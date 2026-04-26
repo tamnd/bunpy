@@ -32,6 +32,10 @@ jobs:
       - name: Print tool versions
         run: go version
 
+      - name: Sync sibling toolchain (gopapy, gocopy, goipy)
+        shell: bash
+        run: bash scripts/sync-deps.sh
+
       - name: go vet
         run: go vet ./...
 
@@ -40,6 +44,10 @@ jobs:
 
       - name: go test
         run: go test ./...
+
+      - name: end-to-end fixtures
+        shell: bash
+        run: bash tests/run.sh
 
   smoke:
     name: bunpy --version smoke
@@ -53,6 +61,9 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
           cache: true
 
+      - name: Sync sibling toolchain (gopapy, gocopy, goipy)
+        run: bash scripts/sync-deps.sh
+
       - name: Build bunpy
         run: go build -o bunpy ./cmd/bunpy
 
@@ -61,3 +72,8 @@ jobs:
 
       - name: bunpy --help
         run: ./bunpy --help
+
+      - name: bunpy hello.py
+        run: |
+          echo 'x = 1' > hello.py
+          ./bunpy hello.py

@@ -1,0 +1,11 @@
+// Workspace for local development. CI runs scripts/sync-deps.sh
+// first, which clones gopapy, gocopy, and goipy as siblings of
+// the bunpy checkout.
+go 1.26
+
+use (
+	.
+	../gocopy
+	../goipy
+	../gopapy
+)

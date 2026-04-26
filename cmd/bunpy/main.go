@@ -1,18 +1,22 @@
 // Command bunpy is one binary for Python: runtime + package manager +
 // bundler + test runner. Bun's developer experience, brought to Python.
 //
-// This is v0.0.1, the skeleton. Only --version and --help are wired.
-// Subsequent rungs land in docs/ROADMAP.md order.
+// v0.0.2 wires the runtime: a positional `.py` file argument runs the
+// script through gocopy plus goipy. Subcommands land per the ladder
+// in docs/ROADMAP.md.
 package main
 
 import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
+
+	"github.com/tamnd/bunpy/v1/runtime"
 )
 
 // version is overwritten at build time via -ldflags "-X main.version=...".
-var version = "0.0.1"
+var version = "0.0.2"
 
 // commit is overwritten at build time. Empty in dev builds.
 var commit = ""
@@ -21,29 +25,51 @@ var commit = ""
 var buildDate = ""
 
 func main() {
-	if err := run(os.Args[1:], os.Stdout, os.Stderr); err != nil {
+	code, err := run(os.Args[1:], os.Stdout, os.Stderr)
+	if err != nil {
 		fmt.Fprintln(os.Stderr, "bunpy:", err)
-		os.Exit(1)
+		if code == 0 {
+			code = 1
+		}
 	}
+	os.Exit(code)
 }
 
-func run(args []string, stdout, stderr io.Writer) error {
+func run(args []string, stdout, stderr io.Writer) (int, error) {
 	if len(args) == 0 {
 		usage(stdout)
-		return nil
+		return 0, nil
 	}
 
 	switch args[0] {
 	case "version", "-v", "--version":
 		printVersion(stdout)
-		return nil
+		return 0, nil
 	case "help", "-h", "--help":
 		usage(stdout)
-		return nil
-	default:
-		usage(stderr)
-		return fmt.Errorf("unknown command %q (only --version / --help wired in v0.0.1)", args[0])
+		return 0, nil
 	}
+
+	if isFilePath(args[0]) {
+		src, err := os.ReadFile(args[0])
+		if err != nil {
+			return 1, err
+		}
+		return runtime.Run(args[0], src, args[1:], stdout, stderr)
+	}
+
+	usage(stderr)
+	return 1, fmt.Errorf("unknown command %q (v0.0.2 wires --version, --help, and `bunpy <file.py>`)", args[0])
+}
+
+// isFilePath reports whether arg looks like a script path. A leading '-'
+// is reserved for flags. We only auto-run files ending in .py for now;
+// this keeps the unknown-command error message useful for typos.
+func isFilePath(arg string) bool {
+	if strings.HasPrefix(arg, "-") {
+		return false
+	}
+	return strings.HasSuffix(arg, ".py")
 }
 
 func printVersion(w io.Writer) {
@@ -67,6 +93,7 @@ func usage(w io.Writer) {
 	fmt.Fprintln(w, "bunpy: one binary for Python (runtime, packages, bundler, tests).")
 	fmt.Fprintln(w, "")
 	fmt.Fprintln(w, "USAGE")
+	fmt.Fprintln(w, "  bunpy <file.py> [args...]   Run a Python script")
 	fmt.Fprintln(w, "  bunpy <command> [args]")
 	fmt.Fprintln(w, "  bunpy --version")
 	fmt.Fprintln(w, "  bunpy --help")
@@ -92,7 +119,7 @@ func usage(w io.Writer) {
 	fmt.Fprintln(w, "  fmt               Format Python source (delegates to gopapy)")
 	fmt.Fprintln(w, "  check             Lint Python source (delegates to gopapy)")
 	fmt.Fprintln(w, "")
-	fmt.Fprintln(w, "v0.0.1 ships only --version and --help. Each rung in")
-	fmt.Fprintln(w, "docs/ROADMAP.md adds one capability with a green CI matrix")
+	fmt.Fprintln(w, "v0.0.2 ships --version, --help, and `bunpy <file.py>`. Each rung")
+	fmt.Fprintln(w, "in docs/ROADMAP.md adds one capability with a green CI matrix")
 	fmt.Fprintln(w, "on linux, macOS, and Windows.")
 }

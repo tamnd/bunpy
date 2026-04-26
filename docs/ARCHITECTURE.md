@@ -33,6 +33,26 @@ land alongside each version's PR under `docs/`.
   └── bunpy/test          →  discovery + parallel + isolate + coverage
 ```
 
+## The gocopy / goipy bridge
+
+bunpy compiles with gocopy and runs with goipy. Both speak the
+same CPython 3.14 marshal format, but they live in separate Go
+modules with separate type identities. To hand a code object
+across, bunpy serializes it on one side and deserializes it on
+the other:
+
+```
+source bytes
+  -> gocopy.compiler.Compile        (*gocopy/bytecode.CodeObject)
+  -> gocopy.marshal.Marshal         ([]byte, just the body)
+  -> goipy.marshal.Unmarshal        (*goipy/object.Code)
+  -> goipy.vm.Interp.Run            (Python objects)
+```
+
+The marshal hop is in-memory; nothing touches disk. When gocopy
+and goipy unify under one module path the bridge collapses to a
+direct hand-off, but the surface bunpy depends on stays the same.
+
 ## Module layout
 
 ```
