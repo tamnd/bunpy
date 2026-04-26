@@ -1,0 +1,78 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GO_VERSION: '1.26'
+
+jobs:
+  cross:
+    name: ${{ matrix.goos }}/${{ matrix.goarch }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+            bin: bunpy
+          - goos: linux
+            goarch: arm64
+            bin: bunpy
+          - goos: darwin
+            goarch: amd64
+            bin: bunpy
+          - goos: darwin
+            goarch: arm64
+            bin: bunpy
+          - goos: windows
+            goarch: amd64
+            bin: bunpy.exe
+          - goos: windows
+            goarch: arm64
+            bin: bunpy.exe
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Compute build metadata
+        id: meta
+        run: |
+          echo "commit=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          echo "date=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
+      - name: go build
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: '0'
+        run: |
+          go build \
+            -trimpath \
+            -ldflags="-s -w \
+              -X main.commit=${{ steps.meta.outputs.commit }} \
+              -X main.buildDate=${{ steps.meta.outputs.date }}" \
+            -o "${{ matrix.bin }}" \
+            ./cmd/bunpy
+
+      - name: Verify binary exists
+        run: ls -la "${{ matrix.bin }}"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: bunpy-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: ${{ matrix.bin }}
+          if-no-files-found: error
+          retention-days: 14

@@ -1,0 +1,60 @@
+# Coverage
+
+Tracks bunpy's progress against Bun's feature surface. Generated
+by `scripts/feature-coverage.sh` from `scripts/coverage.tsv`.
+Status codes:
+
+- `done` — implemented and shipped in a tagged release
+- `wip`  — currently being landed
+- `next` — next on the ladder per docs/ROADMAP.md
+- `todo` — planned, not yet started
+- `skip` — intentionally out of scope (see docs/DEVIATIONS.md)
+
+| Status | Bun                          | bunpy                          | Notes                              |
+|--------|------------------------------|--------------------------------|------------------------------------|
+| done   | bunpy --version              | bunpy --version                | Shipped in v0.0.1                  |
+| done   | bunpy --help                 | bunpy --help                   | Shipped in v0.0.1                  |
+| next   | bun \<file\>                 | bunpy \<file\>                 | v0.0.2: wires gocopy + goipy       |
+| todo   | bun run                      | bunpy run                      | v0.0.3                             |
+| todo   | bun repl                     | bunpy repl                     | v0.0.8                             |
+| todo   | bun install                  | bunpy install                  | v0.1.x                             |
+| todo   | bun add                      | bunpy add                      | v0.1.3                             |
+| todo   | bun remove                   | bunpy remove                   | v0.1.8                             |
+| todo   | bun update                   | bunpy update                   | v0.1.7                             |
+| todo   | bun outdated                 | bunpy outdated                 | v0.1.7                             |
+| todo   | bun audit                    | bunpy audit                    | v0.2.2                             |
+| todo   | bun link / unlink            | bunpy link / unlink            | v0.1.9                             |
+| todo   | bun patch                    | bunpy patch                    | v0.1.10                            |
+| todo   | bun publish                  | bunpy publish                  | v0.2.3                             |
+| todo   | bun pm                       | bunpy pm                       | v0.1.x                             |
+| todo   | bun why                      | bunpy why                      | v0.1.11                            |
+| todo   | bun init                     | bunpy init                     | v0.2.4                             |
+| todo   | bun create                   | bunpy create                   | v0.2.4                             |
+| todo   | bunx                         | bunpyx                         | v0.2.5                             |
+| todo   | bun build                    | bunpy build                    | v0.6.x                             |
+| todo   | bun build --compile          | bunpy build --compile          | v0.6.3                             |
+| todo   | bun --hot                    | bunpy run --hot                | v0.7.0                             |
+| todo   | bun --watch                  | bunpy run --watch              | v0.7.1                             |
+| todo   | bun test                     | bunpy test                     | v0.5.x                             |
+| todo   | Bun.serve                    | bunpy.serve                    | v0.3.0                             |
+| todo   | Bun.file                     | bunpy.file                     | v0.3.1                             |
+| todo   | Bun.sql                      | bunpy.sql                      | v0.3.2 / 0.3.3 / 0.3.4             |
+| todo   | Bun.redis                    | bunpy.redis                    | v0.3.5                             |
+| todo   | Bun.s3                       | bunpy.s3                       | v0.3.6                             |
+| todo   | Bun.$                        | bunpy.dollar                   | v0.3.7                             |
+| todo   | Bun.spawn                    | bunpy.spawn                    | v0.3.8                             |
+| todo   | Bun.glob                     | bunpy.glob                     | v0.3.9                             |
+| todo   | Bun.cron                     | bunpy.cron                     | v0.3.10                            |
+| todo   | fetch / Request / Response   | bunpy globals                  | v0.3.11                            |
+| todo   | Bun.WebSocket                | bunpy.WebSocket                | v0.3.12                            |
+| todo   | Bun.password                 | bunpy.password                 | v0.3.13                            |
+| todo   | Bun.gzip / inflate / base64  | bunpy.gzip / ...               | v0.3.14                            |
+| todo   | Bun.dns / semver / deepEquals| bunpy.dns / semver / deep_equals | v0.4.0                           |
+| todo   | Bun.HTMLRewriter             | bunpy.HTMLRewriter             | v0.4.2                             |
+| todo   | Bun.YAML                     | bunpy.YAML                     | v0.4.3                             |
+| todo   | bun:ffi                      | bunpy.dlopen                   | v0.4.4                             |
+| todo   | Bun.Worker                   | bunpy.Worker                   | v0.4.5                             |
+| todo   | Bun.WebView                  | bunpy.WebView                  | v0.4.7                             |
+| todo   | URLPattern                   | bunpy.URLPattern               | v0.4.9                             |
+| skip   | JSX/TSX loader               | —                              | Python lacks JSX; t-strings (PEP 750) are the closest |
+| skip   | bun:sqlite C-binding         | bunpy.sql sqlite driver        | pure-Go binding instead            |
