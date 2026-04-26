@@ -42,5 +42,5 @@ todo	bun:ffi	bunpy.dlopen	v0.4.4
 todo	Bun.Worker	bunpy.Worker	v0.4.5
 todo	Bun.WebView	bunpy.WebView	v0.4.7
 todo	URLPattern	bunpy.URLPattern	v0.4.9
-skip	JSX/TSX loader	—	Python lacks JSX; t-strings are the closest equivalent (PEP 750)
+skip	JSX/TSX loader	(none)	Python lacks JSX; t-strings are the closest equivalent (PEP 750)
 skip	bun:sqlite C-binding	bunpy.sql sqlite driver	pure-Go binding instead

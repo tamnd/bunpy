@@ -13,9 +13,8 @@ changes.
 
 Bootstrap. The repo is the skeleton: README, LICENSE, the CLI
 entry point with `bunpy --version` and `bunpy --help`, the CI
-workflow set (lint + test + cross-platform build + tag-driven
-release), the changelog tooling, and the docs landing pages
-that point at the architecture and roadmap specs.
+workflow set (lint, test, cross-platform build, tag-driven
+release), the changelog tooling, and the docs landing pages.
 
 There is no runtime yet. `bunpy <file.py>` is reserved for
 v0.0.2, which wires goipy in. The ladder is in
@@ -23,9 +22,9 @@ v0.0.2, which wires goipy in. The ladder is in
 
 ### Added
 
-- `cmd/bunpy/main.go` with `bunpy version` / `--version` /
-  `bunpy help` / `--help` and a subcommand router shaped for
-  the rungs ahead.
+- `cmd/bunpy/main.go` with `bunpy version`, `--version`,
+  `bunpy help`, `--help`, and a subcommand router shaped for the
+  rungs ahead.
 - `LICENSE` (MIT, dated 2026-04-26).
 - `README.md` with the Bun-to-bunpy CLI map and the Python API
   shape.
@@ -48,8 +47,5 @@ v0.0.2, which wires goipy in. The ladder is in
 
 ### Notes
 
-- bunpy targets Python 3.14 because gopapy / gocopy / goipy do.
-- bunpy is English-only on the project side. Translated content
-  in this account belongs to the kernel-docs / Beej / MDN
-  repos, not this one.
+bunpy targets Python 3.14 because gopapy, gocopy, and goipy do.
 

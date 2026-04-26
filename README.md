@@ -17,7 +17,7 @@
 `bunpy` is to Python what Bun is to JavaScript: one static binary
 that runs Python scripts, installs PyPI packages, bundles projects
 into single executables, and runs tests. No virtualenv, no
-`pip install`, no separate interpreter — `bunpy app.py` works on
+`pip install`, no separate interpreter. `bunpy app.py` works on
 a fresh machine.
 
 The runtime piece is built on the Pure-Go Python toolchain in this
@@ -37,13 +37,12 @@ glob, cron, fetch, WebSocket).
 
 ## Status
 
-Early bootstrap. v0.0.x rungs are landing one PR at a time;
-nothing about the public surface is frozen until v0.5.0. Track
-scope and progress in [`docs/COVERAGE.md`](docs/COVERAGE.md). For
-the architecture see
-[notes/Spec/1100/1169_bunpy.md](https://github.com/tamnd/notes/blob/main/Spec/1100/1169_bunpy.md);
-for the per-version plan see
-[notes/Spec/1100/1170_bunpy_roadmap.md](https://github.com/tamnd/notes/blob/main/Spec/1100/1170_bunpy_roadmap.md).
+Early bootstrap. v0.0.x rungs land one PR at a time; nothing
+about the public surface is frozen until v0.5.0. Track scope and
+progress in [`docs/COVERAGE.md`](docs/COVERAGE.md). The
+architecture summary is in
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) and the
+per-version plan is in [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ## Quick start
 

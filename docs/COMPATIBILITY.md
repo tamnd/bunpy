@@ -4,7 +4,7 @@ bunpy is a strict superset on the input side: anything `pip
 install` accepts, `bunpy add` accepts. Anything `python -m pytest`
 finds, `bunpy test` finds. Anything `python script.py` runs,
 `bunpy script.py` runs *to the extent goipy supports the bytecode
-involved* — see goipy's coverage notes.
+involved*. See goipy's coverage notes for the gaps.
 
 This page documents the boundaries.
 

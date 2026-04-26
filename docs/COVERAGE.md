@@ -4,11 +4,11 @@ Tracks bunpy's progress against Bun's feature surface. Generated
 by `scripts/feature-coverage.sh` from `scripts/coverage.tsv`.
 Status codes:
 
-- `done` — implemented and shipped in a tagged release
-- `wip`  — currently being landed
-- `next` — next on the ladder per docs/ROADMAP.md
-- `todo` — planned, not yet started
-- `skip` — intentionally out of scope (see docs/DEVIATIONS.md)
+- `done`: implemented and shipped in a tagged release.
+- `wip`: currently being landed.
+- `next`: next on the ladder per `docs/ROADMAP.md`.
+- `todo`: planned, not yet started.
+- `skip`: intentionally out of scope (see `docs/DEVIATIONS.md`).
 
 | Status | Bun                          | bunpy                          | Notes                              |
 |--------|------------------------------|--------------------------------|------------------------------------|
@@ -56,5 +56,5 @@ Status codes:
 | todo   | Bun.Worker                   | bunpy.Worker                   | v0.4.5                             |
 | todo   | Bun.WebView                  | bunpy.WebView                  | v0.4.7                             |
 | todo   | URLPattern                   | bunpy.URLPattern               | v0.4.9                             |
-| skip   | JSX/TSX loader               | —                              | Python lacks JSX; t-strings (PEP 750) are the closest |
+| skip   | JSX/TSX loader               | (none)                         | Python lacks JSX; PEP 750 t-strings are the closest |
 | skip   | bun:sqlite C-binding         | bunpy.sql sqlite driver        | pure-Go binding instead            |

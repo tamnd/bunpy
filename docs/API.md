@@ -50,7 +50,7 @@ s3 = bunpy.s3({"region": "us-east-1", "bucket": "logs"})
 url = s3.presign("path/to/object", method="GET", expires_in=3600)
 
 result = bunpy.shell("ls", "-la").text()
-out = bunpy.dollar("git status").text()    # bunpy.$ — identifier-safe form
+out = bunpy.dollar("git status").text()    # identifier-safe form of bunpy.$
 ```
 
 ## Spawn / Glob / Cron

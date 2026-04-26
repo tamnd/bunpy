@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# build-changelog.sh — concatenate per-version changelog/v*.md notes into
+# build-changelog.sh: concatenate per-version changelog/v*.md notes into
 # CHANGELOG.md, sorted newest first. Inspired by gopapy's tooling.
 #
 # Each changelog/vX.Y.Z.md contains the body that ships in the GitHub
@@ -35,7 +35,6 @@ shopt -s nullglob
 notes=( changelog/v*.md )
 
 if [ ${#notes[@]} -gt 0 ]; then
-  # Reverse-sort by version.
   IFS=$'\n' sorted=( $(printf '%s\n' "${notes[@]}" | sort -V -r) )
   unset IFS
   for f in "${sorted[@]}"; do
