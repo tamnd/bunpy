@@ -9,6 +9,39 @@ changes.
 
 ## [Unreleased]
 
+## [0.0.3] - 2026-04-26
+
+`bunpy run <file.py>` is the explicit form of `bunpy <file.py>`.
+Both routes converge on the same `runtime.Run` call so behaviour
+is identical. Pyproject script-name dispatch (`bunpy run
+<script>`) waits for the package manager in v0.1.x.
+
+### Added
+
+- `bunpy run <file.py> [args...]` subcommand in
+  `cmd/bunpy/main.go`.
+- `bunpy run --help` prints the run-scoped usage.
+- `bunpy run` with no args writes a usage line to stderr and exits
+  non-zero.
+- `bunpy run -` reserved for stdin scripts; today it errors with
+  "stdin scripts not yet wired".
+- `tests/run.sh` runs every fixture twice: positional dispatch and
+  through `bunpy run`. Each fixture counts as two assertions, so
+  the count doubles.
+- Five new go tests: `TestRunSubcommand`, `TestRunSubcommandNoArgs`,
+  `TestRunSubcommandHelp`, `TestRunSubcommandStdinReserved`,
+  `TestRunSubcommandRejectsNonPyArg`.
+
+### Changed
+
+- `cmd/bunpy/main.go` extracts the file-running path into
+  `runFile` so positional and `run` paths share one entry point.
+- `docs/ROADMAP.md` marks v0.0.3 shipped, v0.0.4 next.
+- `docs/CLI.md` reflects the v0.0.3 surface.
+- `docs/COVERAGE.md` flips the `bun run` row to `done`.
+- The version banner in `bunpy --help` lists the four wired
+  capabilities.
+
 ## [0.0.2] - 2026-04-26
 
 `bunpy <file.py>` now runs. It is a thin pipe: gocopy compiles

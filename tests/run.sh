@@ -21,43 +21,46 @@ fail=0
 ran=0
 
 run_fixture() {
-  local script="$1"
+  local label="$1"
+  local script="$2"
+  shift 2
   local dir name expected
   dir="$(dirname "$script")"
   name="$(basename "$script" .py)"
   expected="$dir/expected_${name}.txt"
 
   if [ ! -f "$expected" ]; then
-    echo "skip: $script (no expected_${name}.txt)"
+    echo "skip: $label $script (no expected_${name}.txt)"
     return 0
   fi
 
   ran=$((ran + 1))
   local got rc
-  got="$("$bin" "$script" 2>&1)" || rc=$?
+  got="$("$bin" "$@" "$script" 2>&1)" || rc=$?
   rc="${rc:-0}"
   local want
   want="$(cat "$expected")"
   if [ "$rc" -ne 0 ]; then
-    echo "FAIL: $script exited $rc"
+    echo "FAIL: $label $script exited $rc"
     echo "stderr+stdout:"
     echo "$got"
     fail=$((fail + 1))
     return 0
   fi
   if [ "$got" != "$want" ]; then
-    echo "FAIL: $script stdout mismatch"
+    echo "FAIL: $label $script stdout mismatch"
     echo "  got:  $(printf '%s' "$got" | head -c 200)"
     echo "  want: $(printf '%s' "$want" | head -c 200)"
     fail=$((fail + 1))
     return 0
   fi
-  echo "ok:   $script"
+  echo "ok:   $label $script"
 }
 
 for script in tests/fixtures/v00*/*.py; do
   [ -e "$script" ] || continue
-  run_fixture "$script"
+  run_fixture "positional" "$script"
+  run_fixture "run       " "$script" run
 done
 
 echo "---"

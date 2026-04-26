@@ -13,8 +13,8 @@ harness goes from non-zero to zero in the same PR.
 |---------|--------------------------------------|------------|
 | v0.0.1  | repo bootstrap                       | shipped    |
 | v0.0.2  | `bunpy <file.py>` shells to goipy    | shipped    |
-| v0.0.3  | `bunpy run` subcommand               | next       |
-| v0.0.4  | embedded stdlib smoke                | planned    |
+| v0.0.3  | `bunpy run` subcommand               | shipped    |
+| v0.0.4  | embedded stdlib smoke                | next       |
 | v0.0.5  | binary metadata baked at build time  | planned    |
 | v0.0.6  | release tooling actually publishes   | planned    |
 | v0.0.7  | embedded help and man pages          | planned    |

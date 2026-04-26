@@ -1,9 +1,10 @@
 # CLI reference
 
 bunpy ships as one binary. Subcommands land per-version per the
-roadmap; v0.0.1 only has `--version` and `--help`. This page is
-the long-form reference. Running `bunpy help <cmd>` gives the
-short form.
+roadmap. Today (v0.0.3) the wired surface is `--version`,
+`--help`, positional `bunpy <file.py>`, and `bunpy run <file.py>`.
+This page is the long-form reference. Running `bunpy help <cmd>`
+gives the short form.
 
 ## Synopsis
 
@@ -21,10 +22,12 @@ thing.
 
 ### Runtime
 
-- `bunpy run <file.py>` runs a Python script. Flags: `--hot`
+- `bunpy run <file.py>` runs a Python script. The bare positional
+  form `bunpy <file.py>` is the same call. Flags planned: `--hot`
   (state-preserving reload), `--watch` (full restart on change),
   `-` (read from stdin), `--no-globals` (do not inject Web
-  platform globals).
+  platform globals). v0.0.3 wires the basic file path; the flags
+  follow on the v0.7.x rungs.
 - `bunpy repl` opens an interactive REPL. History at
   `~/.bunpy_history`.
 

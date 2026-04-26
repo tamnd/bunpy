@@ -111,6 +111,75 @@ func TestRunFileMissing(t *testing.T) {
 	}
 }
 
+func TestRunSubcommand(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "pass.py")
+	if err := os.WriteFile(path, []byte("pass\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var stdout, stderr bytes.Buffer
+	code, err := run([]string{"run", path}, &stdout, &stderr)
+	if err != nil {
+		t.Fatalf("bunpy run %s: %v\nstderr:\n%s", path, err, stderr.String())
+	}
+	if code != 0 {
+		t.Fatalf("code %d, want 0", code)
+	}
+	if stdout.String() != "" {
+		t.Errorf("stdout %q, want empty", stdout.String())
+	}
+}
+
+func TestRunSubcommandNoArgs(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	code, err := run([]string{"run"}, &stdout, &stderr)
+	if err == nil {
+		t.Fatal("expected error for `bunpy run` with no args")
+	}
+	if code == 0 {
+		t.Error("expected non-zero exit code")
+	}
+	if !strings.Contains(stderr.String(), "usage") {
+		t.Errorf("stderr %q does not mention usage", stderr.String())
+	}
+}
+
+func TestRunSubcommandHelp(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	code, err := run([]string{"run", "--help"}, &stdout, &stderr)
+	if err != nil {
+		t.Fatalf("bunpy run --help: %v", err)
+	}
+	if code != 0 {
+		t.Fatalf("code %d, want 0", code)
+	}
+	if !strings.Contains(stdout.String(), "bunpy run") {
+		t.Errorf("stdout %q missing `bunpy run`", stdout.String())
+	}
+}
+
+func TestRunSubcommandStdinReserved(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	code, err := run([]string{"run", "-"}, &stdout, &stderr)
+	if err == nil {
+		t.Fatal("expected error for stdin script")
+	}
+	if code == 0 {
+		t.Error("expected non-zero exit code")
+	}
+}
+
+func TestRunSubcommandRejectsNonPyArg(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	code, err := run([]string{"run", "frobnicate"}, &stdout, &stderr)
+	if err == nil {
+		t.Fatal("expected error for non-.py argument")
+	}
+	if code == 0 {
+		t.Error("expected non-zero exit code")
+	}
+}
+
 func TestRunFileBadSource(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "bad.py")
