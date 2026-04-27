@@ -1,10 +1,11 @@
 # CLI reference
 
 bunpy ships as one binary. Subcommands land per-version per the
-roadmap. Today (v0.0.4) the wired surface is `--version`,
-`--help`, positional `bunpy <file.py>`, `bunpy run <file.py>`,
-and `bunpy stdlib`. This page is the long-form reference.
-Running `bunpy help <cmd>` gives the short form.
+roadmap. Today (v0.0.5) the wired surface is `--version` (with
+`--short` and `--json`), `--help`, positional `bunpy <file.py>`,
+`bunpy run <file.py>`, and `bunpy stdlib`. This page is the
+long-form reference. Running `bunpy help <cmd>` gives the short
+form.
 
 ## Synopsis
 
@@ -100,5 +101,14 @@ thing.
 
 ### Meta
 
-- `bunpy version` and `--version` print the version.
+- `bunpy version` (alias `--version`, `-v`) prints the version,
+  commit, build date, host go/os/arch, and pinned toolchain
+  commits. A locally-built binary prints just `bunpy dev` plus
+  the go/os/arch line so dev builds cannot lie about identity.
+- `bunpy version --short` prints just the version string. Useful
+  for shell scripts that want to gate on it.
+- `bunpy version --json` prints the same metadata as a one-line
+  JSON object. Fields: `version`, `commit`, `build_date`,
+  `goipy`, `gocopy`, `gopapy`, `go`, `os`, `arch`. Empty string
+  fields are omitted.
 - `bunpy help [cmd]` and `--help` print help.

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -21,9 +22,83 @@ func TestVersion(t *testing.T) {
 		if code != 0 {
 			t.Fatalf("%s: code %d, want 0", arg, code)
 		}
-		if !strings.HasPrefix(stdout.String(), version) {
-			t.Errorf("%s: stdout %q does not start with version %q", arg, stdout.String(), version)
+		want := "bunpy " + runtime.Build().Version
+		if !strings.HasPrefix(stdout.String(), want) {
+			t.Errorf("%s: stdout %q does not start with %q", arg, stdout.String(), want)
 		}
+	}
+}
+
+func TestVersionShort(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	code, err := run([]string{"version", "--short"}, &stdout, &stderr)
+	if err != nil {
+		t.Fatalf("bunpy version --short: %v", err)
+	}
+	if code != 0 {
+		t.Fatalf("code %d, want 0", code)
+	}
+	got := strings.TrimSpace(stdout.String())
+	if got != runtime.Build().Version {
+		t.Errorf("stdout %q, want %q", got, runtime.Build().Version)
+	}
+}
+
+func TestVersionJSON(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	code, err := run([]string{"version", "--json"}, &stdout, &stderr)
+	if err != nil {
+		t.Fatalf("bunpy version --json: %v", err)
+	}
+	if code != 0 {
+		t.Fatalf("code %d, want 0", code)
+	}
+	var got map[string]any
+	if err := json.Unmarshal([]byte(strings.TrimSpace(stdout.String())), &got); err != nil {
+		t.Fatalf("invalid JSON %q: %v", stdout.String(), err)
+	}
+	if got["version"] != runtime.Build().Version {
+		t.Errorf("json version = %v, want %q", got["version"], runtime.Build().Version)
+	}
+	for _, k := range []string{"go", "os", "arch"} {
+		if _, ok := got[k]; !ok {
+			t.Errorf("json output missing key %q: %s", k, stdout.String())
+		}
+	}
+}
+
+func TestVersionDevBuild(t *testing.T) {
+	if runtime.Build().Version != "dev" {
+		t.Skipf("not a dev build (version = %q); skipping", runtime.Build().Version)
+	}
+	var stdout, stderr bytes.Buffer
+	code, err := run([]string{"version"}, &stdout, &stderr)
+	if err != nil {
+		t.Fatalf("bunpy version: %v", err)
+	}
+	if code != 0 {
+		t.Fatalf("code %d, want 0", code)
+	}
+	out := stdout.String()
+	if !strings.Contains(out, "bunpy dev") {
+		t.Errorf("dev build stdout missing `bunpy dev`: %q", out)
+	}
+	if strings.Contains(out, "commit ") || strings.Contains(out, "built ") {
+		t.Errorf("dev build stdout should not include commit/built lines: %q", out)
+	}
+	if strings.Contains(out, "toolchain:") {
+		t.Errorf("dev build stdout should not include toolchain line: %q", out)
+	}
+}
+
+func TestVersionUnknownFlag(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	code, err := run([]string{"version", "--frobnicate"}, &stdout, &stderr)
+	if err == nil {
+		t.Fatal("expected error for unknown version flag")
+	}
+	if code == 0 {
+		t.Error("expected non-zero exit code")
 	}
 }
 

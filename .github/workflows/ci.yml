@@ -75,11 +75,29 @@ jobs:
       - name: Sync sibling toolchain (gopapy, gocopy, goipy)
         run: bash scripts/sync-deps.sh
 
-      - name: Build bunpy
-        run: go build -o bunpy ./cmd/bunpy
+      - name: Build bunpy with metadata
+        env:
+          BUNPY_VERSION: dev
+        run: |
+          go build \
+            -trimpath \
+            -ldflags="$(bash scripts/build-ldflags.sh)" \
+            -o bunpy \
+            ./cmd/bunpy
 
       - name: bunpy --version
         run: ./bunpy --version
+
+      - name: bunpy version --short
+        run: |
+          got="$(./bunpy version --short)"
+          test "$got" = "dev" || { echo "want dev, got $got"; exit 1; }
+
+      - name: bunpy version --json shape
+        run: |
+          out="$(./bunpy version --json)"
+          echo "$out"
+          python3 -c "import json,sys; d=json.loads(sys.argv[1]); assert d['version']=='dev', d; assert d['commit'], d; assert d['build_date'], d; assert d['goipy'] and d['gocopy'] and d['gopapy'], d; assert 'go' in d and 'os' in d and 'arch' in d, d" "$out"
 
       - name: bunpy --help
         run: ./bunpy --help

@@ -9,6 +9,72 @@ changes.
 
 ## [Unreleased]
 
+## [0.0.5] - 2026-04-27
+
+`bunpy version` is now load-bearing. The version string, commit,
+build date, and the three pinned sibling-toolchain commits
+(gopapy, gocopy, goipy) are baked into the binary via `-ldflags`
+at build time. A locally-built binary stays honest by printing
+just `bunpy dev`, hiding the commit/built/toolchain lines that
+only release builds get to claim.
+
+This rung also adds machine-readable output. `bunpy version
+--short` prints the version string. `bunpy version --json` prints
+a one-line JSON object that scripts can pipe into `jq`. CI
+verifies the JSON shape on every push so the contract is locked.
+
+The hardcoded `var version = "0.0.x"` in `cmd/bunpy/main.go` is
+gone. There was a foot-gun: every release I had to remember to
+bump the constant or the binary would lie about what it was.
+The single source of truth now is `BUNPY_VERSION` in the build
+pipeline, which `release.yml` derives from the tag and `build.yml`
+sets to `dev`.
+
+### Added
+
+- `runtime/buildinfo.go` declares six build-time string vars
+  (`Version`, `Commit`, `BuildDate`, `Goipy`, `Gocopy`, `Gopapy`)
+  plus a `BuildInfo` struct and a `Build()` accessor that fills
+  in `Go`, `OS`, `Arch` from `runtime.GOOS`/`GOARCH`/`Version`.
+- `runtime/buildinfo_test.go` covers dev defaults, host fields,
+  and JSON shape.
+- `cmd/bunpy/main.go` grows a `versionSubcommand` that handles
+  `--short` and `--json`. The plain form prints a multi-line
+  banner; the dev form skips the commit/built/toolchain lines.
+- `scripts/build-ldflags.sh` prints the `-ldflags` string used by
+  every build pipeline. It reads `BUNPY_VERSION`, `BUNPY_COMMIT`,
+  and `BUNPY_BUILD_DATE` from the environment (with sensible
+  defaults) and pulls pinned dep commits from
+  `scripts/sync-deps.sh` so there is one source of truth.
+- `.github/workflows/ci.yml` smoke job builds with metadata,
+  asserts `bunpy version --short` prints `dev`, and validates
+  `bunpy version --json` shape via host `python3`.
+- Five new go tests in `cmd/bunpy/main_test.go`:
+  `TestVersionShort`, `TestVersionJSON`, `TestVersionDevBuild`,
+  `TestVersionUnknownFlag`, plus an updated `TestVersion` that
+  no longer depends on a hardcoded constant.
+
+### Changed
+
+- `cmd/bunpy/main.go` no longer carries `var version`,
+  `var commit`, `var buildDate`. All metadata flows through
+  `runtime.Build()`.
+- `.github/workflows/build.yml` and
+  `.github/workflows/release.yml` source
+  `scripts/build-ldflags.sh` instead of inlining `-X main.foo=...`
+  flags. Tag-driven builds set `BUNPY_VERSION` from
+  `${GITHUB_REF_NAME#v}`; main builds set it to `dev`.
+- `bunpy version` output is now multi-line with a separate
+  go/os/arch line. Plain and `(commit ..., built ...)` forms
+  documented in `docs/CLI.md`.
+- `docs/ROADMAP.md` marks v0.0.5 shipped, v0.0.6 next.
+- `docs/ARCHITECTURE.md` adds a "Build metadata" paragraph.
+- `docs/CLI.md` documents `--short` and `--json` and the
+  dev/release distinction.
+- The version banner in `bunpy --help` lists the five wired
+  capabilities, with the version subcommand spelled out as
+  `--version (with --short and --json)`.
+
 ## [0.0.4] - 2026-04-27
 
 `bunpy stdlib` exposes the list of Python stdlib modules baked

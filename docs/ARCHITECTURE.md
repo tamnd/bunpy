@@ -53,6 +53,21 @@ The marshal hop is in-memory; nothing touches disk. When gocopy
 and goipy unify under one module path the bridge collapses to a
 direct hand-off, but the surface bunpy depends on stays the same.
 
+## Build metadata
+
+Build-time metadata lives in `runtime/buildinfo.go`. Six string
+package vars (`Version`, `Commit`, `BuildDate`, plus the three
+sibling-toolchain commits `Goipy`, `Gocopy`, `Gopapy`) default to
+empty or `"dev"` and are overwritten via `-ldflags "-X ..."`.
+`scripts/build-ldflags.sh` is the single producer of that
+ldflags string: it reads pinned commits from `scripts/sync-deps.sh`
+so the in-binary toolchain commits cannot drift from the workspace
+they were built against. The CLI consumes this via
+`runtime.Build()` and exposes it as `bunpy version`,
+`bunpy version --short`, and `bunpy version --json`. A dev build
+prints just `bunpy dev` and hides commit/date/toolchain lines so
+local binaries never claim a tag they do not have.
+
 ## Embedded stdlib
 
 goipy ships ~184 Python stdlib modules baked into the binary.

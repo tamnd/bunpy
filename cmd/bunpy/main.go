@@ -7,6 +7,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -14,15 +15,6 @@ import (
 
 	"github.com/tamnd/bunpy/v1/runtime"
 )
-
-// version is overwritten at build time via -ldflags "-X main.version=...".
-var version = "0.0.4"
-
-// commit is overwritten at build time. Empty in dev builds.
-var commit = ""
-
-// buildDate is overwritten at build time (RFC 3339). Empty in dev builds.
-var buildDate = ""
 
 func main() {
 	code, err := run(os.Args[1:], os.Stdout, os.Stderr)
@@ -43,8 +35,7 @@ func run(args []string, stdout, stderr io.Writer) (int, error) {
 
 	switch args[0] {
 	case "version", "-v", "--version":
-		printVersion(stdout)
-		return 0, nil
+		return versionSubcommand(args[1:], stdout, stderr)
 	case "help", "-h", "--help":
 		usage(stdout)
 		return 0, nil
@@ -59,7 +50,37 @@ func run(args []string, stdout, stderr io.Writer) (int, error) {
 	}
 
 	usage(stderr)
-	return 1, fmt.Errorf("unknown command %q (v0.0.4 wires --version, --help, `bunpy <file.py>`, `bunpy run`, `bunpy stdlib`)", args[0])
+	return 1, fmt.Errorf("unknown command %q (v0.0.5 wires --version, --help, `bunpy <file.py>`, `bunpy run`, `bunpy stdlib`)", args[0])
+}
+
+func versionSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
+	mode := "plain"
+	for _, a := range args {
+		switch a {
+		case "--short":
+			mode = "short"
+		case "--json":
+			mode = "json"
+		default:
+			return 1, fmt.Errorf("bunpy version: unknown flag %q (known: --short, --json)", a)
+		}
+	}
+	b := runtime.Build()
+	switch mode {
+	case "short":
+		fmt.Fprintln(stdout, b.Version)
+		return 0, nil
+	case "json":
+		data, err := json.Marshal(b)
+		if err != nil {
+			return 1, fmt.Errorf("bunpy version --json: %w", err)
+		}
+		fmt.Fprintln(stdout, string(data))
+		return 0, nil
+	default:
+		printVersion(stdout, b)
+		return 0, nil
+	}
 }
 
 func stdlibSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
@@ -133,20 +154,23 @@ func isFilePath(arg string) bool {
 	return strings.HasSuffix(arg, ".py")
 }
 
-func printVersion(w io.Writer) {
-	fmt.Fprintln(w, version)
-	if commit != "" || buildDate != "" {
-		extra := ""
-		if commit != "" {
-			extra = "commit " + commit
-		}
-		if buildDate != "" {
-			if extra != "" {
-				extra += ", "
-			}
-			extra += "built " + buildDate
-		}
-		fmt.Fprintln(w, extra)
+func printVersion(w io.Writer, b runtime.BuildInfo) {
+	if b.Commit == "" && b.BuildDate == "" {
+		fmt.Fprintf(w, "bunpy %s\n", b.Version)
+		fmt.Fprintf(w, "go %s %s/%s\n", b.Go, b.OS, b.Arch)
+		return
+	}
+	parts := []string{}
+	if b.Commit != "" {
+		parts = append(parts, "commit "+b.Commit)
+	}
+	if b.BuildDate != "" {
+		parts = append(parts, "built "+b.BuildDate)
+	}
+	fmt.Fprintf(w, "bunpy %s (%s)\n", b.Version, strings.Join(parts, ", "))
+	fmt.Fprintf(w, "go %s %s/%s\n", b.Go, b.OS, b.Arch)
+	if b.Goipy != "" || b.Gocopy != "" || b.Gopapy != "" {
+		fmt.Fprintf(w, "toolchain: gopapy %s / gocopy %s / goipy %s\n", b.Gopapy, b.Gocopy, b.Goipy)
 	}
 }
 
@@ -181,7 +205,8 @@ func usage(w io.Writer) {
 	fmt.Fprintln(w, "  check             Lint Python source (delegates to gopapy)")
 	fmt.Fprintln(w, "  stdlib            List Python stdlib modules embedded in the binary")
 	fmt.Fprintln(w, "")
-	fmt.Fprintln(w, "v0.0.4 ships --version, --help, `bunpy <file.py>`, `bunpy run`,")
-	fmt.Fprintln(w, "and `bunpy stdlib`. Each rung in docs/ROADMAP.md adds one")
-	fmt.Fprintln(w, "capability with a green CI matrix on linux, macOS, and Windows.")
+	fmt.Fprintln(w, "v0.0.5 ships --version (with --short and --json), --help,")
+	fmt.Fprintln(w, "`bunpy <file.py>`, `bunpy run`, and `bunpy stdlib`. Each rung")
+	fmt.Fprintln(w, "in docs/ROADMAP.md adds one capability with a green CI matrix")
+	fmt.Fprintln(w, "on linux, macOS, and Windows.")
 }
