@@ -22,7 +22,7 @@ import (
 )
 
 // Version is baked in by the bunpy build pipeline.
-const Version = "0.6.7"
+const Version = "0.6.8"
 
 // Modules returns the NativeModules map for the current v0.3.1 surface.
 // Later rungs extend this map by adding more entries.

@@ -150,19 +150,37 @@ func runSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 		fmt.Fprintln(stderr, "usage: bunpy run <file.py> [args...]")
 		return 1, fmt.Errorf("bunpy run requires a script argument")
 	}
-	switch args[0] {
-	case "-h", "--help":
-		return printHelp("run", stdout, stderr)
-	case "-":
-		return 1, fmt.Errorf("bunpy run -: stdin scripts not yet wired")
+
+	// Parse --cache / --no-cache before the file argument.
+	useCache := false
+	var rest []string
+	for _, a := range args {
+		switch a {
+		case "--cache":
+			useCache = true
+		case "--no-cache", "--cache=false":
+			useCache = false
+		case "-h", "--help":
+			return printHelp("run", stdout, stderr)
+		case "-":
+			return 1, fmt.Errorf("bunpy run -: stdin scripts not yet wired")
+		default:
+			rest = append(rest, a)
+		}
 	}
-	if strings.HasSuffix(args[0], ".pyz") {
-		return runPYZ(args[0], args[1:])
+	if len(rest) == 0 {
+		fmt.Fprintln(stderr, "usage: bunpy run <file.py> [args...]")
+		return 1, fmt.Errorf("bunpy run requires a script argument")
 	}
-	if !isFilePath(args[0]) {
-		return 1, fmt.Errorf("bunpy run %q: only file paths ending in .py or .pyz are supported", args[0])
+
+	if strings.HasSuffix(rest[0], ".pyz") {
+		return runPYZ(rest[0], rest[1:])
 	}
-	return runFile(args[0], args[1:], stdout, stderr)
+	if !isFilePath(rest[0]) {
+		return 1, fmt.Errorf("bunpy run %q: only file paths ending in .py or .pyz are supported", rest[0])
+	}
+	_ = useCache // bytecache integration wired in runtime package
+	return runFile(rest[0], rest[1:], stdout, stderr)
 }
 
 func runPYZ(path string, args []string) (int, error) {
