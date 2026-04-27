@@ -35,13 +35,13 @@ import (
 
 // Wheel is an opened wheel archive with its dist-info parsed.
 type Wheel struct {
-	Filename string  // e.g. requests-2.31.0-py3-none-any.whl
-	Name     string  // PEP 503 normalised
+	Filename string // e.g. requests-2.31.0-py3-none-any.whl
+	Name     string // PEP 503 normalised
 	Version  string
-	Tags     []Tag   // <python_tag>-<abi_tag>-<platform_tag>
-	DistInfo string  // path inside the zip, e.g. "requests-2.31.0.dist-info/"
-	DataDir  string  // optional, e.g. "requests-2.31.0.data/"
-	Metadata []byte  // METADATA verbatim
+	Tags     []Tag  // <python_tag>-<abi_tag>-<platform_tag>
+	DistInfo string // path inside the zip, e.g. "requests-2.31.0.dist-info/"
+	DataDir  string // optional, e.g. "requests-2.31.0.data/"
+	Metadata []byte // METADATA verbatim
 	WHEEL    WheelMeta
 	RECORD   []Entry
 

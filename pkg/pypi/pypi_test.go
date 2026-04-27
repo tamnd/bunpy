@@ -3,6 +3,7 @@ package pypi
 import (
 	"context"
 	"errors"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -203,6 +204,107 @@ func TestParseInvalidJSON(t *testing.T) {
 	_, err := c.Get(context.Background(), "broken")
 	if err == nil || !strings.Contains(err.Error(), "parse") {
 		t.Errorf("want parse error, got %v", err)
+	}
+}
+
+func TestParseCoreMetadata(t *testing.T) {
+	cases := []struct {
+		raw      string
+		wantOK   bool
+		wantHash string
+	}{
+		{``, false, ""},
+		{`true`, true, ""},
+		{`false`, false, ""},
+		{`{"sha256":"abc"}`, true, "abc"},
+		{`"unexpected"`, false, ""},
+	}
+	for _, c := range cases {
+		ok, hashes := parseCoreMetadata([]byte(c.raw))
+		if ok != c.wantOK {
+			t.Errorf("parseCoreMetadata(%q) ok = %v, want %v", c.raw, ok, c.wantOK)
+		}
+		if hashes["sha256"] != c.wantHash {
+			t.Errorf("parseCoreMetadata(%q) sha256 = %q, want %q", c.raw, hashes["sha256"], c.wantHash)
+		}
+	}
+}
+
+type metadataTransport struct {
+	body []byte
+	hits int
+}
+
+func (m *metadataTransport) Do(req *http.Request) (*http.Response, error) {
+	m.hits++
+	if !strings.HasSuffix(req.URL.Path, ".metadata") {
+		return nil, errors.New("metadataTransport: expected .metadata path")
+	}
+	return &http.Response{
+		StatusCode: 200,
+		Body:       io.NopCloser(strings.NewReader(string(m.body))),
+		Header:     http.Header{},
+	}, nil
+}
+
+func TestFetchMetadataPEP658(t *testing.T) {
+	body := []byte("Metadata-Version: 2.1\nName: widget\nVersion: 1.0.0\n")
+	tr := &metadataTransport{body: body}
+	c := New()
+	c.HTTP = tr
+	f := File{
+		Filename:              "widget-1.0.0-py3-none-any.whl",
+		URL:                   "https://files/widget.whl",
+		CoreMetadataAvailable: true,
+		CoreMetadataHashes:    map[string]string{"sha256": sha256Hex(body)},
+	}
+	got, err := c.FetchMetadata(context.Background(), f, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(body) {
+		t.Errorf("metadata mismatch: got %q", got)
+	}
+	if tr.hits != 1 {
+		t.Errorf("hits = %d, want 1", tr.hits)
+	}
+}
+
+func TestFetchMetadataHashMismatch(t *testing.T) {
+	tr := &metadataTransport{body: []byte("real")}
+	c := New()
+	c.HTTP = tr
+	f := File{
+		URL:                   "https://files/widget.whl",
+		CoreMetadataAvailable: true,
+		CoreMetadataHashes:    map[string]string{"sha256": sha256Hex([]byte("not real"))},
+	}
+	_, err := c.FetchMetadata(context.Background(), f, nil, nil)
+	if err == nil || !strings.Contains(err.Error(), "hash mismatch") {
+		t.Errorf("want hash mismatch error, got %v", err)
+	}
+}
+
+func TestFetchMetadataFallbackExtract(t *testing.T) {
+	wheel := []byte("fake wheel bytes")
+	want := []byte("METADATA-bytes")
+	c := New()
+	c.HTTP = httpkit.FixturesFS(t.TempDir())
+	f := File{Filename: "widget-1.0.0-py3-none-any.whl"}
+	got, err := c.FetchMetadata(context.Background(), f,
+		func() ([]byte, error) { return wheel, nil },
+		func(b []byte) ([]byte, error) {
+			if string(b) != string(wheel) {
+				t.Errorf("extractor saw %q", b)
+			}
+			return want, nil
+		},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(want) {
+		t.Errorf("got %q, want %q", got, want)
 	}
 }
 

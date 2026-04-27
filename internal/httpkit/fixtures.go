@@ -157,4 +157,3 @@ func applyHeaders(resp *http.Response, r io.Reader) {
 		}
 	}
 }
-

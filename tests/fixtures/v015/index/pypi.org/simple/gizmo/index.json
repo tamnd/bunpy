@@ -1,0 +1,11 @@
+{
+  "name": "gizmo",
+  "files": [
+    {
+      "filename": "gizmo-2.0.0-py3-none-any.whl",
+      "url": "https://files.example/gizmo/gizmo-2.0.0-py3-none-any.whl",
+      "hashes": {"sha256": "1bab3c37f9d20ea2ec432ece91eaf166c9bdb678af26e628f1d9dedff0b198ee"}
+    }
+  ],
+  "meta": {"api-version": "1.1", "_last-serial": 1}
+}

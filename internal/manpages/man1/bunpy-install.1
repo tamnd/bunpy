@@ -1,0 +1,50 @@
+.TH BUNPY-INSTALL 1 "2026-04-27" "bunpy" "User Commands"
+.SH NAME
+bunpy-install \- install every pinned wheel from bunpy.lock
+.SH SYNOPSIS
+.B bunpy install
+.RB [ \-\-target
+.IR dir ]
+.RB [ \-\-cache-dir
+.IR path ]
+.RB [ \-\-no-verify ]
+.SH DESCRIPTION
+Reads
+.I ./bunpy.lock
+and installs every
+.B [[package]]
+pin into
+.IR ./.bunpy/site-packages .
+The lockfile is treated as the source of truth: the resolver does
+not run, so the install is deterministic across machines that share
+the lockfile. Each wheel is fetched through the same httpkit and
+cache path
+.BR bunpy-add (1)
+uses, then installed via the v0.1.2 wheel installer (purelib only,
+RECORD-verified, atomic stage and rename).
+.PP
+Run
+.BR bunpy-pm-lock (1)
+first when the lockfile is missing or stale.
+.SH OPTIONS
+.TP
+.BI \-\-target " dir"
+Site-packages target directory. Defaults to
+.IR ./.bunpy/site-packages .
+.TP
+.BI \-\-cache-dir " path"
+Override the wheel cache root. Defaults to
+.I $BUNPY_CACHE_DIR
+or the platform XDG default.
+.TP
+.B \-\-no-verify
+Skip RECORD hash verification. Use when the lockfile and a private
+mirror agree on integrity by other means.
+.SH EXIT STATUS
+Zero when every pin installs cleanly. Non-zero when the lockfile is
+missing, a wheel cannot be fetched, or RECORD verification fails.
+.SH SEE ALSO
+.BR bunpy-add (1),
+.BR bunpy-pm-lock (1),
+.BR bunpy-pm-install-wheel (1),
+.BR bunpy (1).

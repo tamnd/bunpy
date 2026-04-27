@@ -16,18 +16,19 @@ import (
 	"github.com/tamnd/bunpy/v1/pkg/cache"
 	"github.com/tamnd/bunpy/v1/pkg/lockfile"
 	"github.com/tamnd/bunpy/v1/pkg/manifest"
+	"github.com/tamnd/bunpy/v1/pkg/marker"
 	"github.com/tamnd/bunpy/v1/pkg/pypi"
+	"github.com/tamnd/bunpy/v1/pkg/resolver"
 	"github.com/tamnd/bunpy/v1/pkg/version"
 	"github.com/tamnd/bunpy/v1/pkg/wheel"
 )
 
-// addSubcommand wires `bunpy add <pkg>[<spec>]`. The v0.1.3 base
-// is the naive single-package porcelain: load pyproject.toml, fetch
-// the PyPI project page, pick the highest universal wheel matching
-// the caller's spec, install it, and write the resolved spec back.
-// v0.1.4 layers the lockfile writer: every successful add upserts
-// the resolved row into bunpy.lock and refreshes the content-hash.
-// No transitive walk and no resolver yet; those land in v0.1.5.
+// addSubcommand wires `bunpy add <pkg>[<spec>]`. v0.1.5 hands the
+// requirement to the PubGrub-inspired resolver, which walks
+// transitive Requires-Dist edges, evaluates PEP 508 markers, and
+// picks platform-aware wheels via wheel.Pick. Every pin lands in
+// bunpy.lock; the install layer materialises each wheel under
+// .bunpy/site-packages.
 func addSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 	var (
 		spec      string
@@ -110,35 +111,52 @@ func addSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 	if fix := os.Getenv("BUNPY_PYPI_FIXTURES"); fix != "" {
 		client.HTTP = httpkit.FixturesFS(fix)
 	}
-	proj, err := client.Get(context.Background(), name)
+	ctx := context.Background()
+	reg := newPypiRegistry(ctx, client, wheel.HostTags(), marker.DefaultEnv(),
+		func(f pypi.File) ([]byte, error) { return fetchAddWheel(f, name, cacheDir) })
+	rootReqs := []resolver.Requirement{{Name: pypi.Normalize(name), Spec: parsed}}
+	res, err := resolver.New(reg).Solve(rootReqs)
 	if err != nil {
-		var nf *pypi.NotFoundError
-		if errors.As(err, &nf) {
-			return 1, fmt.Errorf("bunpy add: %w", err)
-		}
 		return 1, fmt.Errorf("bunpy add: %w", err)
 	}
 
-	chosen, file, ok := pickUniversalWheel(proj, parsed)
+	var rootPin resolver.Pin
+	for _, p := range res.Pins {
+		if p.Name == pypi.Normalize(name) {
+			rootPin = p
+			break
+		}
+	}
+	if rootPin.Version == "" {
+		return 1, fmt.Errorf("bunpy add: resolver returned no pin for %s", name)
+	}
+	chosen := rootPin.Version
+	rootFile, ok := reg.Pick(rootPin.Name, rootPin.Version)
 	if !ok {
-		return 1, fmt.Errorf("bunpy add: no py3-none-any wheel matches %q", spec)
+		return 1, fmt.Errorf("bunpy add: no wheel matches host for %s %s", name, chosen)
 	}
 
 	if !noInstall {
-		body, err := fetchAddWheel(file, name, cacheDir)
-		if err != nil {
-			return 1, fmt.Errorf("bunpy add: %w", err)
-		}
-		w, err := wheel.OpenReader(file.Filename, body)
-		if err != nil {
-			return 1, fmt.Errorf("bunpy add: %w", err)
-		}
-		verify := true
-		if _, err := w.Install(target, wheel.InstallOptions{
-			Installer:    "bunpy",
-			VerifyHashes: &verify,
-		}); err != nil {
-			return 1, fmt.Errorf("bunpy add: %w", err)
+		for _, pin := range res.Pins {
+			f, ok := reg.Pick(pin.Name, pin.Version)
+			if !ok {
+				return 1, fmt.Errorf("bunpy add: no wheel for %s %s", pin.Name, pin.Version)
+			}
+			body, err := fetchAddWheel(f, pin.Name, cacheDir)
+			if err != nil {
+				return 1, fmt.Errorf("bunpy add: %w", err)
+			}
+			w, err := wheel.OpenReader(f.Filename, body)
+			if err != nil {
+				return 1, fmt.Errorf("bunpy add: %w", err)
+			}
+			verify := true
+			if _, err := w.Install(target, wheel.InstallOptions{
+				Installer:    "bunpy",
+				VerifyHashes: &verify,
+			}); err != nil {
+				return 1, fmt.Errorf("bunpy add: %w", err)
+			}
 		}
 	}
 
@@ -154,19 +172,24 @@ func addSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 		if err := os.WriteFile("pyproject.toml", out, 0o644); err != nil {
 			return 1, fmt.Errorf("bunpy add: %w", err)
 		}
-		if err := updateLockfile("bunpy.lock", out, name, chosen, file); err != nil {
+		if err := updateLockfile("bunpy.lock", out, res, reg); err != nil {
 			return 1, fmt.Errorf("bunpy add: %w", err)
 		}
 	}
 
+	_ = rootFile
 	fmt.Fprintf(stdout, "added %s %s\n", name, chosen)
+	if extra := len(res.Pins) - 1; extra > 0 {
+		fmt.Fprintf(stdout, "  + %d transitive\n", extra)
+	}
 	return 0, nil
 }
 
-// updateLockfile rewrites bunpy.lock so the entry for name reflects
-// the resolved wheel. The content-hash is recomputed from the new
-// pyproject's [project].dependencies.
-func updateLockfile(path string, manifestBytes []byte, name, chosen string, f pypi.File) error {
+// updateLockfile rewrites bunpy.lock so every pin in res lands in
+// the file. Existing entries are upserted; the content-hash is
+// recomputed from the freshly written pyproject's
+// [project].dependencies.
+func updateLockfile(path string, manifestBytes []byte, res *resolver.Resolution, reg *pypiRegistry) error {
 	mf, err := manifest.Parse(manifestBytes)
 	if err != nil {
 		return fmt.Errorf("re-parse manifest: %w", err)
@@ -178,13 +201,19 @@ func updateLockfile(path string, manifestBytes []byte, name, chosen string, f py
 	if lock == nil {
 		lock = &lockfile.Lock{Version: lockfile.Version}
 	}
-	lock.Upsert(lockfile.Package{
-		Name:     name,
-		Version:  chosen,
-		Filename: f.Filename,
-		URL:      f.URL,
-		Hash:     wheelSha256(f),
-	})
+	for _, pin := range res.Pins {
+		f, ok := reg.Pick(pin.Name, pin.Version)
+		if !ok {
+			return fmt.Errorf("missing wheel pick for %s %s", pin.Name, pin.Version)
+		}
+		lock.Upsert(lockfile.Package{
+			Name:     pin.Name,
+			Version:  pin.Version,
+			Filename: f.Filename,
+			URL:      f.URL,
+			Hash:     wheelSha256(f),
+		})
+	}
 	lock.ContentHash = lockfile.HashDependencies(mf.Project.Dependencies)
 	lock.Generated = time.Now().UTC()
 	return lock.WriteFile(path)
@@ -197,37 +226,6 @@ func wheelSha256(f pypi.File) string {
 		return "sha256:" + h
 	}
 	return ""
-}
-
-// pickUniversalWheel filters proj.Files to py3-none-any wheels and
-// returns the highest version matching spec (and its file entry).
-func pickUniversalWheel(proj *pypi.Project, spec version.Spec) (string, pypi.File, bool) {
-	byVer := map[string]pypi.File{}
-	var versions []string
-	for _, f := range proj.Files {
-		if f.Kind != "wheel" {
-			continue
-		}
-		if !strings.HasSuffix(f.Filename, "-py3-none-any.whl") {
-			continue
-		}
-		if f.Yanked {
-			continue
-		}
-		if f.Version == "" {
-			continue
-		}
-		if _, seen := byVer[f.Version]; seen {
-			continue
-		}
-		byVer[f.Version] = f
-		versions = append(versions, f.Version)
-	}
-	chosen := version.Highest(spec, versions)
-	if chosen == "" {
-		return "", pypi.File{}, false
-	}
-	return chosen, byVer[chosen], true
 }
 
 // splitNameSpec separates "widget>=1.0" into ("widget", ">=1.0").

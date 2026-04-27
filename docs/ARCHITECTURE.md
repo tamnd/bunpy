@@ -241,21 +241,25 @@ between `[` and `]`. The whole file is otherwise left alone.
 
 1. Load `./pyproject.toml` in strict mode so a broken file fails
    fast before any network.
-2. `pypi.Client.Get(name)` against the configured simple index
-   (live, ETag-cached, or `BUNPY_PYPI_FIXTURES` for tests).
-3. Filter to `py3-none-any` wheels, drop yanked entries, pick the
-   highest version satisfying the spec via
-   `version.Highest`.
-4. Download via `httpkit` (cache-first, atomic), install via the
-   v0.1.2 wheel installer.
-5. Re-write `pyproject.toml` via `manifest.AddDependency`. The
-   line written is the caller's spec verbatim, or
+2. Build a `pypiRegistry` over `pypi.Client` (live, ETag-cached,
+   or `BUNPY_PYPI_FIXTURES` for tests), the host wheel-tag set
+   (`wheel.HostTags`), and the host marker environment
+   (`marker.DefaultEnv`).
+3. Hand the requirement to `resolver.Solver`. The solver walks
+   transitive Requires-Dist edges, evaluates PEP 508 markers, and
+   asks the registry for platform wheels via `wheel.Pick` against
+   the host tag ladder.
+4. For each pin, download via `httpkit` (cache-first, atomic) and
+   install via the v0.1.2 wheel installer.
+5. Re-write `pyproject.toml` via `manifest.AddDependency` and
+   upsert every pin in `bunpy.lock`. The line written into
+   `[project].dependencies` is the caller's spec verbatim, or
    `name>=resolved-version` when the caller gave no spec.
 
-v0.1.3 is naive on purpose: no transitive walk, no resolver.
-v0.1.4 layers the lockfile (see below); v0.1.5 swaps the picker
-for PubGrub plus platform wheels and markers. The porcelain
-surface is fixed; later rungs swap algorithms in behind it.
+`bunpy install` is the read-side companion: it walks the existing
+lockfile (no resolver, no marker pass) and installs every pin.
+The porcelain surface is fixed; later rungs swap algorithms in
+behind it without breaking callers.
 
 ## Lockfile (`pkg/lockfile`, `bunpy.lock`)
 
@@ -284,9 +288,11 @@ lockfile entry is still listed in `[project].dependencies`.
 Either drift exits non-zero so CI can catch a stale lockfile
 without a network round-trip.
 
-v0.1.4 records only the direct deps the naive picker chooses.
-The PubGrub resolver in v0.1.5 fills transitive entries against
-the same `[[package]]` shape; the schema does not bump.
+v0.1.5 fills transitive entries against the same `[[package]]`
+shape; the schema does not bump. `--check` re-reads the lockfile,
+compares the content-hash against pyproject's, and verifies that
+every direct dep in `[project].dependencies` has a matching pin.
+Transitive rows are expected and never trigger a drift.
 
 ## Module layout
 

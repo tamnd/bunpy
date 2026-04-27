@@ -1,6 +1,6 @@
 // Package lockfile reads and writes bunpy.lock. The lockfile
 // freezes one entry per direct dependency captured by bunpy add.
-// v0.1.4 supports schema version 1; v0.1.5 fills in transitive
+// Schema version 1 is what v0.1.4 introduced; v0.1.5 fills in transitive
 // entries against the same shape.
 package lockfile
 

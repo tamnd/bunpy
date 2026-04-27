@@ -13,15 +13,14 @@ Walks
 .B [project].dependencies
 in
 .IR ./pyproject.toml ,
-runs the same naive picker
-.BR bunpy-add (1)
-uses, and writes
+hands every direct requirement to the resolver, walks transitive
+Requires-Dist edges, and writes
 .I ./bunpy.lock
 with one
 .B [[package]]
-row per direct dependency. No install. The lockfile freezes the
-resolved version, wheel filename, URL, and sha256 from the PyPI
-index so a re-run on a second machine resolves to the same artefact.
+row per pin. No install. The lockfile freezes the resolved version,
+wheel filename, URL, and sha256 from the PyPI index so a re-run on a
+second machine resolves to the same artefact.
 .PP
 The header carries a
 .B content-hash
@@ -33,9 +32,9 @@ A cheap byte compare detects pyproject drift without re-resolving.
 Verify the lockfile against
 .I ./pyproject.toml
 and exit non-zero on drift: the lockfile is missing, the
-content-hash differs, or the lockfile holds an entry that
+content-hash differs, or a direct dependency in
 .B [project].dependencies
-no longer lists. No PyPI traffic, no rewrite.
+has no matching lockfile entry. No PyPI traffic, no rewrite.
 .TP
 .BI \-\-index " url"
 Override the PEP 691 simple index. Defaults to
@@ -46,13 +45,11 @@ Override the cache root. Defaults to
 .I $BUNPY_CACHE_DIR
 or the platform XDG default.
 .SH SCOPE
-v0.1.4 lands the writer plus reader. There is no transitive walk
-yet; the lockfile records only the direct dependencies that
-.BR bunpy-add (1)
-and
-.B pm lock
-resolve today. The PubGrub resolver in v0.1.5 fills transitive
-entries against the same schema, version 1.
+v0.1.5 swaps the picker for the PubGrub-inspired resolver: every
+Requires-Dist edge of every direct dep is walked, PEP 508 markers
+are evaluated against the host environment, and platform wheels
+(manylinux, musllinux, macosx, win) are picked through the host
+tag ladder before each pin is written.
 .SH FILES
 .TP
 .I ./pyproject.toml

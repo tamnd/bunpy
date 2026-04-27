@@ -12,6 +12,8 @@ package pypi
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -42,7 +44,7 @@ func New() *Client {
 	return &Client{
 		BaseURL:   DefaultBaseURL,
 		HTTP:      httpkit.Default(4),
-		UserAgent: "bunpy/0.1.4",
+		UserAgent: "bunpy/0.1.5",
 	}
 }
 
@@ -65,6 +67,12 @@ type File struct {
 	YankedReason   string            `json:"yanked_reason,omitempty"`
 	Version        string            `json:"version,omitempty"`
 	Kind           string            `json:"kind"`
+	// CoreMetadataAvailable mirrors PEP 658: the wheel's METADATA
+	// is served at <url>.metadata. Both legacy
+	// data-dist-info-metadata and current core-metadata spellings
+	// surface here.
+	CoreMetadataAvailable bool              `json:"core_metadata_available,omitempty"`
+	CoreMetadataHashes    map[string]string `json:"core_metadata_hashes,omitempty"`
 }
 
 // ProjectMeta is the small `meta` object PEP 691 carries.
@@ -135,6 +143,47 @@ func (c *Client) Get(ctx context.Context, name string) (*Project, error) {
 	return parseProject(norm, body, etag)
 }
 
+// FetchMetadata returns the wheel's dist-info METADATA bytes. When
+// f.CoreMetadataAvailable is true it goes after <url>.metadata via
+// httpkit; otherwise it falls back to fetching the wheel body and
+// asking the caller-provided extractor to find METADATA inside the
+// archive. Hash verification is best-effort: when the index supplied
+// a sha256, a mismatch returns an error.
+func (c *Client) FetchMetadata(ctx context.Context, f File, fetchWheel func() ([]byte, error), extract func([]byte) ([]byte, error)) ([]byte, error) {
+	if f.CoreMetadataAvailable {
+		req, err := http.NewRequestWithContext(ctx, "GET", f.URL+".metadata", nil)
+		if err != nil {
+			return nil, err
+		}
+		if c.UserAgent != "" {
+			req.Header.Set("User-Agent", c.UserAgent)
+		}
+		resp, err := c.HTTP.Do(req)
+		if err != nil {
+			return nil, fmt.Errorf("pypi: get %s.metadata: %w", f.URL, err)
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode/100 != 2 {
+			return nil, fmt.Errorf("pypi: %s.metadata: %s", f.URL, resp.Status)
+		}
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("pypi: read %s.metadata: %w", f.URL, err)
+		}
+		if want := f.CoreMetadataHashes["sha256"]; want != "" {
+			if got := sha256Hex(body); got != want {
+				return nil, fmt.Errorf("pypi: metadata hash mismatch for %s: got %s want %s", f.Filename, got, want)
+			}
+		}
+		return body, nil
+	}
+	body, err := fetchWheel()
+	if err != nil {
+		return nil, err
+	}
+	return extract(body)
+}
+
 // NotFoundError is returned when the index serves a 404 for the
 // requested project. Callers can use errors.As to detect it and
 // decide whether to surface a typo or a missing private mirror.
@@ -154,11 +203,13 @@ func (c *Client) baseURL() string {
 type rawPage struct {
 	Name  string `json:"name"`
 	Files []struct {
-		Filename       string            `json:"filename"`
-		URL            string            `json:"url"`
-		Hashes         map[string]string `json:"hashes,omitempty"`
-		RequiresPython string            `json:"requires-python,omitempty"`
-		Yanked         json.RawMessage   `json:"yanked,omitempty"`
+		Filename             string            `json:"filename"`
+		URL                  string            `json:"url"`
+		Hashes               map[string]string `json:"hashes,omitempty"`
+		RequiresPython       string            `json:"requires-python,omitempty"`
+		Yanked               json.RawMessage   `json:"yanked,omitempty"`
+		CoreMetadata         json.RawMessage   `json:"core-metadata,omitempty"`
+		DataDistInfoMetadata json.RawMessage   `json:"data-dist-info-metadata,omitempty"`
 	} `json:"files"`
 	Meta struct {
 		APIVersion string `json:"api-version,omitempty"`
@@ -193,6 +244,11 @@ func parseProject(name string, body []byte, etag string) (*Project, error) {
 			RequiresPython: rf.RequiresPython,
 		}
 		f.Yanked, f.YankedReason = parseYanked(rf.Yanked)
+		raw := rf.CoreMetadata
+		if len(raw) == 0 {
+			raw = rf.DataDistInfoMetadata
+		}
+		f.CoreMetadataAvailable, f.CoreMetadataHashes = parseCoreMetadata(raw)
 		f.Kind = kindOfFilename(rf.Filename).String()
 		f.Version = versionFromFilename(canonical, rf.Filename)
 		if f.Version != "" {
@@ -205,6 +261,26 @@ func parseProject(name string, body []byte, etag string) (*Project, error) {
 	}
 	sort.Strings(p.Versions)
 	return p, nil
+}
+
+func sha256Hex(b []byte) string {
+	sum := sha256.Sum256(b)
+	return hex.EncodeToString(sum[:])
+}
+
+func parseCoreMetadata(raw json.RawMessage) (bool, map[string]string) {
+	if len(raw) == 0 {
+		return false, nil
+	}
+	var b bool
+	if err := json.Unmarshal(raw, &b); err == nil {
+		return b, nil
+	}
+	var m map[string]string
+	if err := json.Unmarshal(raw, &m); err == nil {
+		return true, m
+	}
+	return false, nil
 }
 
 func parseYanked(raw json.RawMessage) (bool, string) {

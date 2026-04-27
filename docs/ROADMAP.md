@@ -29,7 +29,7 @@ harness goes from non-zero to zero in the same PR.
 | v0.1.2  | wheel installer (PEP 427)            | shipped    |
 | v0.1.3  | `bunpy add` (single package, naive)  | shipped    |
 | v0.1.4  | `bunpy.lock` writer plus reader      | shipped    |
-| v0.1.5  | PubGrub resolver                     | planned    |
+| v0.1.5  | resolver, platform wheels, markers   | shipped    |
 | v0.1.6  | dep lanes (`-D`, `-O`, `-P`)         | planned    |
 | v0.1.7  | `bunpy update` and `bunpy outdated`  | planned    |
 | v0.1.8  | `bunpy remove`                       | planned    |

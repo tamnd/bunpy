@@ -164,7 +164,7 @@ func TestInstallRejectsRootIsPurelibFalse(t *testing.T) {
 
 func TestInstallRejectsDataDir(t *testing.T) {
 	body := buildWheel(t, "tinypkg", "0.1.0", purelibTrue, map[string]string{
-		"tinypkg/__init__.py":         "",
+		"tinypkg/__init__.py":          "",
 		"tinypkg-0.1.0.data/scripts/x": "x",
 	}, nil)
 	w, _ := OpenReader("tinypkg-0.1.0-py3-none-any.whl", body)

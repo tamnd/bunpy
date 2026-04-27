@@ -1,0 +1,11 @@
+{
+  "name": "widget",
+  "files": [
+    {
+      "filename": "widget-1.0.0-py3-none-any.whl",
+      "url": "https://files.example/widget/widget-1.0.0-py3-none-any.whl",
+      "hashes": {"sha256": "297cfd94dde49aa06bf455b778222d2604b7ccf57fc4c661a911b463520e5dda"}
+    }
+  ],
+  "meta": {"api-version": "1.1", "_last-serial": 1}
+}

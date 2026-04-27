@@ -17,7 +17,9 @@ import (
 	"github.com/tamnd/bunpy/v1/pkg/cache"
 	"github.com/tamnd/bunpy/v1/pkg/lockfile"
 	"github.com/tamnd/bunpy/v1/pkg/manifest"
+	"github.com/tamnd/bunpy/v1/pkg/marker"
 	"github.com/tamnd/bunpy/v1/pkg/pypi"
+	"github.com/tamnd/bunpy/v1/pkg/resolver"
 	"github.com/tamnd/bunpy/v1/pkg/version"
 	"github.com/tamnd/bunpy/v1/pkg/wheel"
 )
@@ -236,9 +238,9 @@ func pmInstallWheel(args []string, stdout, stderr io.Writer) (int, error) {
 
 // pmLock regenerates bunpy.lock from pyproject.toml without
 // installing. With --check, exits non-zero on drift: missing
-// lockfile, content-hash mismatch, or entries unique to the
-// lockfile. v0.1.4 ships the naive single-package picker; the
-// PubGrub resolver in v0.1.5 fills transitive entries.
+// lockfile, content-hash mismatch, or a pyproject dep with no
+// lockfile entry. v0.1.5 walks the resolver so transitive deps
+// land in the lockfile alongside the direct ones.
 func pmLock(args []string, stdout, stderr io.Writer) (int, error) {
 	var (
 		check    bool
@@ -304,10 +306,17 @@ func pmLock(args []string, stdout, stderr io.Writer) (int, error) {
 				direct[lockfile.Normalize(name)] = struct{}{}
 			}
 		}
-		for _, p := range existing.Packages {
-			if _, ok := direct[lockfile.Normalize(p.Name)]; !ok {
-				fmt.Fprintf(stderr, "bunpy pm lock --check: lockfile has %q not in pyproject\n", p.Name)
-				return 1, fmt.Errorf("stale lockfile entry: %s", p.Name)
+		for name := range direct {
+			found := false
+			for _, p := range existing.Packages {
+				if lockfile.Normalize(p.Name) == name {
+					found = true
+					break
+				}
+			}
+			if !found {
+				fmt.Fprintf(stderr, "bunpy pm lock --check: pyproject has %q not in lockfile\n", name)
+				return 1, fmt.Errorf("missing lockfile entry: %s", name)
 			}
 		}
 		return 0, nil
@@ -321,30 +330,40 @@ func pmLock(args []string, stdout, stderr io.Writer) (int, error) {
 		client.HTTP = httpkit.FixturesFS(fix)
 	}
 
-	lock := &lockfile.Lock{Version: lockfile.Version}
+	ctx := context.Background()
+	reg := newPypiRegistry(ctx, client, wheel.HostTags(), marker.DefaultEnv(),
+		func(f pypi.File) ([]byte, error) {
+			body, _, err := loadWheelSource(f.URL)
+			return body, err
+		})
+	var roots []resolver.Requirement
 	for _, dep := range mf.Project.Dependencies {
-		name, vSpec := splitNameSpec(dep)
-		if name == "" {
+		dname, vSpec := splitNameSpec(dep)
+		if dname == "" {
 			return 1, fmt.Errorf("bunpy pm lock: invalid dep %q", dep)
 		}
 		spec, err := version.ParseSpec(vSpec)
 		if err != nil {
 			return 1, fmt.Errorf("bunpy pm lock: parse %q: %w", dep, err)
 		}
-		proj, err := client.Get(context.Background(), name)
-		if err != nil {
-			return 1, fmt.Errorf("bunpy pm lock: %w", err)
-		}
-		chosen, file, ok := pickUniversalWheel(proj, spec)
+		roots = append(roots, resolver.Requirement{Name: pypi.Normalize(dname), Spec: spec})
+	}
+	res, err := resolver.New(reg).Solve(roots)
+	if err != nil {
+		return 1, fmt.Errorf("bunpy pm lock: %w", err)
+	}
+	lock := &lockfile.Lock{Version: lockfile.Version}
+	for _, pin := range res.Pins {
+		f, ok := reg.Pick(pin.Name, pin.Version)
 		if !ok {
-			return 1, fmt.Errorf("bunpy pm lock: no py3-none-any wheel matches %q", dep)
+			return 1, fmt.Errorf("bunpy pm lock: no wheel pick for %s %s", pin.Name, pin.Version)
 		}
 		lock.Upsert(lockfile.Package{
-			Name:     name,
-			Version:  chosen,
-			Filename: file.Filename,
-			URL:      file.URL,
-			Hash:     wheelSha256(file),
+			Name:     pin.Name,
+			Version:  pin.Version,
+			Filename: f.Filename,
+			URL:      f.URL,
+			Hash:     wheelSha256(f),
 		})
 	}
 	lock.ContentHash = wantHash

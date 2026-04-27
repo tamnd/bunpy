@@ -1,0 +1,5 @@
+./gizmo-2.0.0.dist-info/INSTALLER
+./gizmo-2.0.0.dist-info/METADATA
+./gizmo-2.0.0.dist-info/RECORD
+./gizmo-2.0.0.dist-info/WHEEL
+./gizmo/__init__.py

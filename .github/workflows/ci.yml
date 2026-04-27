@@ -115,7 +115,7 @@ jobs:
       - name: bunpy help / --help parity
         shell: bash
         run: |
-          for cmd in run repl stdlib version help man pm add; do
+          for cmd in run repl stdlib version help man pm add install; do
             a="$(./bunpy help "$cmd")"
             b="$(./bunpy "$cmd" --help)"
             if [ "$a" != "$b" ]; then
@@ -269,6 +269,46 @@ jobs:
               BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" pm lock --check 2>/dev/null ); then
             echo "want non-zero exit on drift"; exit 1
           fi
+
+      - name: bunpy pm lock transitive smoke (v0.1.5)
+        shell: bash
+        run: |
+          work="$(mktemp -d)"
+          cache="$(mktemp -d)"
+          cat > "$work/pyproject.toml" <<'EOF'
+          [project]
+          name = "smoke"
+          version = "0.0.1"
+          dependencies = ["widget>=1.0"]
+          EOF
+          ( cd "$work" && BUNPY_PYPI_FIXTURES="$GITHUB_WORKSPACE/tests/fixtures/v015/index" \
+              BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" pm lock )
+          test -f "$work/bunpy.lock"
+          grep -q 'name = "widget"' "$work/bunpy.lock" || { echo "missing widget pin in:"; cat "$work/bunpy.lock"; exit 1; }
+          grep -q 'name = "gizmo"' "$work/bunpy.lock" || { echo "missing transitive gizmo pin in:"; cat "$work/bunpy.lock"; exit 1; }
+          grep -q 'version = "1.0.0"' "$work/bunpy.lock"
+          grep -q 'version = "2.0.0"' "$work/bunpy.lock"
+          # --check on the freshly resolved tree passes.
+          ( cd "$work" && BUNPY_PYPI_FIXTURES="$GITHUB_WORKSPACE/tests/fixtures/v015/index" \
+              BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" pm lock --check )
+
+      - name: bunpy install smoke (v0.1.5)
+        shell: bash
+        run: |
+          work="$(mktemp -d)"
+          cache="$(mktemp -d)"
+          cat > "$work/pyproject.toml" <<'EOF'
+          [project]
+          name = "smoke"
+          version = "0.0.1"
+          dependencies = ["widget>=1.0"]
+          EOF
+          ( cd "$work" && BUNPY_PYPI_FIXTURES="$GITHUB_WORKSPACE/tests/fixtures/v015/index" \
+              BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" pm lock )
+          ( cd "$work" && BUNPY_PYPI_FIXTURES="$GITHUB_WORKSPACE/tests/fixtures/v015/index" \
+              BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" install )
+          test -f "$work/.bunpy/site-packages/widget/__init__.py"
+          test -f "$work/.bunpy/site-packages/gizmo/__init__.py"
 
       - name: bunpy hello.py
         run: |

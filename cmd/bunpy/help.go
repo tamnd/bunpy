@@ -74,29 +74,27 @@ The list is baked at build time from goipy's embedded stdlib.
 	"add": {
 		Name:    "add",
 		Summary: "Add a single package to pyproject.toml and install it",
-		Body: `bunpy add: install one package and write it to pyproject.toml.
+		Body: `bunpy add: install one package (plus its transitive deps) and write it to pyproject.toml.
 
 USAGE
-  bunpy add <pkg>                    pick the highest universal wheel
+  bunpy add <pkg>                    pick the highest matching wheel
   bunpy add <pkg>==1.2.3             pin an exact version
   bunpy add <pkg>>=1.2,<2            satisfy a PEP 440 range
-  bunpy add <pkg> --no-install       only update the manifest
+  bunpy add <pkg> --no-install       only update the manifest and lockfile
   bunpy add <pkg> --no-write         only install
   bunpy add <pkg> --target <dir>     site-packages target (default ./.bunpy/site-packages)
   bunpy add <pkg> --index <url>      override the simple index
   bunpy add <pkg> --cache-dir <dir>  override the cache root
 
-v0.1.3 was naive on purpose: no transitive walk, no lockfile, no
-resolver. v0.1.4 adds the lockfile writer: every successful
-` + "`bunpy add`" + ` rewrites ` + "`bunpy.lock`" + ` next to
-` + "`pyproject.toml`" + ` with the resolved version, wheel filename,
-URL, and sha256. ` + "`--no-write`" + ` suppresses both the manifest
-edit and the lockfile update; ` + "`--no-install`" + ` still writes the
-lockfile. The fetch path is restricted to universal wheels
-(` + "`py3-none-any`" + `); platform wheels and the resolver land
-together in v0.1.5. Among matching wheels the highest version
-satisfying the spec wins; the install reuses the v0.1.2 wheel
-installer (purelib only, RECORD-verified, atomic stage and rename).
+v0.1.5 hands the requirement to the resolver: every Requires-Dist
+edge is walked, PEP 508 markers are evaluated against the host
+environment, and platform wheels (manylinux, musllinux, macosx,
+win) are picked through the same compatibility-tag ladder pip
+uses. The chosen pin and every transitive dep land in
+` + "`bunpy.lock`" + `. ` + "`--no-write`" + ` suppresses both the
+manifest edit and the lockfile update; ` + "`--no-install`" + ` still
+writes the lockfile. The install reuses the v0.1.2 wheel installer
+(purelib only, RECORD-verified, atomic stage and rename).
 
 When the spec is omitted, the line written into
 ` + "`[project].dependencies`" + ` is ` + "`<name>>=<resolved-version>`" + `.
@@ -126,9 +124,10 @@ the same machinery.
 
 v0.1.3 wires ` + "`pm config`" + ` (parser), ` + "`pm info`" + ` (PyPI client),
 and ` + "`pm install-wheel`" + ` (PEP 427 single-wheel installer). v0.1.4
-adds ` + "`pm lock`" + ` (lockfile writer plus drift check). The naive
-` + "`bunpy add`" + ` porcelain layered on top lands at the top level. No
-transitive resolution yet; the resolver lands in v0.1.5.
+adds ` + "`pm lock`" + ` (lockfile writer plus drift check). v0.1.5
+swaps the picker for the PubGrub-inspired resolver: ` + "`pm lock`" + `
+and ` + "`bunpy add`" + ` walk transitive deps, evaluate PEP 508
+markers, and pick platform wheels.
 `,
 	},
 	"pm-lock": {
@@ -155,11 +154,10 @@ content-hash drifts from pyproject.toml, or the lockfile holds an
 entry that ` + "`[project].dependencies`" + ` no longer lists. Use it in
 CI to keep the lockfile honest.
 
-v0.1.4 is the writer plus reader. There is still no transitive
-walk; the lockfile records only the direct deps that
-` + "`bunpy add`" + ` and ` + "`pm lock`" + ` resolve today. The PubGrub
-resolver in v0.1.5 fills transitive entries against the same
-schema.
+v0.1.5 fills transitive entries: the resolver walks every
+Requires-Dist edge, evaluates PEP 508 markers, and picks
+platform-aware wheels via the host tag ladder before writing the
+lockfile.
 `,
 	},
 	"pm-info": {
@@ -265,6 +263,25 @@ USAGE
   bunpy help <command>     long-form help for one subcommand
 
 Equivalent to ` + "`bunpy <command> --help`" + `.
+`,
+	},
+	"install": {
+		Name:    "install",
+		Summary: "Install every pin in bunpy.lock into site-packages",
+		Body: `bunpy install: install every pinned wheel from bunpy.lock.
+
+USAGE
+  bunpy install                       install all pins into ./.bunpy/site-packages
+  bunpy install --target <dir>        site-packages target
+  bunpy install --cache-dir <dir>     override the wheel cache root
+  bunpy install --no-verify           skip RECORD hash verification
+
+v0.1.5 treats ` + "`bunpy.lock`" + ` as the source of truth: the
+resolver does not run, every wheel is fetched through the same
+httpkit + cache path ` + "`bunpy add`" + ` uses, and each pin is
+installed via the v0.1.2 wheel installer. Run
+` + "`bunpy pm lock`" + ` first to refresh the lockfile from
+` + "`pyproject.toml`" + `.
 `,
 	},
 	"man": {
