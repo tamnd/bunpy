@@ -1,11 +1,11 @@
 # CLI reference
 
 bunpy ships as one binary. Subcommands land per-version per the
-roadmap. Today (v0.0.5) the wired surface is `--version` (with
+roadmap. Today (v0.0.6) the wired surface is `--version` (with
 `--short` and `--json`), `--help`, positional `bunpy <file.py>`,
 `bunpy run <file.py>`, and `bunpy stdlib`. This page is the
 long-form reference. Running `bunpy help <cmd>` gives the short
-form.
+form. Installing the binary itself: see `docs/INSTALL.md`.
 
 ## Synopsis
 

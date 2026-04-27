@@ -56,6 +56,16 @@ jobs:
             exit 1
           fi
 
+      - name: render-formula smoke
+        if: runner.os != 'Windows'
+        shell: bash
+        run: bash scripts/test-render-formula.sh
+
+      - name: install.sh smoke
+        if: runner.os != 'Windows'
+        shell: bash
+        run: bash scripts/test-install-sh.sh
+
       - name: end-to-end fixtures
         shell: bash
         run: bash tests/run.sh

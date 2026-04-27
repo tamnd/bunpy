@@ -133,3 +133,67 @@ jobs:
           fail_on_unmatched_files: true
           draft: false
           prerelease: false
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: sha256sums
+          path: dist/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 7
+
+  tap:
+    name: update homebrew tap
+    needs: release
+    runs-on: ubuntu-latest
+    if: ${{ !github.event.repository.fork }}
+    steps:
+      - name: Skip if BREW_TAP_TOKEN missing
+        id: gate
+        env:
+          TOKEN: ${{ secrets.BREW_TAP_TOKEN }}
+        run: |
+          if [ -z "${TOKEN:-}" ]; then
+            echo "no BREW_TAP_TOKEN secret; skipping tap update"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v6
+        if: steps.gate.outputs.skip != 'true'
+
+      - uses: actions/download-artifact@v8
+        if: steps.gate.outputs.skip != 'true'
+        with:
+          name: sha256sums
+          path: sums
+
+      - name: Render formula
+        if: steps.gate.outputs.skip != 'true'
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          mkdir -p out
+          bash scripts/render-formula.sh "$version" sums/SHA256SUMS out/bunpy.rb
+          cat out/bunpy.rb
+
+      - name: Push to homebrew-bunpy
+        if: steps.gate.outputs.skip != 'true'
+        env:
+          BREW_TAP_TOKEN: ${{ secrets.BREW_TAP_TOKEN }}
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          tap="$(mktemp -d)/homebrew-bunpy"
+          git clone --quiet "https://x-access-token:${BREW_TAP_TOKEN}@github.com/tamnd/homebrew-bunpy.git" "$tap"
+          mkdir -p "$tap/Formula"
+          cp out/bunpy.rb "$tap/Formula/bunpy.rb"
+          cd "$tap"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet -- Formula/bunpy.rb; then
+            echo "no formula changes; nothing to push"
+            exit 0
+          fi
+          git add Formula/bunpy.rb
+          git commit -m "bunpy ${version}"
+          git push origin HEAD:main

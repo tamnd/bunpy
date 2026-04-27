@@ -44,20 +44,34 @@ architecture summary is in
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) and the
 per-version plan is in [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
+## Install
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/tamnd/bunpy/main/install.sh | bash
+```
+
+Or via Homebrew:
+
+```sh
+brew install tamnd/bunpy/bunpy
+```
+
+Detailed install paths (env overrides, manual download, Windows
+fallback) live in [`docs/INSTALL.md`](docs/INSTALL.md).
+
 ## Quick start
 
 ```sh
-go build ./cmd/bunpy
-./bunpy --version
-./bunpy --help
+echo 'x = 1' > /tmp/hello.py
+bunpy /tmp/hello.py
+bunpy version --json
 ```
 
-Once v0.0.2 lands:
+Or build from source:
 
 ```sh
-echo 'print("hello from bunpy")' > /tmp/hello.py
-./bunpy /tmp/hello.py
-# hello from bunpy
+go build ./cmd/bunpy
+./bunpy version
 ```
 
 ## Why "Bun for Python"

@@ -16,8 +16,8 @@ harness goes from non-zero to zero in the same PR.
 | v0.0.3  | `bunpy run` subcommand               | shipped    |
 | v0.0.4  | embedded stdlib smoke                | shipped    |
 | v0.0.5  | binary metadata baked at build time  | shipped    |
-| v0.0.6  | release tooling actually publishes   | next       |
-| v0.0.7  | embedded help and man pages          | planned    |
+| v0.0.6  | release tooling actually publishes   | shipped    |
+| v0.0.7  | embedded help and man pages          | next       |
 | v0.0.8  | `bunpy repl`                         | planned    |
 
 ## v0.1.x: package manager (twelve rungs)

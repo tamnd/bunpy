@@ -53,6 +53,23 @@ The marshal hop is in-memory; nothing touches disk. When gocopy
 and goipy unify under one module path the bridge collapses to a
 direct hand-off, but the surface bunpy depends on stays the same.
 
+## Distribution
+
+Tagged releases produce six archives (linux/darwin/windows times
+amd64/arm64) plus an aggregated `SHA256SUMS` file.
+`install.sh` at the repo root is the one-liner installer for
+linux and macOS: it resolves the latest tag, downloads the
+matching `.tar.gz`, verifies the checksum from `SHA256SUMS`,
+and drops the binary at `$HOME/.bunpy/bin/bunpy`. Re-running
+upgrades in place; the prior binary is preserved as
+`bunpy.prev` so rollbacks are one `mv` away. The Homebrew tap
+at `tamnd/homebrew-bunpy` is updated by a `tap` job in
+`release.yml`: `scripts/render-formula.sh` materialises
+`Formula/bunpy.rb` from a template and the `SHA256SUMS` file,
+and the workflow pushes the result with a fine-grained PAT.
+The job is gated on the `BREW_TAP_TOKEN` secret; absent the
+secret it skips so forks and contributors do not need it.
+
 ## Build metadata
 
 Build-time metadata lives in `runtime/buildinfo.go`. Six string

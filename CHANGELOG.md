@@ -9,6 +9,74 @@ changes.
 
 ## [Unreleased]
 
+## [0.0.6] - 2026-04-27
+
+The release pipeline now actually delivers binaries. Two new
+install paths land in this rung: a one-liner shell installer
+(`curl ... | bash`) and a Homebrew tap.
+
+The release archive format itself is unchanged. v0.0.6 is purely
+about consumption: the install script downloads the right archive
+for your os/arch, verifies the SHA-256 against the release's
+`SHA256SUMS`, and drops the binary at `$HOME/.bunpy/bin`. The
+Homebrew tap is updated automatically by a new `tap` job in
+`release.yml` whenever a tag ships.
+
+### Added
+
+- `install.sh` at the repo root. Pure bash, uses only `curl`,
+  `tar`, `shasum`/`sha256sum`. Resolves the latest tag from the
+  GitHub releases API or pins via `BUNPY_VERSION`. Verifies
+  checksum from the aggregated `SHA256SUMS` file. Re-running
+  upgrades in place; the previous binary is preserved at
+  `bin/bunpy.prev` for rollback.
+- `scripts/formula.rb.tmpl`: Homebrew formula template with
+  `@@VERSION@@` and four `@@SHA_*@@` placeholders.
+- `scripts/render-formula.sh`: reads a `SHA256SUMS` file plus a
+  bare version, prints `Formula/bunpy.rb` to a destination path.
+  Errors loudly if any of the four supported os/arch sums is
+  missing. Windows zips are intentionally not surfaced through
+  Homebrew.
+- `scripts/test-render-formula.sh` and
+  `scripts/test-install-sh.sh`: bash smoke tests wired into
+  `.github/workflows/ci.yml` (linux + macOS only).
+- `docs/INSTALL.md`: install one-liner, Homebrew tap, manual
+  download, env overrides, verifying steps. Linked from
+  `README.md`.
+- `tamnd/homebrew-bunpy` repo created out-of-band as the formula
+  destination. The `tap` job in `release.yml` clones, rewrites
+  `Formula/bunpy.rb`, and pushes via the `BREW_TAP_TOKEN` secret.
+
+### Changed
+
+- `.github/workflows/release.yml` grows a `tap` job that runs
+  after the existing `release` job and is gated on the
+  `BREW_TAP_TOKEN` repo secret. The job is a no-op when the
+  secret is absent so forks and contributors do not need it.
+- `.github/workflows/release.yml` also uploads `SHA256SUMS` as a
+  workflow artifact named `sha256sums`, which the `tap` job
+  consumes via `download-artifact`.
+- `.github/workflows/ci.yml` runs the install.sh and
+  render-formula smokes on every push/PR.
+- `README.md` leads with the install one-liner and the Homebrew
+  tap. Quick-start swaps to the installed `bunpy` command.
+- `docs/CLI.md` and `docs/ARCHITECTURE.md` both gained pointers
+  to `docs/INSTALL.md` and the `Distribution` paragraph.
+- `docs/ROADMAP.md` marks v0.0.6 shipped, v0.0.7 next.
+
+### Notes
+
+- The `tap` job's first end-to-end run requires a one-time setup
+  step: a `BREW_TAP_TOKEN` repo secret on `tamnd/bunpy` (a
+  fine-grained PAT with `Contents: write` on
+  `tamnd/homebrew-bunpy`, nothing else). Until that secret is
+  set, the job logs "no BREW_TAP_TOKEN secret; skipping tap
+  update" and exits 0, so the rest of the release succeeds
+  regardless.
+- Windows users are not yet covered by Homebrew or `install.sh`.
+  The release zips ship as before; documented fallback in
+  `docs/INSTALL.md`.
+
 ## [0.0.5] - 2026-04-27
 
 `bunpy version` is now load-bearing. The version string, commit,

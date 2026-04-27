@@ -1,0 +1,38 @@
+class Bunpy < Formula
+  desc "One binary for Python: runtime, packages, bundler, tests"
+  homepage "https://github.com/tamnd/bunpy"
+  version "@@VERSION@@"
+  license "MIT"
+
+  on_macos do
+    on_arm do
+      url "https://github.com/tamnd/bunpy/releases/download/v#{version}/bunpy-v#{version}-darwin-arm64.tar.gz"
+      sha256 "@@SHA_DARWIN_ARM64@@"
+    end
+    on_intel do
+      url "https://github.com/tamnd/bunpy/releases/download/v#{version}/bunpy-v#{version}-darwin-amd64.tar.gz"
+      sha256 "@@SHA_DARWIN_AMD64@@"
+    end
+  end
+
+  on_linux do
+    on_arm do
+      url "https://github.com/tamnd/bunpy/releases/download/v#{version}/bunpy-v#{version}-linux-arm64.tar.gz"
+      sha256 "@@SHA_LINUX_ARM64@@"
+    end
+    on_intel do
+      url "https://github.com/tamnd/bunpy/releases/download/v#{version}/bunpy-v#{version}-linux-amd64.tar.gz"
+      sha256 "@@SHA_LINUX_AMD64@@"
+    end
+  end
+
+  def install
+    arch = Hardware::CPU.arm? ? "arm64" : "amd64"
+    os = OS.mac? ? "darwin" : "linux"
+    bin.install "bunpy-v#{version}-#{os}-#{arch}/bunpy"
+  end
+
+  test do
+    assert_match version.to_s, shell_output("#{bin}/bunpy version --short").strip
+  end
+end
