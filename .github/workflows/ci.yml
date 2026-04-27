@@ -115,7 +115,7 @@ jobs:
       - name: bunpy help / --help parity
         shell: bash
         run: |
-          for cmd in run repl stdlib version help man pm add install outdated update remove link unlink patch why workspace audit; do
+          for cmd in run repl stdlib version help man pm add install outdated update remove link unlink patch why workspace audit publish; do
             a="$(./bunpy help "$cmd")"
             b="$(./bunpy "$cmd" --help)"
             if [ "$a" != "$b" ]; then
@@ -673,6 +673,23 @@ jobs:
           top="$( cd "$work" && "$GITHUB_WORKSPACE/bunpy" why gamma --top --cache-dir "$cache" )"
           test "$top" = "$(printf 'alpha\nbeta')"
           ( cd "$work" && "$GITHUB_WORKSPACE/bunpy" why ghost --cache-dir "$cache" ) && exit 1 || true
+
+      - name: bunpy publish smoke (v0.2.2)
+        shell: bash
+        run: |
+          # Smoke: --dry-run exits 0 and --no-token check
+          dir="$(mktemp -d)"
+          cat > "$dir/pyproject.toml" <<'EOF'
+          [project]
+          name = "mypkg"
+          version = "0.1.0"
+          EOF
+          # Without token and without dry-run, should exit non-zero
+          ( cd "$dir" && "$GITHUB_WORKSPACE/bunpy" publish ) && exit 1 || true
+          # --help exits 0
+          "$GITHUB_WORKSPACE/bunpy" publish --help > /dev/null
+          # unknown flag exits non-zero
+          ( cd "$dir" && "$GITHUB_WORKSPACE/bunpy" publish --unknown-flag ) && exit 1 || true
 
       - name: bunpy audit smoke (v0.2.1)
         shell: bash

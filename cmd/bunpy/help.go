@@ -573,6 +573,31 @@ The result also surfaces overlay state: a linked pin shows
 and uses installer ` + "`bunpy-patch`" + `.
 `,
 	},
+	"publish": {
+		Name:    "publish",
+		Summary: "Build and upload a wheel and/or sdist to PyPI",
+		Body: `bunpy publish: build artefacts and upload them to a registry.
+
+USAGE
+  bunpy publish                      build sdist + wheel, upload both
+  bunpy publish --wheel-only         wheel only
+  bunpy publish --sdist-only         sdist only
+  bunpy publish --dry-run            build but do not upload
+  bunpy publish --registry <url>     override upload endpoint
+  bunpy publish --token <token>      override PYPI_TOKEN
+  bunpy publish --manifest <path>    pyproject.toml path (default ./pyproject.toml)
+
+Reads ` + "`[build-system].build-backend`" + ` from ` + "`pyproject.toml`" + `
+(default ` + "`hatchling.build`" + `) and invokes the PEP 517 build hooks
+via the Python interpreter found on PATH.
+
+The upload uses HTTP multipart POST to the registry endpoint with
+HTTP Basic auth: username ` + "`__token__`" + `, password = token.
+
+Token resolution order: ` + "`--token`" + ` flag, then ` + "`PYPI_TOKEN`" + `
+environment variable. Both are required unless ` + "`--dry-run`" + ` is set.
+`,
+	},
 	"audit": {
 		Name:    "audit",
 		Summary: "Scan pinned packages against the OSV vulnerability database",

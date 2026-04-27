@@ -396,6 +396,18 @@ state — the user-visible artefact is `./patches/<name>+<version>.patch`,
 which is the input to the resolver-independent reproducible
 install.
 
+v0.2.2 lands `bunpy publish`. `pkg/build` wraps PEP 517 build hooks
+via a Python subprocess call: `build_sdist` and `build_wheel` are
+invoked via `importlib.import_module` using the backend declared in
+`[build-system].build-backend` (default `hatchling.build`). The
+backend must already be installed; bunpy does not auto-install build
+deps. `pkg/publish` uploads artefacts via HTTP multipart POST to the
+registry upload URL. SHA-256 of each file is computed and sent as the
+`sha256_digest` field. Auth uses HTTP Basic with username `__token__`
+and the API token as password. `ErrAlreadyExists` (400 with "already
+exists") and `ErrUnauthorized` (403) surface as typed errors so callers
+can give actionable messages. `--dry-run` builds but skips the POST.
+
 v0.2.1 lands `bunpy audit`. `pkg/audit` exposes `OSVClient` with
 `QueryBatch`, which splits the lockfile's pin list into 1000-item
 chunks (the OSV API limit) and POSTs each batch to

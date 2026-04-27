@@ -1,0 +1,104 @@
+.TH BUNPY-PUBLISH 1 "2026-04-27" "bunpy" "User Commands"
+.SH NAME
+bunpy-publish \- build and upload a wheel and/or sdist to PyPI
+.SH SYNOPSIS
+.B bunpy publish
+.RB [ \-\-sdist-only | \-\-wheel-only ]
+.RB [ \-\-dry-run ]
+.RB [ \-\-registry
+.IR url ]
+.RB [ \-\-token
+.IR token ]
+.RB [ \-\-manifest
+.IR path ]
+.SH DESCRIPTION
+.B bunpy publish
+invokes the project's declared PEP 517 build backend to produce a source
+distribution and/or wheel, then uploads the artefacts to a PyPI-compatible
+registry using HTTP multipart POST.
+.PP
+The build backend is read from
+.B [build-system].build-backend
+in
+.IR pyproject.toml .
+If the section is absent,
+.B hatchling.build
+is used. The backend must already be installed in the active Python
+environment;
+.B bunpy publish
+does not auto-install build dependencies.
+.PP
+Authentication uses HTTP Basic auth with username
+.B __token__
+and the provided API token as password. Token resolution order:
+.B \-\-token
+flag first, then the
+.B PYPI_TOKEN
+environment variable.
+.SH OPTIONS
+.TP
+.B \-\-sdist-only
+Build and upload a source distribution only; skip the wheel.
+.TP
+.B \-\-wheel-only
+Build and upload a wheel only; skip the sdist.
+.TP
+.B \-\-dry-run
+Build artefacts but do not upload. Prints the artefact paths to stdout.
+No token is required when
+.B \-\-dry-run
+is set.
+.TP
+.BI \-\-registry " url"
+Upload endpoint URL (default:
+.BR https://upload.pypi.org/legacy/ ).
+Use
+.B https://test.pypi.org/legacy/
+for TestPyPI.
+.TP
+.BI \-\-token " token"
+API token to authenticate with the registry. Overrides
+.BR PYPI_TOKEN .
+.TP
+.BI \-\-manifest " path"
+Path to
+.IR pyproject.toml
+(default:
+.BR pyproject.toml ).
+.TP
+.BR \-h ", " \-\-help
+Print a short usage summary and exit.
+.SH ENVIRONMENT
+.TP
+.B PYPI_TOKEN
+API token used when
+.B \-\-token
+is not given.
+.SH EXIT STATUS
+.TP
+.B 0
+All artefacts uploaded (or dry-run complete).
+.TP
+.B 1
+Build error, upload error, or missing credentials.
+.SH EXAMPLES
+Publish to PyPI:
+.PP
+.nf
+PYPI_TOKEN=pypi-... bunpy publish
+.fi
+.PP
+Dry run to verify artefact paths without uploading:
+.PP
+.nf
+bunpy publish --dry-run
+.fi
+.PP
+Upload only the wheel to TestPyPI:
+.PP
+.nf
+bunpy publish --wheel-only --registry https://test.pypi.org/legacy/ --token pypi-...
+.fi
+.SH SEE ALSO
+.BR bunpy-add (1),
+.BR bunpy-create (1)
