@@ -396,6 +396,19 @@ state — the user-visible artefact is `./patches/<name>+<version>.patch`,
 which is the input to the resolver-independent reproducible
 install.
 
+v0.3.0 opens the v0.3.x series. The key architectural change is a
+`NativeModules map[string]func(*Interp) *object.Module` field added to
+`goipy.Interp`. `builtinModule` checks the map before the built-in
+switch, so embedders can inject module namespaces without modifying the
+VM. `runtime/run.go` pre-populates this map with `bunpyAPI.Modules()`
+before running user code, making all `bunpy.*` modules importable with
+no filesystem reads. The new `api/bunpy/` package holds the module
+builders: `bunpy.base64` (encode/decode/encode_url/decode_url) wraps
+`encoding/base64`; `bunpy.gzip` (compress/decompress with optional
+level) wraps `compress/gzip`. The top-level `bunpy` module attaches
+both as sub-module attributes so `bunpy.base64.encode(...)` works
+without a separate `from bunpy import base64` import.
+
 v0.2.4 lands `bunpyx`, a companion binary shipped in the same
 platform archive as `bunpy`. `pkg/runenv` creates a temporary install
 prefix: a `site-packages/` subdirectory for wheel contents and a `bin/`

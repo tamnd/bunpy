@@ -49,11 +49,21 @@ harness goes from non-zero to zero in the same PR.
 
 ## v0.3.x: built-in API surface, part 1
 
-`bunpy.serve`, `bunpy.file/write/read`, `bunpy.sql` (sqlite,
-postgres, mysql), `bunpy.redis`, `bunpy.s3`, `bunpy.shell`,
-`bunpy.dollar`, `bunpy.spawn`, `bunpy.glob`, `bunpy.cron`, the
-fetch/URL/Request/Response globals, `bunpy.WebSocket`,
-`bunpy.password`, `bunpy.gzip`, `bunpy.base64`.
+| Version | Title                                | Status     |
+|---------|--------------------------------------|------------|
+| v0.3.0  | NativeModules hook + bunpy.base64 + bunpy.gzip | shipped |
+| v0.3.1  | fetch, URL, Request, Response globals | planned   |
+| v0.3.2  | bunpy.serve HTTP server              | planned    |
+| v0.3.3  | bunpy.file, bunpy.write, bunpy.read  | planned    |
+| v0.3.4  | bunpy.shell, bunpy.spawn, bunpy.dollar | planned  |
+| v0.3.5  | bunpy.glob                           | planned    |
+| v0.3.6  | bunpy.sql (SQLite)                   | planned    |
+| v0.3.7  | bunpy.sql (Postgres + MySQL)         | planned    |
+| v0.3.8  | bunpy.redis                          | planned    |
+| v0.3.9  | bunpy.s3                             | planned    |
+| v0.3.10 | bunpy.WebSocket                      | planned    |
+| v0.3.11 | bunpy.cron                           | planned    |
+| v0.3.12 | bunpy.password                       | planned    |
 
 ## v0.4.x: built-in API surface, part 2
 

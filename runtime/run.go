@@ -15,6 +15,7 @@ import (
 	gocopyCompiler "github.com/tamnd/gocopy/v1/compiler"
 	gocopyMarshal "github.com/tamnd/gocopy/v1/marshal"
 
+	bunpyAPI "github.com/tamnd/bunpy/v1/api/bunpy"
 	goipyMarshal "github.com/tamnd/goipy/marshal"
 	goipyObject "github.com/tamnd/goipy/object"
 	goipyVM "github.com/tamnd/goipy/vm"
@@ -57,6 +58,7 @@ func Run(filename string, source []byte, args []string, stdout, stderr io.Writer
 	interp := goipyVM.New()
 	interp.Stdout = stdout
 	interp.Stderr = stderr
+	interp.NativeModules = bunpyAPI.Modules()
 	if abs, aerr := filepath.Abs(filepath.Dir(filename)); aerr == nil {
 		interp.SearchPath = []string{abs}
 	}
