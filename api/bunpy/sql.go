@@ -311,6 +311,18 @@ func goValueToPyObj(v any) goipyObject.Object {
 		return &goipyObject.Bytes{V: val}
 	case string:
 		return &goipyObject.Str{V: val}
+	case map[string]any:
+		d := goipyObject.NewDict()
+		for k, vv := range val {
+			d.SetStr(k, goValueToPyObj(vv))
+		}
+		return d
+	case []any:
+		items := make([]goipyObject.Object, len(val))
+		for i, vv := range val {
+			items[i] = goValueToPyObj(vv)
+		}
+		return &goipyObject.List{V: items}
 	default:
 		return &goipyObject.Str{V: fmt.Sprintf("%v", val)}
 	}

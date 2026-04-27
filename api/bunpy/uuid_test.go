@@ -4,6 +4,7 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	goipyObject "github.com/tamnd/goipy/object"
 
@@ -57,6 +58,7 @@ func TestUUIDV7Ordered(t *testing.T) {
 	mod := bunpyAPI.BuildUUID(nil)
 	v7Fn, _ := mod.Dict.GetStr("v7")
 	r1, _ := v7Fn.(*goipyObject.BuiltinFunc).Call(nil, nil, nil)
+	time.Sleep(2 * time.Millisecond)
 	r2, _ := v7Fn.(*goipyObject.BuiltinFunc).Call(nil, nil, nil)
 	s1 := r1.(*goipyObject.Str).V
 	s2 := r2.(*goipyObject.Str).V
