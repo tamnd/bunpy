@@ -42,7 +42,12 @@ func (f fixtureTransport) Do(req *http.Request) (*http.Response, error) {
 	if !ok {
 		return nil, errors.New("httpkit fixtures: cannot map URL to fixtures root: " + req.URL.String())
 	}
-	body, err := os.ReadFile(filepath.Join(dir, "index.json"))
+	// Two layouts: a directory URL (path ends in "/") looks for
+	// index.json inside the resolved dir; a file URL (any other
+	// shape) is served as a raw file at the resolved path. The
+	// PEP 691 simple index uses the first; wheel downloads use the
+	// second.
+	body, err := readFixture(req.URL.Path, dir)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return notFound(req), nil
@@ -59,14 +64,20 @@ func (f fixtureTransport) Do(req *http.Request) (*http.Response, error) {
 		ProtoMajor: 1,
 		ProtoMinor: 1,
 	}
-	if hdr, err := os.Open(filepath.Join(dir, "index.headers")); err == nil {
+	headersPath := filepath.Join(dir, "index.headers")
+	if !strings.HasSuffix(req.URL.Path, "/") && req.URL.Path != "" {
+		headersPath = dir + ".headers"
+	}
+	if hdr, err := os.Open(headersPath); err == nil {
 		defer hdr.Close()
 		applyHeaders(resp, hdr)
 	} else if !os.IsNotExist(err) {
 		return nil, err
 	}
+	if resp.Header.Get("Content-Type") == "" {
+		resp.Header.Set("Content-Type", contentTypeFor(req.URL.Path))
+	}
 	resp.ContentLength = int64(len(body))
-	resp.Header.Set("Content-Type", firstNonEmpty(resp.Header.Get("Content-Type"), "application/vnd.pypi.simple.v1+json"))
 	if etag := req.Header.Get("If-None-Match"); etag != "" && etag == resp.Header.Get("ETag") {
 		resp.StatusCode = http.StatusNotModified
 		resp.Status = "304 Not Modified"
@@ -86,6 +97,30 @@ func (f fixtureTransport) dirFor(u *url.URL) (string, bool) {
 		parts = append(parts, strings.Split(clean, "/")...)
 	}
 	return filepath.Join(parts...), true
+}
+
+// readFixture returns the response body for a URL path. A path ending
+// in "/" is a directory URL: look for index.json inside the resolved
+// dir. Any other shape is a file URL: return the file at the resolved
+// path directly.
+func readFixture(urlPath, resolved string) ([]byte, error) {
+	if strings.HasSuffix(urlPath, "/") || urlPath == "" {
+		return os.ReadFile(filepath.Join(resolved, "index.json"))
+	}
+	return os.ReadFile(resolved)
+}
+
+func contentTypeFor(urlPath string) string {
+	if strings.HasSuffix(urlPath, "/") || urlPath == "" {
+		return "application/vnd.pypi.simple.v1+json"
+	}
+	if strings.HasSuffix(urlPath, ".whl") {
+		return "application/zip"
+	}
+	if strings.HasSuffix(urlPath, ".tar.gz") {
+		return "application/gzip"
+	}
+	return "application/octet-stream"
 }
 
 func notFound(req *http.Request) *http.Response {
@@ -123,9 +158,3 @@ func applyHeaders(resp *http.Response, r io.Reader) {
 	}
 }
 
-func firstNonEmpty(a, b string) string {
-	if a != "" {
-		return a
-	}
-	return b
-}

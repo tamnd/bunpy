@@ -200,6 +200,22 @@ jobs:
             echo "want non-zero exit on 404"; exit 1
           fi
 
+      - name: bunpy pm install-wheel smoke
+        shell: bash
+        run: |
+          target="$(mktemp -d)/site-packages"
+          ./bunpy pm install-wheel tests/fixtures/v012/tinypkg-0.1.0-py3-none-any.whl --target "$target"
+          test -f "$target/tinypkg/__init__.py"
+          got="$(cat "$target/tinypkg-0.1.0.dist-info/INSTALLER")"
+          test "$got" = "bunpy" || { echo "want INSTALLER=bunpy, got: $got"; exit 1; }
+          # URL fetch path through the fixture transport.
+          target2="$(mktemp -d)/site-packages"
+          BUNPY_PYPI_FIXTURES=tests/fixtures/v012/index BUNPY_CACHE_DIR="$(mktemp -d)" \
+            ./bunpy pm install-wheel \
+              https://files.example/tinypkg/tinypkg-0.1.0-py3-none-any.whl \
+              --target "$target2"
+          test -f "$target2/tinypkg/__init__.py"
+
       - name: bunpy hello.py
         run: |
           echo 'x = 1' > hello.py

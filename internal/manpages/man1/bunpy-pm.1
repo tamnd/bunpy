@@ -14,11 +14,14 @@ commands (
 ) call into the same machinery and live at the top level of the
 CLI.
 .PP
-v0.1.0 wires only
-.BR "pm config" :
-a JSON dump of the parsed
-.IR pyproject.toml .
-No network, no installs.
+v0.1.2 wires
+.BR "pm config" ,
+.BR "pm info" ,
+and
+.BR "pm install-wheel" .
+The resolver and the porcelain
+.B add
+verb land in v0.1.3 and v0.1.5.
 .SH VERBS
 .TP
 .B config
@@ -31,7 +34,12 @@ as JSON. See
 Fetch a PEP 691 project page and print the parsed metadata
 as JSON. See
 .BR bunpy-pm-info (1).
+.TP
+.B install-wheel
+Install one wheel into site-packages. See
+.BR bunpy-pm-install-wheel (1).
 .SH SEE ALSO
 .BR bunpy (1),
 .BR bunpy-pm-config (1),
-.BR bunpy-pm-info (1).
+.BR bunpy-pm-info (1),
+.BR bunpy-pm-install-wheel (1).

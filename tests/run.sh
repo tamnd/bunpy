@@ -170,6 +170,47 @@ if [ -d tests/fixtures/v011/index ]; then
   run_pm_info_fixture tests/fixtures/v011/index widget tests/fixtures/v011/expected_widget.json
 fi
 
+run_install_wheel_fixture() {
+  local whl="$1"
+  local dir name expected got rc want target
+  dir="$(dirname "$whl")"
+  name="$(basename "$whl" .whl)"
+  expected="$dir/expected_${name}.txt"
+
+  if [ ! -f "$expected" ]; then
+    echo "skip: install-wh $whl (no expected_${name}.txt)"
+    return 0
+  fi
+
+  ran=$((ran + 1))
+  target="$(mktemp -d)"
+  got=""
+  rc=0
+  if ! "$bin" pm install-wheel "$whl" --target "$target" >/dev/null 2>&1; then
+    rc=$?
+    echo "FAIL: install-wh $whl install exited $rc"
+    fail=$((fail + 1))
+    return 0
+  fi
+  got="$(cd "$target" && find . -type f | LC_ALL=C sort)"
+  want="$(cat "$expected")"
+  if [ "$got" != "$want" ]; then
+    echo "FAIL: install-wh $whl tree mismatch"
+    echo "  got:"
+    printf '%s\n' "$got" | sed 's/^/    /'
+    echo "  want:"
+    printf '%s\n' "$want" | sed 's/^/    /'
+    fail=$((fail + 1))
+    return 0
+  fi
+  echo "ok:   install-wh $whl"
+}
+
+for whl in tests/fixtures/v01*/*.whl; do
+  [ -e "$whl" ] || continue
+  run_install_wheel_fixture "$whl"
+done
+
 echo "---"
 echo "ran $ran fixtures, $fail failed"
 exit "$fail"

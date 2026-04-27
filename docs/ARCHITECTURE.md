@@ -185,8 +185,41 @@ single cache slot.
 `bunpy pm info <pkg>` is the porcelain on top: it builds a
 default client, swaps in the fixture transport when the env hook
 is set, fetches the page, and prints the parsed `pypi.Project`
-as JSON. Later v0.1.x rungs (`pm install-wheel`, `bunpy add`,
-the resolver) consume the same `Project` shape.
+as JSON. Later v0.1.x rungs (`bunpy add`, the resolver) consume
+the same `Project` shape.
+
+## Wheel installer
+
+`pkg/wheel/` is the PEP 427 installer. `wheel.Open(path)` (or
+`OpenReader(filename, body)`) reads a `.whl`, parses
+`<dist>.dist-info/{WHEEL,METADATA,RECORD}`, and returns a `Wheel`
+struct. `(*Wheel).Install(target, opts)` writes the body files
+into `target` (typically `./.bunpy/site-packages/`), re-emits
+RECORD with the install-side hashes and sizes, and writes
+`INSTALLER`.
+
+The v0.1.2 surface is deliberately narrow:
+
+- `Root-Is-Purelib: true` only; `false` is refused.
+- No `*.data/` subdirs (purelib, platlib, scripts, headers,
+  data); these land when a real wheel forces it.
+- Unsafe entries (zip-slip, absolute paths, parent traversal,
+  backslashes) are rejected before any byte hits disk.
+- RECORD hashes are verified on every install; a mismatch aborts
+  before any partial write. `--no-verify` opts out.
+- The install is staged under a tempdir inside `target` and
+  renamed file-by-file at the end; a mid-install crash leaves
+  the existing site-packages untouched.
+
+`bunpy pm install-wheel <url|path>` is the porcelain: a `.whl`
+path is read straight off disk, an `https://` URL goes through
+`httpkit.RoundTripper` (so `BUNPY_PYPI_FIXTURES` redirects to a
+fixture root in tests) and is cached under
+`${BUNPY_CACHE_DIR or XDG default}/wheels/<name>/<filename>`.
+
+`pkg/cache.WheelCache` mirrors the index cache: atomic write via
+tempfile + rename, PEP 503 normalisation on the project-name
+slot so `Foo_Bar` and `foo-bar` share one cache key.
 
 ## Module layout
 

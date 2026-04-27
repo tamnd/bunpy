@@ -1,11 +1,12 @@
 # CLI reference
 
 bunpy ships as one binary. Subcommands land per-version per the
-roadmap. Today (v0.1.1) the wired surface is `--version` (with
+roadmap. Today (v0.1.2) the wired surface is `--version` (with
 `--short` and `--json`), `--help`, positional `bunpy <file.py>`,
 `bunpy run <file.py>`, `bunpy repl`, `bunpy stdlib`,
-`bunpy pm config`, `bunpy pm info`, `bunpy help`, and
-`bunpy man`. This page is the long-form reference. Running
+`bunpy pm config`, `bunpy pm info`, `bunpy pm install-wheel`,
+`bunpy help`, and `bunpy man`. This page is the long-form
+reference. Running
 `bunpy help <cmd>` gives the same body inline; `bunpy man <cmd>`
 prints the bundled roff manpage. Installing the binary itself:
 see `docs/INSTALL.md`.
@@ -68,6 +69,18 @@ The `pm` tree groups low-level plumbing; porcelain commands
   <url>`, `--cache-dir <path>`. Tests pin every byte of every
   PyPI exchange via `BUNPY_PYPI_FIXTURES`; CI never reaches the
   live index.
+- `bunpy pm install-wheel <url|path>` installs one wheel into a
+  target site-packages directory (default
+  `./.bunpy/site-packages/`) per PEP 427. Flags: `--target
+  <dir>`, `--no-verify`, `--installer <name>`. v0.1.2 supports
+  purelib wheels only (`Root-Is-Purelib: true`, no `*.data/`
+  subdirs). RECORD hashes are verified before any byte hits
+  disk; unsafe entries (zip-slip, absolute paths, parent
+  traversal) are rejected at the entry level. The install is
+  staged under a tempdir inside `--target` and renamed into
+  place, so a mid-install crash leaves the existing tree intact.
+  URL fetches go through the same `httpkit` transport `pm info`
+  uses, so `BUNPY_PYPI_FIXTURES` redirects fetches in tests.
 
 The rest of the package-manager surface is aspirational and
 lands per the v0.1.x ladder in `docs/ROADMAP.md`:
@@ -88,9 +101,6 @@ lands per the v0.1.x ladder in `docs/ROADMAP.md`:
   to PyPI.
 - `bunpy why <pkg>` prints a reverse-deps tree explaining why a
   package is in the lockfile.
-- `bunpy pm info <pkg>` fetches PEP 691 metadata.
-- `bunpy pm install-wheel <url|path>` installs a single wheel
-  with no dependency resolution.
 - `bunpy pm cache rm` clears on-disk caches.
 - `bunpy pm ls` lists installed packages.
 - `bunpy pm hash` prints the lockfile content hash.

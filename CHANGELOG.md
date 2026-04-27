@@ -9,6 +9,284 @@ changes.
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-04-27
+
+The package-manager band gets its filesystem primitive: a wheel
+installer. v0.1.2 ships the Go `pkg/wheel` package, a wheel-body
+disk cache, and a porcelain verb `bunpy pm install-wheel
+<url|path>` that lays one wheel down into a target site-packages
+directory per PEP 427. No resolution, no transitive walk, no
+lockfile yet.
+
+The exposed surface is narrow on purpose: purelib wheels only
+(`Root-Is-Purelib: true`, no `*.data/` subdirs), RECORD hash
+verification on by default, unsafe entries (zip-slip, absolute
+paths, parent traversal) rejected before any byte hits disk, and
+the install staged under a tempdir inside `--target` and renamed
+file-by-file at the end. A mid-install crash leaves the existing
+site-packages untouched.
+
+### Added
+
+- `pkg/wheel/`: `Open(path)` / `OpenReader(filename, body)` parse
+  the wheel zip and dist-info/{WHEEL,METADATA,RECORD}.
+  `(*Wheel).Install(target, opts)` does the actual install: it
+  pre-flights the body for unsafe entries, verifies hashes (when
+  `VerifyHashes` is on), stages files under a tempdir inside
+  `target`, writes `INSTALLER`, re-emits `RECORD` with the
+  install-side hashes and sizes, then renames the staged tree
+  into place. `Wheel.Tags`, `Wheel.WHEEL`, and `Wheel.RECORD` are
+  parsed structurally; `Wheel.Metadata` is kept verbatim and
+  consumed by the v0.1.5 resolver.
+- `pkg/cache/wheel.go`: `WheelCache{Dir}` with `Path`, `Has`,
+  `Put`. Atomic writes via tempfile + rename, PEP 503 name
+  normalisation on the project-name slot.
+- `cmd/bunpy/pm.go`: `bunpy pm install-wheel <url|path>` with
+  flags `--target <dir>` (default `./.bunpy/site-packages`),
+  `--no-verify`, `--installer <name>` (default `bunpy`). URL
+  fetches go through `httpkit.RoundTripper` so
+  `BUNPY_PYPI_FIXTURES` redirects to a fixture root in tests;
+  the body is cached under `<cache>/wheels/<name>/<filename>`.
+- `internal/manpages/man1/bunpy-pm-install-wheel.1`: roff page
+  covering synopsis, options, environment, exit status.
+- `helpRegistry` entry for `pm-install-wheel`; the existing `pm`
+  body lists all three verbs.
+- Tests: `pkg/wheel/wheel_test.go` (10 cases including
+  Open/parse, RECORD parse, purelib install round-trip,
+  zip-slip rejection, absolute-path rejection, Root-Is-Purelib
+  false rejection, .data subdir rejection, hash-mismatch
+  rejection, --no-verify hatch, INSTALLER write),
+  `pkg/cache/wheel_test.go` (round-trip + atomic-write check),
+  plus 5 new cases in `cmd/bunpy/pm_test.go` covering local
+  path, URL via fixture transport, missing file, missing arg,
+  and help routing.
+- Fixtures: `tests/fixtures/v012/tinypkg-0.1.0-py3-none-any.whl`
+  is a frozen tiny wheel built once by
+  `tests/fixtures/v012/build_tinypkg.go` and committed (RECORD
+  hashes must stay byte-stable).
+  `tests/fixtures/v012/index/files.example/tinypkg/` carries the
+  same bytes for the URL-fetch path.
+
+### Changed
+
+- `internal/httpkit/fixtures.go`: the fixture transport now
+  serves binary file URLs alongside the existing PEP 691
+  directory URLs. A path ending in `/` resolves to
+  `<root>/<host>/<path>/index.json` (unchanged); any other path
+  resolves to a raw file at `<root>/<host>/<path>`. Wheel
+  downloads use the second shape.
+- `cmd/bunpy/main.go`: unknown-command error message updates to
+  v0.1.2.
+- `tests/run.sh`: walks `tests/fixtures/v01*/*.whl` and asserts
+  `find <tempdir>` output matches `expected_<name>.txt`
+  byte-for-byte.
+- `.github/workflows/ci.yml`: smoke job adds a `bunpy pm
+  install-wheel` round-trip (path + URL) and asserts the
+  expected files land plus `INSTALLER` carries `bunpy`. The
+  existing help-parity loop covers `pm-install-wheel`
+  automatically via the registry iteration.
+- `docs/CLI.md`: `bunpy pm install-wheel` lands under Package
+  manager; the wired-surface preamble updates.
+- `docs/ARCHITECTURE.md`: new "Wheel installer" section covers
+  the offline-first surface, the install rules (purelib only,
+  hash verify, atomic stage + rename), and the `WheelCache`
+  layout.
+- `docs/ROADMAP.md`: v0.1.2 marked shipped; v0.1.3 (`bunpy
+  add`) next.
+
+### Notes
+
+- `*.data/` subdirs (purelib, platlib, scripts, headers, data),
+  wheel signing (PEP 458), editable installs (PEP 660), and
+  `.pyc` generation are explicitly out of scope. They land at
+  the rungs the roadmap pins them to.
+- The downloaded wheel cache is keyed under
+  `${BUNPY_CACHE_DIR or XDG default}/wheels/<name>/<filename>`;
+  a re-run with the same URL is offline.
+
+## [0.1.1] - 2026-04-27
+
+The package-manager band gets its network primitive. v0.1.1
+lands the PEP 691 simple-index client, an ETag-keyed disk
+cache, and a fixture transport that lets every later v0.1.x
+test pin every byte of every PyPI exchange. CI never reaches
+the live index in unit tests.
+
+The exposed verb is `bunpy pm info <package>`. It fetches a
+project page, parses every release artefact, and prints the
+parsed view as JSON. Later rungs (`pm install-wheel`,
+`bunpy add`, the resolver) consume the same `pypi.Project`
+shape, so the network primitive only has to be written once.
+
+### Added
+
+- `pkg/pypi/`: `Client.Get(ctx, name)` returns a parsed PEP 691
+  project page. The result carries `Name` (PEP 503 normalised),
+  `Files` (filename, url, hashes, requires_python, yanked flag,
+  version, kind), `Versions` (sorted unique), and `Meta`
+  (api_version, last_serial, etag). Wheels and sdists are
+  classified by extension; unknown filenames are still recorded
+  so callers do not lose fidelity. `NotFoundError` is the typed
+  error for 404s.
+- `internal/httpkit/`: a tiny `RoundTripper` interface, a
+  `Default(perHost)` constructor wrapping `*http.Client` with
+  sane timeouts plus a per-host concurrency limiter, and a
+  `FixturesFS(root)` transport that serves canned responses
+  from a directory tree keyed by URL host plus path. The
+  fixture transport handles `If-None-Match` so ETag-revalidation
+  is part of the test contract.
+- `pkg/cache/`: an ETag-keyed `Index` for PEP 691 pages.
+  Atomic writes via tempfile plus rename; PEP 503 name
+  normalisation everywhere a name touches disk so
+  `Foo_Bar`, `foo-bar`, and `FOO.BAR` share one cache slot.
+  `DefaultDir()` honours `XDG_CACHE_HOME`, falls back to
+  `$HOME/Library/Caches/bunpy` on macOS and
+  `%LOCALAPPDATA%\bunpy` on Windows; `BUNPY_CACHE_DIR`
+  overrides everything.
+- `cmd/bunpy/pm.go`: `bunpy pm info <package>` with flags
+  `--no-cache`, `--index <url>`, `--cache-dir <path>`. The
+  `BUNPY_PYPI_FIXTURES` env hook swaps the live transport
+  for `httpkit.FixturesFS` so smokes and end-to-end fixtures
+  stay offline. The `pm` plumbing dispatch grows the `info`
+  verb alongside `config`.
+- `internal/manpages/man1/bunpy-pm-info.1`: roff page covering
+  synopsis, options, caching, environment, exit status.
+- `helpRegistry` entry for `pm-info`; the existing `pm` body
+  lists both verbs.
+- Tests: `pkg/pypi/pypi_test.go` (8 cases covering name
+  normalisation, kind classification, version extraction, page
+  parsing, ETag revalidation through a recording transport,
+  404 surfacing, invalid JSON), `pkg/cache/index_test.go` (5
+  cases including a normalisation alias check and an
+  atomic-write left-no-temp check), `internal/httpkit/fixtures_test.go`
+  (4 cases including `If-None-Match` and status override),
+  plus 6 new cases in `cmd/bunpy/pm_test.go` exercising the
+  binary against a fixture root.
+
+### Changed
+
+- `cmd/bunpy/main.go`: unknown-command error message updates
+  to v0.1.1.
+- `tests/run.sh`: walks `tests/fixtures/v011/index/` for a
+  fixture transport root and asserts `bunpy pm info widget`
+  output matches `expected_widget.json` byte-for-byte.
+- `tests/fixtures/v011/`: a frozen `widget` page plus the
+  expected JSON output.
+- `.github/workflows/ci.yml`: smoke job adds a `bunpy pm
+  info` round-trip against a tempdir fixture root (asserts
+  `demo + 1.0 + wheel` in the output and a non-zero exit on a
+  404). Help-parity loop now covers `pm-info` automatically
+  via the registry iteration.
+- `docs/CLI.md`: `bunpy pm info` lands under Package manager;
+  the wired-surface preamble updates.
+- `docs/ARCHITECTURE.md`: new "PyPI client" section covers
+  the offline-first transport contract, the cache layout, and
+  the `Client.Get` surface that later rungs consume. Module
+  layout grows `internal/httpkit/`.
+- `docs/ROADMAP.md`: v0.1.1 marked shipped; v0.1.2 (wheel
+  installer) next.
+
+### Notes
+
+- The metadata cache (`metadata/` subdir under the cache
+  root) is intentionally not wired here; PubGrub is the
+  caller that reads `.dist-info/METADATA`, and that lands
+  with v0.1.5.
+- Authentication, mirrors, and fall-back indexes are out of
+  scope for v0.1.1. They live with workspaces in v0.2.x.
+- A separate `live-pypi` workflow that exercises the real
+  index against a tiny curated set lands as a follow-up; CI
+  unit tests stay strictly offline.
+
+## [0.1.0] - 2026-04-27
+
+v0.1.0 opens the package-manager band. It is parser-only: no
+network, no installs, no lockfile. The exposed surface is the
+`pkg/manifest` Go package and one porcelain verb, `bunpy pm
+config`, which prints the parsed `pyproject.toml` as JSON.
+
+Every later v0.1.x rung consumes this same `Manifest` shape:
+the resolver reads `Project.Dependencies`, the wheel installer
+reads `Project.Name`, `bunpy add` writes back via `Project.Raw`.
+Landing the parser first means the next eleven rungs never
+fight over its shape.
+
+### Added
+
+- `pkg/manifest/`: PEP 621 `[project]` parser with all the
+  modelled fields (name, version, description, requires-python,
+  dependencies, optional-dependencies, authors, maintainers,
+  license, readme, scripts, gui-scripts, entry-points, urls,
+  keywords, classifiers, dynamic). The original table is kept
+  in `Project.Raw` so `bunpy add` can round-trip it back to
+  disk in v0.1.3. `[tool.bunpy]` is preserved verbatim under
+  `Tool.Raw`; any other top-level table goes into
+  `Manifest.Other` so unknown keys do not get dropped.
+  `Load`, `LoadOpts`, `Parse`, `ParseOpts` cover the four
+  call shapes; `LoadOptions{Strict: false}` collects validation
+  failures as warnings instead of errors.
+- `cmd/bunpy/pm.go`: `bunpy pm <verb>` plumbing tree. v0.1.0
+  wires `bunpy pm config [path]`, which loads the manifest in
+  strict mode and prints it as indented JSON. Strict mode
+  rejects a missing `[project]` table, a missing or
+  PEP 503-invalid `name`, and any `project.dynamic` entry that
+  is also set literally (PEP 621 §5.4).
+- `internal/manpages/man1/bunpy-pm.1` and
+  `bunpy-pm-config.1`: roff manpages for the two new help
+  topics.
+- `helpRegistry` entries for `pm` and `pm-config`. The CI
+  parity loop iterates the registry, so the new entries are
+  covered automatically.
+- Fixtures under `tests/fixtures/v010/`: `minimal`, `full`,
+  and `tool-bunpy` pyproject + expected JSON triples.
+  `tests/run.sh` grows a `*.pyproject.toml` paired with
+  `expected_<name>.json` handler.
+- Tests: `pkg/manifest/manifest_test.go` (15 cases covering
+  minimal, full, license shorthand, readme shorthand, missing
+  project, missing name, invalid names, valid names,
+  dynamic-conflict, dynamic-no-conflict, tool.bunpy preserved,
+  tool.<other> preserved, unknown top-level preserved, bad
+  TOML) and `cmd/bunpy/pm_test.go` (9 cases covering JSON
+  shape, default path, missing file, bad name, unknown flag,
+  no verb, unknown verb, pm help routes, pm-config help).
+
+### Changed
+
+- `cmd/bunpy/main.go`: dispatch grows a `pm` case; the
+  unknown-command error message updates to v0.1.0.
+- `tests/run.sh`: walks `tests/fixtures/v01*/*.pyproject.toml`
+  and compares `bunpy pm config <toml>` against
+  `expected_<name>.json`.
+- `.github/workflows/ci.yml`: smoke job adds a `bunpy pm
+  config` round-trip (writes a temp pyproject, asserts the
+  printed JSON contains the project name, version, and the
+  `[tool.bunpy]` profile, and that a missing path exits
+  non-zero); the help-parity loop now includes `pm`.
+- `docs/CLI.md`: Package manager section is rewritten to lead
+  with the wired `bunpy pm config` and demote the rest to the
+  per-rung roadmap.
+- `docs/ARCHITECTURE.md`: new "Manifest" section covers the
+  three-slot `Manifest` shape (`Project`, `Tool`, `Other`),
+  the strict-vs-soft validation split, and the contract that
+  later rungs consume the same parser output.
+- `docs/ROADMAP.md`: v0.1.x table grows the per-rung statuses;
+  v0.1.0 is shipped, v0.1.1 (PyPI client) is next.
+
+### Notes
+
+- Validation is deliberately narrow. PEP 508 marker parsing
+  lives under `pkg/marker/` and lands with the resolver in
+  v0.1.5. PEP 621 metadata validation beyond name and
+  dynamic-conflict is also out of scope here.
+- `[build-system]` is parsed and preserved verbatim under
+  `Manifest.Other`. Build-backend dispatch is a v0.6.x
+  bundler concern.
+- Writing `pyproject.toml` back to disk is not in v0.1.0.
+  `bunpy add` needs that and lands in v0.1.3; until then
+  `Project.Raw` is the round-trip handle.
+- `github.com/BurntSushi/toml v1.6.0` is the new direct
+  dependency. Pure Go, MIT, no transitive deps.
+
 ## [0.0.8] - 2026-04-27
 
 `bunpy` no longer needs a script file to run. v0.0.8 lands the

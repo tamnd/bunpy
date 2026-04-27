@@ -1,0 +1,5 @@
+./tinypkg-0.1.0.dist-info/INSTALLER
+./tinypkg-0.1.0.dist-info/METADATA
+./tinypkg-0.1.0.dist-info/RECORD
+./tinypkg-0.1.0.dist-info/WHEEL
+./tinypkg/__init__.py

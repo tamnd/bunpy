@@ -262,6 +262,90 @@ func TestPmInfoCacheRoundTrip(t *testing.T) {
 	}
 }
 
+func TestPmInstallWheelLocalPath(t *testing.T) {
+	whl, err := filepath.Abs(filepath.Join("..", "..", "tests", "fixtures", "v012", "tinypkg-0.1.0-py3-none-any.whl"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	target := t.TempDir()
+	var stdout, stderr bytes.Buffer
+	code, err := run([]string{"pm", "install-wheel", whl, "--target", target}, &stdout, &stderr)
+	if err != nil {
+		t.Fatalf("install-wheel: %v\nstderr:\n%s", err, stderr.String())
+	}
+	if code != 0 {
+		t.Fatalf("code %d, want 0", code)
+	}
+	if _, err := os.Stat(filepath.Join(target, "tinypkg", "__init__.py")); err != nil {
+		t.Fatalf("tinypkg/__init__.py not installed: %v", err)
+	}
+	got, err := os.ReadFile(filepath.Join(target, "tinypkg-0.1.0.dist-info", "INSTALLER"))
+	if err != nil {
+		t.Fatalf("INSTALLER missing: %v", err)
+	}
+	if string(got) != "bunpy\n" {
+		t.Errorf("INSTALLER = %q, want %q", got, "bunpy\n")
+	}
+}
+
+func TestPmInstallWheelFromFixturesURL(t *testing.T) {
+	root, err := filepath.Abs(filepath.Join("..", "..", "tests", "fixtures", "v012", "index"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("BUNPY_PYPI_FIXTURES", root)
+	t.Setenv("BUNPY_CACHE_DIR", t.TempDir())
+	target := t.TempDir()
+	var stdout, stderr bytes.Buffer
+	url := "https://files.example/tinypkg/tinypkg-0.1.0-py3-none-any.whl"
+	code, err := run([]string{"pm", "install-wheel", url, "--target", target}, &stdout, &stderr)
+	if err != nil {
+		t.Fatalf("install-wheel from URL: %v\nstderr:\n%s", err, stderr.String())
+	}
+	if code != 0 {
+		t.Fatalf("code %d, want 0", code)
+	}
+	if _, err := os.Stat(filepath.Join(target, "tinypkg", "__init__.py")); err != nil {
+		t.Fatalf("tinypkg/__init__.py not installed: %v", err)
+	}
+}
+
+func TestPmInstallWheelMissingFile(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	code, err := run([]string{"pm", "install-wheel", "/no/such/wheel.whl"}, &stdout, &stderr)
+	if err == nil {
+		t.Fatal("want error on missing file")
+	}
+	if code == 0 {
+		t.Error("want non-zero exit")
+	}
+}
+
+func TestPmInstallWheelNoArg(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	code, err := run([]string{"pm", "install-wheel"}, &stdout, &stderr)
+	if err == nil {
+		t.Fatal("want error on missing source")
+	}
+	if code == 0 {
+		t.Error("want non-zero exit")
+	}
+}
+
+func TestPmInstallWheelHelp(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	code, err := run([]string{"pm", "install-wheel", "--help"}, &stdout, &stderr)
+	if err != nil {
+		t.Fatalf("--help: %v", err)
+	}
+	if code != 0 {
+		t.Fatalf("code %d, want 0", code)
+	}
+	if !strings.Contains(stdout.String(), "bunpy pm install-wheel") {
+		t.Errorf("stdout missing header: %q", stdout.String())
+	}
+}
+
 func TestPmConfigHelp(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 	code, err := run([]string{"pm", "config", "--help"}, &stdout, &stderr)

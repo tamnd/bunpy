@@ -77,17 +77,18 @@ The list is baked at build time from goipy's embedded stdlib.
 		Body: `bunpy pm: package manager plumbing.
 
 USAGE
-  bunpy pm config [path]      print parsed pyproject.toml as JSON
-  bunpy pm info <package>     print PEP 691 project metadata as JSON
+  bunpy pm config [path]                  print parsed pyproject.toml as JSON
+  bunpy pm info <package>                 print PEP 691 project metadata as JSON
+  bunpy pm install-wheel <url|path>       install one wheel into site-packages
 
 The ` + "`pm`" + ` tree groups the low-level package-manager verbs.
 Porcelain commands (` + "`add`" + `, ` + "`install`" + `, ` + "`remove`" + `, ` + "`update`" + `,
 ` + "`outdated`" + `, ` + "`why`" + `, ...) land per docs/ROADMAP.md and call into
 the same machinery.
 
-v0.1.1 wires ` + "`pm config`" + ` (parser) and ` + "`pm info`" + ` (PyPI
-client). No installs and no resolution yet; those land in
-v0.1.2 and v0.1.5 respectively.
+v0.1.2 wires ` + "`pm config`" + ` (parser), ` + "`pm info`" + ` (PyPI client),
+and ` + "`pm install-wheel`" + ` (PEP 427 single-wheel installer). No
+resolution or transitive walk yet; the resolver lands in v0.1.5.
 `,
 	},
 	"pm-info": {
@@ -114,6 +115,34 @@ and ` + "`meta`" + ` (api_version, last_serial, etag).
 Tests can pin every byte of every PyPI exchange by setting
 ` + "`BUNPY_PYPI_FIXTURES`" + ` to a directory tree. The CI smoke and
 the v0.1.x test corpus both use this hook to stay offline.
+`,
+	},
+	"pm-install-wheel": {
+		Name:    "pm-install-wheel",
+		Summary: "Install one wheel into site-packages (PEP 427)",
+		Body: `bunpy pm install-wheel: install one wheel into site-packages.
+
+USAGE
+  bunpy pm install-wheel <path-to.whl>
+  bunpy pm install-wheel <https-url>
+  bunpy pm install-wheel <src> --target <dir>
+  bunpy pm install-wheel <src> --no-verify
+  bunpy pm install-wheel <src> --installer <name>
+
+The default ` + "`--target`" + ` is ` + "`./.bunpy/site-packages`" + `. A path source
+must end in ` + "`.whl`" + `; an ` + "`https://`" + ` URL is fetched through the same
+transport ` + "`pm info`" + ` uses, so ` + "`BUNPY_PYPI_FIXTURES`" + ` swaps it for
+the fixture root in tests.
+
+v0.1.2 supports purelib wheels only (` + "`Root-Is-Purelib: true`" + `, no
+` + "`*.data/`" + ` subdirs). RECORD hashes are verified before any byte
+hits disk; a mismatch aborts the install. Unsafe entries (zip-slip,
+absolute paths, parent traversal) are rejected at the entry level.
+The install is staged under a tempdir inside ` + "`--target`" + ` and renamed
+into place, so a mid-install crash leaves the existing tree intact.
+
+The post-install RECORD is re-emitted alongside an ` + "`INSTALLER`" + ` file
+under the wheel's dist-info directory.
 `,
 	},
 	"pm-config": {

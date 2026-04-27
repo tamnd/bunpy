@@ -1,0 +1,70 @@
+.TH BUNPY-PM-INSTALL-WHEEL 1 "2026-04-27" "bunpy" "User Commands"
+.SH NAME
+bunpy-pm-install-wheel \- install one wheel into site-packages (PEP 427)
+.SH SYNOPSIS
+.B bunpy pm install-wheel
+.IR url | path
+.RB [ --target
+.IR dir ]
+.RB [ --no-verify ]
+.RB [ --installer
+.IR name ]
+.SH DESCRIPTION
+Installs one wheel into a target site-packages directory. The
+source is either a path ending in
+.I .whl
+or an
+.B https://
+URL fetched through the same transport
+.BR bunpy-pm-info (1)
+uses; the
+.B BUNPY_PYPI_FIXTURES
+hook redirects fetches to a fixture root for tests.
+.PP
+v0.1.2 is deliberately narrow:
+.B Root-Is-Purelib: true
+only,
+.B *.data/
+subdirs are refused, unsafe entries (zip-slip, absolute paths,
+parent traversal) are rejected before any byte hits disk, and
+RECORD hashes are verified by default. Files are staged under a
+tempdir inside
+.B --target
+and renamed into place, so a mid-install crash leaves the
+existing tree untouched.
+.PP
+The post-install dist-info gains an
+.B INSTALLER
+file with the value of
+.BR --installer ,
+and RECORD is re-emitted with the install-side hashes and sizes.
+.SH OPTIONS
+.TP
+.BI --target " dir"
+Install root. Default
+.BR ./.bunpy/site-packages .
+.TP
+.B --no-verify
+Skip RECORD hash verification. Off by default; use only when
+inspecting a known-broken wheel.
+.TP
+.BI --installer " name"
+Value to write into
+.BR <dist-info>/INSTALLER .
+Default
+.BR bunpy .
+.SH ENVIRONMENT
+.TP
+.B BUNPY_PYPI_FIXTURES
+When set, redirects URL fetches to a fixture root. Test-only.
+.TP
+.B BUNPY_CACHE_DIR
+Overrides the cache root used for downloaded wheel bodies.
+.SH EXIT STATUS
+Zero on a successful install. Non-zero on an unsafe entry, a
+hash mismatch, an unsupported wheel shape, a fetch error, or an
+I/O failure.
+.SH SEE ALSO
+.BR bunpy-pm (1),
+.BR bunpy-pm-info (1),
+.BR bunpy (1).

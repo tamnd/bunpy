@@ -6,18 +6,21 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/tamnd/bunpy/v1/internal/httpkit"
 	"github.com/tamnd/bunpy/v1/pkg/cache"
 	"github.com/tamnd/bunpy/v1/pkg/manifest"
 	"github.com/tamnd/bunpy/v1/pkg/pypi"
+	"github.com/tamnd/bunpy/v1/pkg/wheel"
 )
 
-// pmSubcommand routes the `bunpy pm <verb>` plumbing tree. v0.1.0
-// only wires `config`; later rungs grow `info`, `install-wheel`, and
-// the rest under the same umbrella.
+// pmSubcommand routes the `bunpy pm <verb>` plumbing tree. v0.1.2
+// wires `config`, `info`, and `install-wheel`. Later rungs grow
+// `add`, `install`, `lock`, and the rest under the same umbrella.
 func pmSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 	if len(args) == 0 {
 		fmt.Fprintln(stderr, "usage: bunpy pm <verb>")
@@ -28,10 +31,12 @@ func pmSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 		return pmConfig(args[1:], stdout, stderr)
 	case "info":
 		return pmInfo(args[1:], stdout, stderr)
+	case "install-wheel":
+		return pmInstallWheel(args[1:], stdout, stderr)
 	case "-h", "--help", "help":
 		return printHelp("pm", stdout, stderr)
 	}
-	return 1, fmt.Errorf("bunpy pm: unknown verb %q (known: config, info, --help)", args[0])
+	return 1, fmt.Errorf("bunpy pm: unknown verb %q (known: config, info, install-wheel, --help)", args[0])
 }
 
 // pmConfig parses pyproject.toml and prints the structured manifest
@@ -147,4 +152,149 @@ func pmInfo(args []string, stdout, stderr io.Writer) (int, error) {
 		return 1, fmt.Errorf("bunpy pm info: %w", err)
 	}
 	return 0, nil
+}
+
+// pmInstallWheel installs one wheel from a local path or https URL
+// into ./.bunpy/site-packages (or --target). The fetch path goes
+// through httpkit and is offline-substitutable via
+// BUNPY_PYPI_FIXTURES so CI smoke tests stay offline.
+func pmInstallWheel(args []string, stdout, stderr io.Writer) (int, error) {
+	var (
+		source    string
+		target    = filepath.Join(".bunpy", "site-packages")
+		installer = "bunpy"
+		noVerify  bool
+	)
+	for i := 0; i < len(args); i++ {
+		a := args[i]
+		switch a {
+		case "-h", "--help":
+			return printHelp("pm-install-wheel", stdout, stderr)
+		case "--no-verify":
+			noVerify = true
+		case "--target":
+			if i+1 >= len(args) {
+				return 1, fmt.Errorf("bunpy pm install-wheel: --target requires a value")
+			}
+			i++
+			target = args[i]
+		case "--installer":
+			if i+1 >= len(args) {
+				return 1, fmt.Errorf("bunpy pm install-wheel: --installer requires a value")
+			}
+			i++
+			installer = args[i]
+		default:
+			if strings.HasPrefix(a, "--target=") {
+				target = strings.TrimPrefix(a, "--target=")
+				continue
+			}
+			if strings.HasPrefix(a, "--installer=") {
+				installer = strings.TrimPrefix(a, "--installer=")
+				continue
+			}
+			if strings.HasPrefix(a, "-") {
+				return 1, fmt.Errorf("bunpy pm install-wheel: unknown flag %q (known: --target, --installer, --no-verify, --help)", a)
+			}
+			if source != "" {
+				return 1, fmt.Errorf("bunpy pm install-wheel: too many positional arguments (%q after %q)", a, source)
+			}
+			source = a
+		}
+	}
+	if source == "" {
+		return 1, fmt.Errorf("usage: bunpy pm install-wheel <url|path>")
+	}
+
+	body, filename, err := loadWheelSource(source)
+	if err != nil {
+		return 1, fmt.Errorf("bunpy pm install-wheel: %w", err)
+	}
+	w, err := wheel.OpenReader(filename, body)
+	if err != nil {
+		return 1, fmt.Errorf("bunpy pm install-wheel: %w", err)
+	}
+	verify := !noVerify
+	created, err := w.Install(target, wheel.InstallOptions{
+		Installer:    installer,
+		VerifyHashes: &verify,
+	})
+	if err != nil {
+		return 1, fmt.Errorf("bunpy pm install-wheel: %w", err)
+	}
+	for _, p := range created {
+		fmt.Fprintln(stdout, p)
+	}
+	return 0, nil
+}
+
+// loadWheelSource resolves source to (body, filename). A path source
+// must end in .whl; an https:// URL is fetched through httpkit and
+// cached under ${BUNPY_CACHE_DIR or XDG default}/wheels/<name>/.
+func loadWheelSource(source string) ([]byte, string, error) {
+	if strings.HasPrefix(source, "https://") || strings.HasPrefix(source, "http://") {
+		return fetchWheel(source)
+	}
+	if !strings.HasSuffix(source, ".whl") {
+		return nil, "", fmt.Errorf("source %q: must end in .whl or be an http(s) URL", source)
+	}
+	body, err := os.ReadFile(source)
+	if err != nil {
+		return nil, "", err
+	}
+	return body, filepath.Base(source), nil
+}
+
+func fetchWheel(rawURL string) ([]byte, string, error) {
+	filename := rawURL
+	if i := strings.LastIndex(rawURL, "/"); i >= 0 {
+		filename = rawURL[i+1:]
+	}
+	if !strings.HasSuffix(filename, ".whl") {
+		return nil, "", fmt.Errorf("url %q: does not end in .whl", rawURL)
+	}
+	pkgName := wheelProjectName(filename)
+	wc, err := cache.NewWheelCache(filepath.Join(cache.DefaultDir(), "wheels"))
+	if err == nil && wc.Has(pkgName, filename) {
+		body, err := os.ReadFile(wc.Path(pkgName, filename))
+		if err == nil {
+			return body, filename, nil
+		}
+	}
+
+	var rt httpkit.RoundTripper = httpkit.Default(4)
+	if fix := os.Getenv("BUNPY_PYPI_FIXTURES"); fix != "" {
+		rt = httpkit.FixturesFS(fix)
+	}
+	req, err := http.NewRequest("GET", rawURL, nil)
+	if err != nil {
+		return nil, "", err
+	}
+	resp, err := rt.Do(req)
+	if err != nil {
+		return nil, "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode/100 != 2 {
+		return nil, "", fmt.Errorf("get %s: %s", rawURL, resp.Status)
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, "", err
+	}
+	if wc != nil {
+		_ = wc.Put(pkgName, filename, body)
+	}
+	return body, filename, nil
+}
+
+// wheelProjectName extracts the project name segment from a wheel
+// filename: <name>-<version>-...whl. Returns the segment as-is so
+// the cache key matches what the resolver will consume.
+func wheelProjectName(filename string) string {
+	base := strings.TrimSuffix(filename, ".whl")
+	if i := strings.IndexByte(base, '-'); i >= 0 {
+		return base[:i]
+	}
+	return base
 }
