@@ -22,7 +22,7 @@ import (
 )
 
 // Version is baked in by the bunpy build pipeline.
-const Version = "0.3.1"
+const Version = "0.3.2"
 
 // Modules returns the NativeModules map for the current v0.3.1 surface.
 // Later rungs extend this map by adding more entries.
@@ -54,9 +54,10 @@ func BuildBunpy(i *goipyVM.Interp) *goipyObject.Module {
 	m.Dict.SetStr("__version__", &goipyObject.Str{V: Version})
 	m.Dict.SetStr("__name__", &goipyObject.Str{V: "bunpy"})
 
-	// Attach sub-modules so `import bunpy; bunpy.base64.encode(...)` works.
+	// Attach sub-modules and functions.
 	m.Dict.SetStr("base64", BuildBase64(i))
 	m.Dict.SetStr("gzip", BuildGzip(i))
+	m.Dict.SetStr("serve", BuildServe(i))
 
 	return m
 }
