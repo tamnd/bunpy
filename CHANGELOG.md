@@ -9,6 +9,95 @@ changes.
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-04-27
+
+The package manager grows its first piece of porcelain. `bunpy
+add <pkg>[<spec>]` reads `pyproject.toml`, fetches the project
+from PyPI, picks the highest universal wheel satisfying the
+caller's PEP 440 spec, installs it through the v0.1.2 wheel
+installer, and writes the resolved spec back into
+`[project].dependencies`. v0.1.3 is naive on purpose: no
+transitive walk, no lockfile, no resolver. The lockfile lands at
+v0.1.4; the PubGrub resolver and platform wheels at v0.1.5. This
+rung exists so the porcelain is wired and later rungs only swap
+algorithms in behind a stable surface.
+
+### Added
+
+- `pkg/version/`: a deliberate PEP 440 subset. `Spec` carries one
+  or more `Clause{Op, Version}` entries; `ParseSpec` accepts bare
+  `1.2.3`, `==`, `!=`, `>=`, `>`, `<=`, `<`, `~=`, comma-joined.
+  Wildcards (`==1.2.*`) and arbitrary equality (`===`) are
+  refused. `Compare` orders versions per PEP 440 release segment
+  plus pre-release tier (`dev` < `pre` < final < `post`); local
+  segments are kept verbatim and ignored. `Highest` skips
+  pre-releases by default and falls back when nothing else
+  matches.
+- `pkg/manifest.AddDependency`: best-effort text rewriter that
+  locates `[project].dependencies`, creates the array when
+  absent, and inserts or replaces the line in PEP 503-normalised
+  order. Comments outside the array survive verbatim. The
+  Manifest now carries `Source []byte` so the rewriter can work
+  off the original text.
+- `cmd/bunpy/add.go`: `bunpy add <pkg>[<spec>]` with
+  `--no-install`, `--no-write`, `--target <dir>`, `--index <url>`,
+  `--cache-dir <path>`. Re-adding an already-listed package
+  upgrades its line. The fetch path goes through `httpkit` and is
+  swappable via `BUNPY_PYPI_FIXTURES` so the v0.1.3 smoke job
+  stays offline.
+- `internal/manpages/man1/bunpy-add.1`: roff page covering
+  synopsis, options, environment, exit status.
+- `helpRegistry` entry for `add`; `bunpy help` and `bunpy add
+  --help` share one body.
+- Tests: `pkg/version/version_test.go` (5 cases including
+  ParseSpec, Compare numeric, Compare pre/post/dev, Match for
+  every operator, Highest pre-release skipping, and the
+  empty-Spec-matches-all invariant), `pkg/manifest/manifest_test.go`
+  grows 7 new cases (append, sort, surrounding-comments preserve,
+  array creation, pre-existing-section ordering, duplicate
+  upgrade, normalised-name dedup), `cmd/bunpy/add_test.go` (7
+  cases covering URL fetch, spec filtering, --no-install,
+  --no-write, no-match exit, no-arg, --help).
+- Fixtures: `tests/fixtures/v013/widget-1.0.0-py3-none-any.whl`
+  and `widget-1.1.0-py3-none-any.whl` plus the matching simple
+  index entry, frozen by `tests/fixtures/v013/build_widgets.go`.
+  `tests/fixtures/v013/widget.add_in` drives the new harness
+  handler that exercises `bunpy add` end-to-end against an
+  isolated cwd.
+
+### Changed
+
+- `cmd/bunpy/main.go`: subcommand router gains `case "add"`; the
+  unknown-command error message updates to v0.1.3.
+- `cmd/bunpy/help.go`: `pm` body mentions the v0.1.3 surface.
+- `tests/run.sh`: walks `tests/fixtures/v01*/*.add_in`, copies
+  the input pyproject into a tempdir, runs `bunpy add` against
+  the fixture index, and diffs the resulting manifest plus the
+  installed file tree against frozen expectations.
+- `.github/workflows/ci.yml`: smoke job adds a `bunpy add`
+  round-trip against the v0.1.3 fixture root, asserting the
+  wheel lands and the new line is in `pyproject.toml`. The
+  help-parity loop now covers `add`.
+- `docs/CLI.md`: `bunpy add` lands under Package manager; the
+  wired-surface preamble updates to v0.1.3.
+- `docs/ARCHITECTURE.md`: new "bunpy add" section covers
+  `pkg/version`, `manifest.AddDependency`, and the
+  manifest-fetch-pick-install-writeback flow.
+- `docs/ROADMAP.md`: v0.1.3 marked shipped; v0.1.4 (`bunpy.lock`
+  writer plus reader) next.
+- `pkg/pypi/pypi.go`: `UserAgent` bumped to `bunpy/0.1.3`.
+
+### Notes
+
+- `bunpy add` only considers `py3-none-any` wheels. Platform
+  wheels land with the resolver in v0.1.5; sdist installs (PEP
+  517) stay out of v0.1.x.
+- Re-adding the same package replaces its line. An exact-pin
+  bump workflow (`bunpy update <pkg>`) lands with v0.1.7.
+- The fetch path caches under
+  `${BUNPY_CACHE_DIR or XDG default}/wheels/<name>/<filename>`;
+  a re-run with the same wheel is offline.
+
 ## [0.1.2] - 2026-04-27
 
 The package-manager band gets its filesystem primitive: a wheel

@@ -1,11 +1,11 @@
 # CLI reference
 
 bunpy ships as one binary. Subcommands land per-version per the
-roadmap. Today (v0.1.2) the wired surface is `--version` (with
+roadmap. Today (v0.1.3) the wired surface is `--version` (with
 `--short` and `--json`), `--help`, positional `bunpy <file.py>`,
 `bunpy run <file.py>`, `bunpy repl`, `bunpy stdlib`,
 `bunpy pm config`, `bunpy pm info`, `bunpy pm install-wheel`,
-`bunpy help`, and `bunpy man`. This page is the long-form
+`bunpy add`, `bunpy help`, and `bunpy man`. This page is the long-form
 reference. Running
 `bunpy help <cmd>` gives the same body inline; `bunpy man <cmd>`
 prints the bundled roff manpage. Installing the binary itself:
@@ -82,13 +82,23 @@ The `pm` tree groups low-level plumbing; porcelain commands
   URL fetches go through the same `httpkit` transport `pm info`
   uses, so `BUNPY_PYPI_FIXTURES` redirects fetches in tests.
 
+The porcelain `bunpy add <pkg>[<spec>]` is wired in v0.1.3 as a
+naive single-package add: load `pyproject.toml` (strict), fetch
+the project's PEP 691 page, pick the highest universal wheel
+(`py3-none-any`) that satisfies the caller's PEP 440 spec, install
+it through `pm install-wheel`, and write the resolved spec back
+into `[project].dependencies`. Flags: `--no-install` (manifest
+only), `--no-write` (install only), `--target <dir>`, `--index
+<url>`, `--cache-dir <path>`. Re-adding an already-listed package
+replaces its line. Pre-releases are skipped unless the spec pins
+one. Transitive walk and lockfile land at v0.1.4 / v0.1.5; dev
+and optional lanes (`-D`, `-O`, `-P`) at v0.1.6.
+
 The rest of the package-manager surface is aspirational and
 lands per the v0.1.x ladder in `docs/ROADMAP.md`:
 
 - `bunpy install` installs dependencies from `pyproject.toml`
   and `bunpy.lock`. `--frozen` refuses to mutate the lockfile.
-- `bunpy add <pkg>` adds a dependency. `-D` for dev, `-O` for
-  optional, `-P` for peer.
 - `bunpy remove <pkg>` removes a dependency.
 - `bunpy update [pkg]` updates one or all packages.
 - `bunpy outdated [pkg]` lists packages with newer versions.

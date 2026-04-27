@@ -211,6 +211,66 @@ for whl in tests/fixtures/v01*/*.whl; do
   run_install_wheel_fixture "$whl"
 done
 
+run_add_fixture() {
+  local in="$1"
+  local dir name input expected_pyproject expected_files args work cache rc=0
+  dir="$(dirname "$in")"
+  name="$(basename "$in" .add_in)"
+  input="$dir/${name}.input.toml"
+  expected_pyproject="$dir/expected_${name}.toml"
+  expected_files="$dir/expected_${name}_files.txt"
+
+  if [ ! -f "$input" ] || [ ! -f "$expected_pyproject" ] || [ ! -f "$expected_files" ]; then
+    echo "skip: add        $in (missing inputs/expectations)"
+    return 0
+  fi
+
+  ran=$((ran + 1))
+  args="$(cat "$in")"
+  work="$(mktemp -d)"
+  cache="$(mktemp -d)"
+  cp "$input" "$work/pyproject.toml"
+
+  if ! ( cd "$work" && BUNPY_PYPI_FIXTURES="$ROOT/$dir/index" BUNPY_CACHE_DIR="$cache" "$bin" add $args >/dev/null 2>&1 ); then
+    rc=$?
+    echo "FAIL: add        $in exited $rc"
+    fail=$((fail + 1))
+    return 0
+  fi
+
+  local got_pyproject want_pyproject got_files want_files
+  got_pyproject="$(cat "$work/pyproject.toml")"
+  want_pyproject="$(cat "$expected_pyproject")"
+  if [ "$got_pyproject" != "$want_pyproject" ]; then
+    echo "FAIL: add        $in pyproject mismatch"
+    echo "  got:"
+    printf '%s\n' "$got_pyproject" | sed 's/^/    /'
+    echo "  want:"
+    printf '%s\n' "$want_pyproject" | sed 's/^/    /'
+    fail=$((fail + 1))
+    return 0
+  fi
+
+  got_files="$(cd "$work/.bunpy/site-packages" && find . -type f | LC_ALL=C sort)"
+  want_files="$(cat "$expected_files")"
+  if [ "$got_files" != "$want_files" ]; then
+    echo "FAIL: add        $in files mismatch"
+    echo "  got:"
+    printf '%s\n' "$got_files" | sed 's/^/    /'
+    echo "  want:"
+    printf '%s\n' "$want_files" | sed 's/^/    /'
+    fail=$((fail + 1))
+    return 0
+  fi
+
+  echo "ok:   add        $in"
+}
+
+for in in tests/fixtures/v01*/*.add_in; do
+  [ -e "$in" ] || continue
+  run_add_fixture "$in"
+done
+
 echo "---"
 echo "ran $ran fixtures, $fail failed"
 exit "$fail"

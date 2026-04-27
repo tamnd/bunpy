@@ -221,6 +221,42 @@ fixture root in tests) and is cached under
 tempfile + rename, PEP 503 normalisation on the project-name
 slot so `Foo_Bar` and `foo-bar` share one cache key.
 
+## bunpy add
+
+`pkg/version/` is a deliberate PEP 440 subset: `==`, `!=`, `>=`,
+`>`, `<=`, `<`, `~=`, comma-joined, with pre-release ordering
+(`a`, `b`, `rc`, `dev`, `post`). Wildcards (`==1.2.*`) and
+arbitrary equality (`===`) are out of scope. `Highest` skips
+pre-releases by default unless the caller's spec pins one, with a
+graceful fallback to pre-releases when nothing else matches.
+
+`pkg/manifest.AddDependency` is a best-effort text rewriter: it
+locates the `[project]` section, finds `dependencies = [...]`
+(creating the array when absent), and inserts or replaces the
+matching line in PEP 503-normalised order. Comments outside the
+array survive verbatim because we only touch the byte range
+between `[` and `]`. The whole file is otherwise left alone.
+
+`bunpy add <pkg>[<spec>]` glues the three pieces together:
+
+1. Load `./pyproject.toml` in strict mode so a broken file fails
+   fast before any network.
+2. `pypi.Client.Get(name)` against the configured simple index
+   (live, ETag-cached, or `BUNPY_PYPI_FIXTURES` for tests).
+3. Filter to `py3-none-any` wheels, drop yanked entries, pick the
+   highest version satisfying the spec via
+   `version.Highest`.
+4. Download via `httpkit` (cache-first, atomic), install via the
+   v0.1.2 wheel installer.
+5. Re-write `pyproject.toml` via `manifest.AddDependency`. The
+   line written is the caller's spec verbatim, or
+   `name>=resolved-version` when the caller gave no spec.
+
+v0.1.3 is naive on purpose: no transitive walk, no lockfile, no
+resolver. Those land at v0.1.4 (lockfile) and v0.1.5 (PubGrub
+plus platform wheels and markers). The porcelain surface is
+fixed; later rungs swap algorithms in behind it.
+
 ## Module layout
 
 ```

@@ -1,0 +1,6 @@
+[project]
+name = "demo"
+version = "0.0.1"
+dependencies = [
+    "widget>=1.1.0",
+]

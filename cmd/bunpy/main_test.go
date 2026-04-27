@@ -397,6 +397,8 @@ func TestHelpFlagAliasesParity(t *testing.T) {
 		{"pm-info", []string{"pm", "info", "-h"}},
 		{"pm-install-wheel", []string{"pm", "install-wheel", "--help"}},
 		{"pm-install-wheel", []string{"pm", "install-wheel", "-h"}},
+		{"add", []string{"add", "--help"}},
+		{"add", []string{"add", "-h"}},
 	}
 	for _, tc := range cases {
 		t.Run(strings.Join(tc.viaSubcmd, " "), func(t *testing.T) {

@@ -71,6 +71,38 @@ USAGE
 The list is baked at build time from goipy's embedded stdlib.
 `,
 	},
+	"add": {
+		Name:    "add",
+		Summary: "Add a single package to pyproject.toml and install it",
+		Body: `bunpy add: install one package and write it to pyproject.toml.
+
+USAGE
+  bunpy add <pkg>                    pick the highest universal wheel
+  bunpy add <pkg>==1.2.3             pin an exact version
+  bunpy add <pkg>>=1.2,<2            satisfy a PEP 440 range
+  bunpy add <pkg> --no-install       only update the manifest
+  bunpy add <pkg> --no-write         only install
+  bunpy add <pkg> --target <dir>     site-packages target (default ./.bunpy/site-packages)
+  bunpy add <pkg> --index <url>      override the simple index
+  bunpy add <pkg> --cache-dir <dir>  override the cache root
+
+v0.1.3 is naive on purpose: no transitive walk, no lockfile, no
+resolver. The fetch path is restricted to universal wheels
+(` + "`py3-none-any`" + `); platform wheels and the resolver land
+together in v0.1.5. Among matching wheels the highest version
+satisfying the spec wins; the install reuses the v0.1.2 wheel
+installer (purelib only, RECORD-verified, atomic stage and rename).
+
+When the spec is omitted, the line written into
+` + "`[project].dependencies`" + ` is ` + "`<name>>=<resolved-version>`" + `.
+When the spec is given, it is written verbatim. Re-adding an
+already-listed package replaces its line with the new spec.
+
+Tests can pin every byte of every PyPI exchange by setting
+` + "`BUNPY_PYPI_FIXTURES`" + ` to a directory tree that serves both the
+PEP 691 simple index and the wheel bodies the index points at.
+`,
+	},
 	"pm": {
 		Name:    "pm",
 		Summary: "Package manager plumbing (config, info, install-wheel...)",
@@ -86,9 +118,11 @@ Porcelain commands (` + "`add`" + `, ` + "`install`" + `, ` + "`remove`" + `, ` 
 ` + "`outdated`" + `, ` + "`why`" + `, ...) land per docs/ROADMAP.md and call into
 the same machinery.
 
-v0.1.2 wires ` + "`pm config`" + ` (parser), ` + "`pm info`" + ` (PyPI client),
-and ` + "`pm install-wheel`" + ` (PEP 427 single-wheel installer). No
-resolution or transitive walk yet; the resolver lands in v0.1.5.
+v0.1.3 wires ` + "`pm config`" + ` (parser), ` + "`pm info`" + ` (PyPI client),
+and ` + "`pm install-wheel`" + ` (PEP 427 single-wheel installer). The
+naive ` + "`bunpy add`" + ` porcelain layered on top lands at the top
+level. No resolution or transitive walk yet; the resolver lands
+in v0.1.5.
 `,
 	},
 	"pm-info": {

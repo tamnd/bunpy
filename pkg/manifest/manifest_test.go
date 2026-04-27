@@ -323,3 +323,206 @@ func TestParseInvalidTOML(t *testing.T) {
 		t.Fatal("Parse: want error on bad toml")
 	}
 }
+
+func TestAddDependencyAppends(t *testing.T) {
+	src := `[project]
+name = "demo"
+dependencies = [
+    "alpha",
+]
+`
+	m, err := Parse([]byte(src))
+	if err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+	out, err := m.AddDependency("widget>=1.0")
+	if err != nil {
+		t.Fatalf("AddDependency: %v", err)
+	}
+	want := `[project]
+name = "demo"
+dependencies = [
+    "alpha",
+    "widget>=1.0",
+]
+`
+	if string(out) != want {
+		t.Errorf("got:\n%s\nwant:\n%s", out, want)
+	}
+}
+
+func TestAddDependencySortsByName(t *testing.T) {
+	src := `[project]
+name = "demo"
+dependencies = [
+    "zeta",
+    "beta",
+]
+`
+	m, _ := Parse([]byte(src))
+	out, err := m.AddDependency("alpha")
+	if err != nil {
+		t.Fatalf("AddDependency: %v", err)
+	}
+	want := `[project]
+name = "demo"
+dependencies = [
+    "alpha",
+    "beta",
+    "zeta",
+]
+`
+	if string(out) != want {
+		t.Errorf("got:\n%s\nwant:\n%s", out, want)
+	}
+}
+
+func TestAddDependencyExistingArrayPreservesSurroundingComments(t *testing.T) {
+	src := `[project]
+name = "demo"
+# leading comment
+dependencies = [
+    "alpha",
+]
+# trailing comment
+
+[tool.bunpy]
+profile = "fast"
+`
+	m, err := Parse([]byte(src))
+	if err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+	out, err := m.AddDependency("widget>=1.0")
+	if err != nil {
+		t.Fatalf("AddDependency: %v", err)
+	}
+	s := string(out)
+	for _, want := range []string{"# leading comment", "# trailing comment", "[tool.bunpy]", "\"alpha\"", "\"widget>=1.0\""} {
+		if !strings.Contains(s, want) {
+			t.Errorf("missing %q in:\n%s", want, s)
+		}
+	}
+	m2, err := Parse(out)
+	if err != nil {
+		t.Fatalf("re-parse: %v", err)
+	}
+	if got := m2.Project.Dependencies; len(got) != 2 || got[0] != "alpha" || got[1] != "widget>=1.0" {
+		t.Errorf("re-parsed deps: %v", got)
+	}
+}
+
+func TestAddDependencyCreatesArray(t *testing.T) {
+	src := `[project]
+name = "demo"
+version = "0.0.1"
+`
+	m, err := Parse([]byte(src))
+	if err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+	out, err := m.AddDependency("widget>=1.0")
+	if err != nil {
+		t.Fatalf("AddDependency: %v", err)
+	}
+	m2, err := Parse(out)
+	if err != nil {
+		t.Fatalf("re-parse: %v\n%s", err, out)
+	}
+	if got := m2.Project.Dependencies; len(got) != 1 || got[0] != "widget>=1.0" {
+		t.Errorf("re-parsed deps: %v", got)
+	}
+}
+
+func TestAddDependencyCreatesArrayBeforeNextSection(t *testing.T) {
+	src := `[project]
+name = "demo"
+version = "0.0.1"
+
+[tool.bunpy]
+profile = "fast"
+`
+	m, _ := Parse([]byte(src))
+	out, err := m.AddDependency("widget>=1.0")
+	if err != nil {
+		t.Fatalf("AddDependency: %v", err)
+	}
+	s := string(out)
+	dep := strings.Index(s, "dependencies")
+	tool := strings.Index(s, "[tool.bunpy]")
+	if dep < 0 || tool < 0 || dep > tool {
+		t.Errorf("dependencies (%d) must come before [tool.bunpy] (%d):\n%s", dep, tool, s)
+	}
+	m2, err := Parse(out)
+	if err != nil {
+		t.Fatalf("re-parse: %v", err)
+	}
+	if got := m2.Project.Dependencies; len(got) != 1 || got[0] != "widget>=1.0" {
+		t.Errorf("re-parsed deps: %v", got)
+	}
+	if m2.Tool.Raw == nil || m2.Tool.Raw["profile"] != "fast" {
+		t.Errorf("tool.bunpy lost: %v", m2.Tool.Raw)
+	}
+}
+
+func TestAddDependencyDuplicateUpgrades(t *testing.T) {
+	src := `[project]
+name = "demo"
+dependencies = [
+    "widget>=1.0",
+]
+`
+	m, _ := Parse([]byte(src))
+	out, err := m.AddDependency("widget>=2.0")
+	if err != nil {
+		t.Fatalf("AddDependency: %v", err)
+	}
+	if strings.Contains(string(out), "widget>=1.0") {
+		t.Errorf("old spec retained:\n%s", out)
+	}
+	m2, err := Parse(out)
+	if err != nil {
+		t.Fatalf("re-parse: %v", err)
+	}
+	if got := m2.Project.Dependencies; len(got) != 1 || got[0] != "widget>=2.0" {
+		t.Errorf("re-parsed deps: %v", got)
+	}
+}
+
+func TestAddDependencyDuplicateNormalisedName(t *testing.T) {
+	src := `[project]
+name = "demo"
+dependencies = [
+    "Foo_Bar==1.0",
+]
+`
+	m, _ := Parse([]byte(src))
+	out, err := m.AddDependency("foo-bar>=2.0")
+	if err != nil {
+		t.Fatalf("AddDependency: %v", err)
+	}
+	m2, err := Parse(out)
+	if err != nil {
+		t.Fatalf("re-parse: %v", err)
+	}
+	if got := m2.Project.Dependencies; len(got) != 1 || got[0] != "foo-bar>=2.0" {
+		t.Errorf("re-parsed deps: %v", got)
+	}
+}
+
+func TestAddDependencyInvalidSpec(t *testing.T) {
+	m, _ := Parse([]byte("[project]\nname = \"demo\"\n"))
+	if _, err := m.AddDependency(""); err == nil {
+		t.Error("empty spec: want error")
+	}
+	if _, err := m.AddDependency("==1.0"); err == nil {
+		t.Error("spec without name: want error")
+	}
+}
+
+func TestAddDependencyMissingProject(t *testing.T) {
+	m := &Manifest{Source: []byte("[build-system]\nrequires = []\n")}
+	if _, err := m.AddDependency("widget"); err == nil {
+		t.Error("missing [project]: want error")
+	}
+}

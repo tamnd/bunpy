@@ -38,6 +38,11 @@ type Manifest struct {
 
 	// Warnings is non-nil only in soft mode.
 	Warnings []string `json:"warnings,omitempty"`
+
+	// Source holds the original bytes parsed; AddDependency and
+	// other text-based mutators consume it. Populated by Parse and
+	// Load; ParseOpts copies the input slice.
+	Source []byte `json:"-"`
 }
 
 // Project mirrors the PEP 621 [project] table.
@@ -124,7 +129,8 @@ func ParseOpts(data []byte, opts LoadOptions) (*Manifest, error) {
 		return nil, fmt.Errorf("manifest: parse toml: %w", err)
 	}
 	m := &Manifest{
-		Other: map[string]any{},
+		Other:  map[string]any{},
+		Source: append([]byte(nil), data...),
 	}
 	for k, v := range raw {
 		switch k {
