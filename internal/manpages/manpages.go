@@ -20,13 +20,17 @@ const Root = "man1"
 func FS() fs.FS { return fsys }
 
 // Page returns the roff bytes for the named subcommand: "" or
-// "bunpy" returns bunpy.1; otherwise bunpy-<name>.1.
+// "bunpy" returns bunpy.1; "bunpyx" returns bunpyx.1; otherwise
+// bunpy-<name>.1.
 func Page(name string) ([]byte, error) {
-	file := Root + "/bunpy.1"
-	if name != "" && name != "bunpy" {
-		file = Root + "/bunpy-" + name + ".1"
+	if name == "" || name == "bunpy" {
+		return fsys.ReadFile(Root + "/bunpy.1")
 	}
-	return fsys.ReadFile(file)
+	prefixed := Root + "/bunpy-" + name + ".1"
+	if data, err := fsys.ReadFile(prefixed); err == nil {
+		return data, nil
+	}
+	return fsys.ReadFile(Root + "/" + name + ".1")
 }
 
 // List returns the embedded manpage filenames, sorted.

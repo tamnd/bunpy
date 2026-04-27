@@ -44,8 +44,8 @@ harness goes from non-zero to zero in the same PR.
 | v0.2.0  | workspaces                           | shipped    |
 | v0.2.1  | audit                                | shipped    |
 | v0.2.2  | publish                              | shipped    |
-| v0.2.3  | create                               | planned    |
-| v0.2.4  | bunpyx                               | planned    |
+| v0.2.3  | create                               | shipped    |
+| v0.2.4  | bunpyx                               | shipped    |
 
 ## v0.3.x: built-in API surface, part 1
 

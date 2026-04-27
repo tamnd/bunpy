@@ -94,6 +94,11 @@ jobs:
             -ldflags="$(bash scripts/build-ldflags.sh)" \
             -o bunpy \
             ./cmd/bunpy
+          go build \
+            -trimpath \
+            -ldflags="$(bash scripts/build-ldflags.sh)" \
+            -o bunpyx \
+            ./cmd/bunpyx
 
       - name: bunpy --version
         run: ./bunpy --version
@@ -782,6 +787,49 @@ jobs:
           "$GITHUB_WORKSPACE/bunpy" create --help > /dev/null
           # unknown template should exit 1
           ( cd "$dest" && "$GITHUB_WORKSPACE/bunpy" create badtemplate myproj --yes ) && exit 1 || true
+
+      - name: bunpyx smoke (v0.2.4)
+        shell: bash
+        run: |
+          # Synthesise a minimal wheel with a console_scripts entry point.
+          wheel_dir="$(mktemp -d)"
+          pkg_ver="mygreet-1.0.0"
+          dist_info="$wheel_dir/${pkg_ver}.dist-info"
+          mkdir -p "$wheel_dir/mygreet" "$dist_info"
+          cat > "$wheel_dir/mygreet/__init__.py" <<'EOF'
+          import sys
+          def main():
+              print("hello bunpyx", *sys.argv[1:])
+          EOF
+          cat > "$dist_info/METADATA" <<'EOF'
+          Metadata-Version: 2.1
+          Name: mygreet
+          Version: 1.0.0
+          EOF
+          cat > "$dist_info/WHEEL" <<'EOF'
+          Wheel-Version: 1.0
+          Generator: test
+          Root-Is-Purelib: true
+          Tag: py3-none-any
+          EOF
+          cat > "$dist_info/entry_points.txt" <<'EOF'
+          [console_scripts]
+          mygreet = mygreet:main
+          EOF
+          touch "$dist_info/RECORD"
+          # pack into a wheel zip
+          cache_dir="$(mktemp -d)"
+          whl="$cache_dir/mygreet-1.0.0-py3-none-any.whl"
+          ( cd "$wheel_dir" && zip -r "$whl" . -x "*.DS_Store" )
+          # run via bunpyx using the pre-seeded cache
+          out="$( "$GITHUB_WORKSPACE/bunpyx" --cache-dir "$cache_dir" --no-cache mygreet@1.0.0 world 2>&1 || true )"
+          echo "$out" | grep -q "hello bunpyx" || { echo "unexpected output: $out"; exit 1; }
+          # --help exits 0
+          "$GITHUB_WORKSPACE/bunpyx" --help > /dev/null
+          # --version prints "bunpyx "
+          "$GITHUB_WORKSPACE/bunpyx" --version | grep -q "bunpyx "
+          # unknown flag exits 1
+          ( "$GITHUB_WORKSPACE/bunpyx" --unknown-flag ) && exit 1 || true
 
       - name: bunpy hello.py
         run: |

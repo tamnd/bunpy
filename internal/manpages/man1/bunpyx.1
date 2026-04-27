@@ -1,0 +1,159 @@
+.TH BUNPYX 1 "2026-04-27" "bunpy" "User Commands"
+.SH NAME
+bunpyx \- run a Python package entry point without installing it permanently
+.SH SYNOPSIS
+.B bunpyx
+.I pkg
+.RB [ @version ]
+.RI [ args ...]
+.br
+.B bunpyx
+.B \-\-from
+.I module
+.I pkg
+.RB [ @version ]
+.RI [ args ...]
+.br
+.B bunpyx
+.B \-\-version
+.br
+.B bunpyx
+.B \-\-help
+.SH DESCRIPTION
+.B bunpyx
+fetches a Python package from PyPI (or the local wheel cache),
+installs it into a temporary directory, and runs its declared
+console-script entry point.
+It is the Python analogue of
+.B bunx
+(from the Bun JavaScript runtime): run a tool once without making it a
+permanent project dependency.
+.PP
+The execution model is:
+.IP 1. 4
+Resolve the package version. If
+.I @version
+is omitted, the latest published version is used.
+.IP 2. 4
+Check the wheel cache (default
+.BR ~/.cache/bunpyx/wheels/ ).
+On a cache hit, the download is skipped.
+.IP 3. 4
+Select the best wheel for the current platform using the same tag
+ranking as
+.BR "bunpy install" .
+.IP 4. 4
+Unpack the wheel into a temp prefix and write console-script shims.
+.IP 5. 4
+Exec the shim (Unix) or start a child process (Windows) with any
+remaining arguments.
+.IP 6. 4
+On exit, the temp prefix is removed unless
+.B \-\-keep
+is given.
+.PP
+The exit code mirrors the invoked process.
+.SH OPTIONS
+.TP
+.BI \-\-from " module"
+Run
+.B python\ \-m\ \fImodule\fR
+instead of looking up the default console-script entry point.
+Useful when the package ships a
+.B __main__.py
+but no registered entry point.
+.TP
+.BI \-\-python " path"
+Path to the Python executable. Defaults to the first
+.B python3
+or
+.B python
+found on
+.B PATH.
+.TP
+.BI \-\-cache\-dir " dir"
+Wheel cache directory. Defaults to
+.BR ~/.cache/bunpyx/wheels/ .
+Pass the same path as
+.B bunpy install
+to share wheels.
+.TP
+.B \-\-no\-cache
+Skip the wheel cache and always fetch from PyPI. The downloaded wheel
+is still written to the cache unless
+.B \-\-cache\-dir
+points nowhere writable.
+.TP
+.B \-\-keep
+Keep the temp prefix after the process exits. Its path is printed to
+stderr so you can inspect what was installed.
+.TP
+.B \-v ", " \-\-version
+Print
+.B bunpyx\ \fIversion\fR
+and exit 0.
+.TP
+.BR \-h ", " \-\-help
+Print a short usage summary and exit 0.
+.SH EXAMPLES
+Run the Black formatter on the current directory:
+.PP
+.nf
+bunpyx black .
+.fi
+.PP
+Run a specific version:
+.PP
+.nf
+bunpyx black@24.10.0 .
+.fi
+.PP
+Run ruff using
+.B \-\-from
+(in case the entry point name differs from the package name):
+.PP
+.nf
+bunpyx --from ruff ruff check .
+.fi
+.PP
+Share the wheel cache with bunpy:
+.PP
+.nf
+bunpyx --cache-dir ~/.cache/bunpy/wheels black .
+.fi
+.SH EXIT STATUS
+.TP
+.B 0
+Invoked process exited 0, or
+.B \-\-help
+/
+.B \-\-version
+was requested.
+.TP
+.B 1
+Package not found, no matching wheel, entry point not found, or
+internal error.
+.TP
+.BI N " (any other value)"
+Exit code of the invoked process.
+.SH NOTES
+On Windows,
+.B bunpyx
+cannot use
+.B exec (2)
+semantics. It starts the entry-point shim as a child process, waits
+for it, and calls
+.B os.Exit
+with the child's exit code. Signal forwarding is not implemented in
+v0.2.4.
+.PP
+bunpyx reuses the same wheel file format and tag selection as
+.B bunpy install.
+A wheel downloaded by bunpyx can be placed in the bunpy wheel cache
+and will be picked up by subsequent
+.B bunpy install
+runs.
+.SH SEE ALSO
+.BR bunpy-install (1),
+.BR bunpy-add (1),
+.BR bunpy-why (1)

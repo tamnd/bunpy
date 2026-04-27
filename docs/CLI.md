@@ -1,7 +1,7 @@
 # CLI reference
 
 bunpy ships as one binary. Subcommands land per-version per the
-roadmap. Today (v0.2.3) the wired surface is `--version` (with
+roadmap. Today (v0.2.4) the wired surface is `--version` (with
 `--short` and `--json`), `--help`, positional `bunpy <file.py>`,
 `bunpy run <file.py>`, `bunpy repl`, `bunpy stdlib`,
 `bunpy pm config`, `bunpy pm info`, `bunpy pm install-wheel`,
@@ -9,6 +9,8 @@ roadmap. Today (v0.2.3) the wired surface is `--version` (with
 `bunpy update`, `bunpy remove`, `bunpy link`, `bunpy unlink`,
 `bunpy patch`, `bunpy why`, `bunpy workspace`, `bunpy audit`,
 `bunpy publish`, `bunpy create`, `bunpy help`, and `bunpy man`.
+The companion binary `bunpyx` runs packages from PyPI without installing
+them permanently.
 This page is the
 long-form reference. Running
 `bunpy help <cmd>` gives the same body inline; `bunpy man <cmd>`
@@ -315,10 +317,48 @@ bunpy create --list             list templates
 
 ### Project scaffolding
 
-- `bunpy create <template>` scaffolds from a template (app, lib,
-  script, workspace). Lands in v0.2.3.
-- `bunpyx <pkg>[@version] [args]` does a one-shot run from PyPI.
-  Lands in v0.2.4.
+`bunpy create <template>` scaffolds from a template (app, lib,
+script, workspace). Lands in v0.2.3.
+
+## bunpyx
+
+`bunpyx` is a companion binary shipped in the same archive as `bunpy`.
+It runs a Python package entry point in a temporary prefix without
+making it a permanent dependency.
+
+```
+bunpyx black .
+bunpyx black@24.10.0 .
+bunpyx --from black black --version
+bunpyx ruff check .
+```
+
+### Execution model
+
+1. Resolve the latest compatible version unless `@version` is given.
+2. Check the wheel cache (`~/.cache/bunpyx/wheels/` by default). Download
+   only on a cache miss.
+3. Unpack the wheel into a temp directory, write console-script shims.
+4. Exec the shim (Unix) or run it as a child process (Windows), then
+   clean up.
+
+The exit code mirrors the invoked process.
+
+### Options
+
+| Flag | Description |
+|---|---|
+| `--from <module>` | run `python -m <module>` instead of the console-script entry point |
+| `--python <path>` | path to Python executable (default: `python3` on PATH) |
+| `--cache-dir <dir>` | wheel cache directory (default: `~/.cache/bunpyx/wheels`) |
+| `--no-cache` | skip the cache; always fetch from PyPI |
+| `--keep` | keep temp prefix after exit; path printed to stderr |
+
+### Windows note
+
+On Windows `bunpyx` cannot use `exec(2)` semantics. It starts the
+entry-point shim as a child process and exits with the child's exit
+code. Signal forwarding is not implemented in v0.2.4.
 
 ### Bundler
 

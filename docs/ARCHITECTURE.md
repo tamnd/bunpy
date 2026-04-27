@@ -396,6 +396,21 @@ state — the user-visible artefact is `./patches/<name>+<version>.patch`,
 which is the input to the resolver-independent reproducible
 install.
 
+v0.2.4 lands `bunpyx`, a companion binary shipped in the same
+platform archive as `bunpy`. `pkg/runenv` creates a temporary install
+prefix: a `site-packages/` subdirectory for wheel contents and a `bin/`
+subdirectory for console-script shims. `Install` unpacks the wheel zip,
+then reads `*.dist-info/entry_points.txt` and writes one shim per
+`[console_scripts]` entry. Shims are short Python scripts
+(`#!/usr/bin/env python3` + `from module import attr; sys.exit(attr())`);
+on Windows a `.cmd` wrapper calls a `.py` helper. `EntryPoint` locates
+the shim in `bin/` and returns its path. `cmd/bunpyx` uses
+`wheel.Pick`+`wheel.HostTags()` for platform selection and resolves via
+`pkg/pypi`; the wheel cache defaults to `~/.cache/bunpyx/wheels/`. On
+Unix the shim is run via `syscall.Exec` so bunpyx is fully replaced
+by the child; on Windows `exec.Command` is used with exit-code
+forwarding. v0.2.x is complete with this rung.
+
 v0.2.3 lands `bunpy create`. `pkg/scaffold` holds four built-in
 templates (app, lib, script, workspace) embedded via
 `//go:embed all:templates` -- the `all:` prefix is required because
