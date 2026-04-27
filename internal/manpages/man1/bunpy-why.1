@@ -1,0 +1,109 @@
+.TH BUNPY-WHY 1 "2026-04-27" "bunpy" "User Commands"
+.SH NAME
+bunpy-why \- print the reverse-deps tree for a pinned package
+.SH SYNOPSIS
+.B bunpy why
+.I pkg
+.RB [ \-\-depth
+.IR N ]
+.RB [ \-\-top ]
+.RB [ \-\-json ]
+.RB [ \-\-lane
+.IR name ]
+.RB [ \-\-cache-dir
+.IR path ]
+.RB [ \-\-manifest
+.IR path ]
+.RB [ \-\-lockfile
+.IR path ]
+.SH DESCRIPTION
+.B bunpy why
+answers
+.RB \(lq why
+is this package in my lockfile?\(rq. It reads
+.B bunpy.lock
+plus the cached wheels' Requires-Dist metadata, builds a forward
+dependency graph, and walks upward from the queried pin to every
+direct project requirement that transitively reaches it.
+.PP
+Each chain terminates at a virtual
+.B @project
+edge tagged with the lane the requirement was declared in
+.RB ( main ", " dev ", " optional:<group> ", " group:<name> ", " peer ).
+.PP
+The result also surfaces overlay state: a linked pin shows
+.B (linked)
+and uses installer
+.BR bunpy-link ;
+a patched pin shows
+.B (patched)
+and uses installer
+.BR bunpy-patch .
+.SH OPTIONS
+.TP
+.BI \-\-depth " N"
+Cap traversal depth. Zero (the default) disables the cap.
+.TP
+.B \-\-top
+Print only the deduped names of the direct project requirements
+that pull
+.I pkg
+in. One name per line. Useful for grep and scripting.
+.TP
+.B \-\-json
+Emit the result as a JSON object with fields
+.IR package ", " version ", " installer ", " linked ", " patched ", " chains .
+.TP
+.BI \-\-lane " name"
+Restrict to chains whose terminal
+.B @project
+edge is in the named lane.
+.TP
+.BI \-\-cache-dir " path"
+Override the wheel cache root used to read Requires-Dist.
+.TP
+.BI \-\-manifest " path"
+Path to
+.BR pyproject.toml .
+Defaults to
+.IR ./pyproject.toml .
+.TP
+.BI \-\-lockfile " path"
+Path to
+.BR bunpy.lock .
+Defaults to
+.IR ./bunpy.lock .
+.SH EXAMPLES
+.PP
+Print the reverse-deps tree for urllib3:
+.PP
+.RS 4
+.EX
+$ bunpy why urllib3
+urllib3 2.2.3
+  via requests 2.32.3 [<3,>=1.21.1]
+    via project requirement (main)
+.EE
+.RE
+.PP
+List the direct dependencies that pull urllib3 in:
+.PP
+.RS 4
+.EX
+$ bunpy why urllib3 --top
+requests
+.EE
+.RE
+.SH EXIT STATUS
+Zero when the package is found in the lockfile and the tree was
+printed. Non-zero on a missing
+.BR bunpy.lock ,
+an unknown package name, or an unreadable cache.
+.SH SEE ALSO
+.BR bunpy-install (1),
+.BR bunpy-add (1),
+.BR bunpy-update (1),
+.BR bunpy-outdated (1),
+.BR bunpy-link (1),
+.BR bunpy-patch (1),
+.BR bunpy (1).

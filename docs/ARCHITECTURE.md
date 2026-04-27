@@ -396,6 +396,28 @@ state — the user-visible artefact is `./patches/<name>+<version>.patch`,
 which is the input to the resolver-independent reproducible
 install.
 
+v0.1.11 lands `bunpy why <pkg>`, the closing rung of the v0.1.x
+package manager. `pkg/why` builds a forward dependency graph
+from `bunpy.lock` plus per-pin Requires-Dist (read out of the
+wheel cache via `wheel.LoadMetadata` / `wheel.ParseMetadata`,
+markers evaluated against `marker.DefaultEnv`), then inverts it.
+`Walk` is a depth-first enumeration of every path from the
+queried pin upward, terminating at a virtual `@project` edge
+tagged with the lane the requirement was declared in. Cycles are
+guarded by per-path visited sets; the same pin can appear in
+multiple chains via different parents (a diamond). Direct-dep
+lane membership comes from the manifest's
+`[project].dependencies`,
+`[project.optional-dependencies]`,
+`[dependency-groups]`, and `[tool.bunpy].peer-dependencies`.
+Overlay state (`bunpy link`, `bunpy patch`) is harvested from
+`[tool.bunpy.links]` and `[tool.bunpy.patches]` so the result
+surfaces `Linked` / `Patched` flags and an `Installer` label
+(`bunpy-link`, `bunpy-patch`) next to the pin in stdout and in
+`--json`. The lockfile schema is unchanged: edges are derived,
+not stored, which keeps v0.1.x lockfiles forward-compatible with
+the rest of the verbs.
+
 ## Module layout
 
 ```

@@ -604,6 +604,76 @@ jobs:
           grep -q 'PATCHED = True' "$work/site-packages/widget/__init__.py"
           test "$(cat "$work/site-packages/widget-1.0.0.dist-info/INSTALLER")" = "bunpy-patch"
 
+      - name: bunpy why smoke (v0.1.11)
+        shell: bash
+        run: |
+          work="$(mktemp -d)"
+          cache="$(mktemp -d)"
+          # Synthesise three METADATA-bearing wheels so the
+          # Requires-Dist scan in `bunpy why` runs against real
+          # bytes.
+          mkdir -p "$cache/wheels/alpha" "$cache/wheels/beta" "$cache/wheels/gamma"
+          python3 - "$cache" <<'PY'
+          import sys, zipfile
+          cache = sys.argv[1]
+          rows = [
+              ("alpha", "1.0.0", "Requires-Dist: gamma>=2.0\n"),
+              ("beta", "1.0.0", "Requires-Dist: gamma>=2.1\n"),
+              ("gamma", "2.2.3", ""),
+          ]
+          for n, v, r in rows:
+              path = f"{cache}/wheels/{n}/{n}-{v}-py3-none-any.whl"
+              with zipfile.ZipFile(path, "w") as z:
+                  z.writestr(f"{n}-{v}.dist-info/METADATA",
+                             f"Metadata-Version: 2.1\nName: {n}\nVersion: {v}\n{r}")
+          PY
+          cat > "$work/pyproject.toml" <<'EOF'
+          [project]
+          name = "demo"
+          version = "0.1.0"
+          dependencies = ["alpha>=1.0"]
+
+          [project.optional-dependencies]
+          tracing = ["beta>=1.0"]
+          EOF
+          cat > "$work/bunpy.lock" <<'EOF'
+          # bunpy.lock
+          version = 1
+          generated = "2026-04-27T10:00:00Z"
+          content-hash = "sha256:0000"
+
+          [[package]]
+          name = "alpha"
+          version = "1.0.0"
+          filename = "alpha-1.0.0-py3-none-any.whl"
+          url = "https://files.example.com/alpha-1.0.0-py3-none-any.whl"
+          hash = "sha256:aaaa"
+
+          [[package]]
+          name = "beta"
+          version = "1.0.0"
+          filename = "beta-1.0.0-py3-none-any.whl"
+          url = "https://files.example.com/beta-1.0.0-py3-none-any.whl"
+          hash = "sha256:bbbb"
+          lanes = ["optional:tracing"]
+
+          [[package]]
+          name = "gamma"
+          version = "2.2.3"
+          filename = "gamma-2.2.3-py3-none-any.whl"
+          url = "https://files.example.com/gamma-2.2.3-py3-none-any.whl"
+          hash = "sha256:cccc"
+          EOF
+          out="$( cd "$work" && "$GITHUB_WORKSPACE/bunpy" why gamma --cache-dir "$cache" )"
+          echo "$out" | grep -q 'gamma 2.2.3'
+          echo "$out" | grep -q 'via alpha 1.0.0'
+          echo "$out" | grep -q 'via beta 1.0.0'
+          echo "$out" | grep -q 'project requirement (main)'
+          echo "$out" | grep -q 'project requirement (optional:tracing)'
+          top="$( cd "$work" && "$GITHUB_WORKSPACE/bunpy" why gamma --top --cache-dir "$cache" )"
+          test "$top" = "$(printf 'alpha\nbeta')"
+          ( cd "$work" && "$GITHUB_WORKSPACE/bunpy" why ghost --cache-dir "$cache" ) && exit 1 || true
+
       - name: bunpy hello.py
         run: |
           echo 'x = 1' > hello.py

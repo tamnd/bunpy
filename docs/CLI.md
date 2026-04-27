@@ -1,13 +1,13 @@
 # CLI reference
 
 bunpy ships as one binary. Subcommands land per-version per the
-roadmap. Today (v0.1.10) the wired surface is `--version` (with
+roadmap. Today (v0.1.11) the wired surface is `--version` (with
 `--short` and `--json`), `--help`, positional `bunpy <file.py>`,
 `bunpy run <file.py>`, `bunpy repl`, `bunpy stdlib`,
 `bunpy pm config`, `bunpy pm info`, `bunpy pm install-wheel`,
 `bunpy pm lock`, `bunpy add`, `bunpy install`, `bunpy outdated`,
 `bunpy update`, `bunpy remove`, `bunpy link`, `bunpy unlink`,
-`bunpy patch`, `bunpy help`, and `bunpy man`.
+`bunpy patch`, `bunpy why`, `bunpy help`, and `bunpy man`.
 This page is the
 long-form reference. Running
 `bunpy help <cmd>` gives the same body inline; `bunpy man <cmd>`
@@ -221,14 +221,31 @@ pin. Flags: `--commit`, `--list`, `--out <path>`, `--no-write`,
 packages cannot be patched: edit the source directly. `bunpy
 install --no-patches` opts out for emergency recovery.
 
+`bunpy why <pkg>` (v0.1.11) prints the reverse-deps tree for a
+pinned package: the chain of intermediate pins that pull `<pkg>`
+in, terminating at the project's direct requirements. The graph
+is built from `bunpy.lock` plus each cached wheel's
+Requires-Dist (markers evaluated against the host environment),
+so the output reflects what would actually install on this box.
+Each chain ends at a virtual `@project` edge tagged with the
+lane that declared the requirement (`main`, `dev`,
+`optional:<group>`, `group:<name>`, `peer`). Flags:
+`--depth <N>` caps traversal; `--top` collapses to just the
+direct-req names (one per line); `--json` emits a structured
+result with `package`, `version`, `installer`, `linked`,
+`patched`, and `chains`; `--lane <name>` restricts to one lane;
+`--cache-dir <path>` overrides the wheel cache root;
+`--manifest <path>` and `--lockfile <path>` override the input
+files. Linked and patched pins surface their state in the
+header (`(linked)`, `(patched)`) and in the JSON `installer`
+field.
+
 The rest of the package-manager surface is aspirational and
-lands per the v0.1.x ladder in `docs/ROADMAP.md`:
+lands per the v0.2.x ladder in `docs/ROADMAP.md`:
 
 - `bunpy audit [--fix]` checks for security advisories.
 - `bunpy publish` builds an sdist plus a wheel and uploads them
   to PyPI.
-- `bunpy why <pkg>` prints a reverse-deps tree explaining why a
-  package is in the lockfile.
 - `bunpy pm cache rm` clears on-disk caches.
 - `bunpy pm ls` lists installed packages.
 - `bunpy pm hash` prints the lockfile content hash.

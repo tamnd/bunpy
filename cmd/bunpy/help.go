@@ -536,6 +536,43 @@ directly. ` + "`bunpy patch <linked-pkg>`" + ` exits with a clear
 error.
 `,
 	},
+	"why": {
+		Name:    "why",
+		Summary: "Print the reverse-deps tree for a pin in bunpy.lock",
+		Body: `bunpy why: print the reverse-deps tree for a pinned package.
+
+USAGE
+  bunpy why <pkg>                  tree from <pkg> upward to project requirements
+  bunpy why <pkg> --depth <N>      cap traversal depth (0 = unlimited)
+  bunpy why <pkg> --top            print only the direct project requirements
+                                   that pull <pkg> in (one name per line)
+  bunpy why <pkg> --json           machine-readable tree
+  bunpy why <pkg> --lane <name>    restrict to chains in one lane
+  bunpy why <pkg> --cache-dir <p>  wheel cache root (for Requires-Dist lookup)
+  bunpy why <pkg> --manifest <p>   pyproject.toml path (default ./pyproject.toml)
+  bunpy why <pkg> --lockfile <p>   bunpy.lock path (default ./bunpy.lock)
+
+` + "`bunpy why`" + ` reads ` + "`bunpy.lock`" + ` and the cached
+wheels' Requires-Dist metadata to build a forward dependency
+graph, then walks upward from the queried pin to every direct
+project requirement that transitively reaches it. Each chain
+terminates at a virtual ` + "`@project`" + ` edge tagged with the
+lane it was declared in (` + "`main`" + `, ` + "`dev`" + `,
+` + "`optional:<group>`" + `, ` + "`group:<name>`" + `, ` + "`peer`" + `).
+
+The default output indents each chain by depth and labels every
+parent edge with its name, version, and the spec it declared on
+the child. ` + "`--top`" + ` collapses to just the direct-req names
+(useful for grep/scripting). ` + "`--json`" + ` emits the full
+` + "`Result`" + ` shape (package, version, installer, linked,
+patched, chains).
+
+The result also surfaces overlay state: a linked pin shows
+` + "`(linked)`" + ` next to the package name and uses installer
+` + "`bunpy-link`" + `; a patched pin shows ` + "`(patched)`" + `
+and uses installer ` + "`bunpy-patch`" + `.
+`,
+	},
 	"man": {
 		Name:    "man",
 		Summary: "Print or install the bundled manpages",
