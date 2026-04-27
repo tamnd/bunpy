@@ -1,0 +1,5 @@
+# Test fixtures and run.sh must keep LF on every platform: the
+# end-to-end harness compares bunpy's stdout (LF) against the
+# expected files byte-for-byte, and CRLF on Windows breaks that.
+tests/** text eol=lf
+*.sh text eol=lf
