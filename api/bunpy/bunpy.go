@@ -22,7 +22,7 @@ import (
 )
 
 // Version is baked in by the bunpy build pipeline.
-const Version = "0.5.0"
+const Version = "0.4.11"
 
 // Modules returns the NativeModules map for the current v0.3.1 surface.
 // Later rungs extend this map by adding more entries.
@@ -61,6 +61,7 @@ func InjectGlobals(i *goipyVM.Interp) {
 			i.Builtins.SetStr(name, v)
 		}
 	}
+	InjectTimerGlobals(i)
 }
 
 // BuildBunpy builds the top-level `bunpy` module. It contains sub-module
