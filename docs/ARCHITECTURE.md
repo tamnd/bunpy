@@ -396,6 +396,18 @@ state — the user-visible artefact is `./patches/<name>+<version>.patch`,
 which is the input to the resolver-independent reproducible
 install.
 
+v0.3.1 injects web-standard globals into every script's builtins.
+`InjectGlobals(i)` in `api/bunpy/bunpy.go` is called from `runtime/run.go`
+immediately after `goipyVM.New()`. It builds the `bunpy._fetch` module and
+copies five symbols -- `fetch`, `URL`, `Request`, `Response`, `Headers` --
+into `i.Builtins`, so Python scripts can call them without any `import`.
+`fetch` uses `net/http.DefaultClient` with full keep-alive and redirect
+support. `URL` parses via `net/url` and exposes the WHATWG URL API
+(protocol, hostname, port, pathname, search, hash, origin). `Response`
+carries `status`, `ok`, `headers`, and `.text()` / `.bytes()` / `.json()`
+methods. `jsonToObject` converts `encoding/json` decoded values to goipy
+object types (Dict, List, Str, Int, Float, Bool, None).
+
 v0.3.0 opens the v0.3.x series. The key architectural change is a
 `NativeModules map[string]func(*Interp) *object.Module` field added to
 `goipy.Interp`. `builtinModule` checks the map before the built-in

@@ -4,11 +4,16 @@
 // *vm.Interp. The map returned by Modules() is assigned to
 // interp.NativeModules before the interpreter runs user code.
 //
+// InjectGlobals injects web-standard globals (fetch, URL, Request,
+// Response) directly into interp.Builtins so they are available without
+// any import statement.
+//
 // Sub-module layout:
 //
-//	bunpy            -- top-level namespace (base64, gzip, version)
-//	bunpy.base64     -- bunpy.base64.encode / .decode
-//	bunpy.gzip       -- bunpy.gzip.compress / .decompress
+//	bunpy              -- top-level namespace (base64, gzip, version)
+//	bunpy.base64       -- bunpy.base64.encode / .decode
+//	bunpy.gzip         -- bunpy.gzip.compress / .decompress
+//	bunpy._fetch       -- internal module backing web globals
 package bunpy
 
 import (
@@ -17,16 +22,28 @@ import (
 )
 
 // Version is baked in by the bunpy build pipeline.
-const Version = "0.3.0"
+const Version = "0.3.1"
 
-// Modules returns the NativeModules map for the current v0.3.0 surface:
-// bunpy, bunpy.base64, bunpy.gzip.
+// Modules returns the NativeModules map for the current v0.3.1 surface.
 // Later rungs extend this map by adding more entries.
 func Modules() map[string]func(*goipyVM.Interp) *goipyObject.Module {
 	return map[string]func(*goipyVM.Interp) *goipyObject.Module{
 		"bunpy":        BuildBunpy,
 		"bunpy.base64": BuildBase64,
 		"bunpy.gzip":   BuildGzip,
+		"bunpy._fetch": BuildFetch,
+	}
+}
+
+// InjectGlobals adds web-standard globals to interp.Builtins so Python
+// scripts can call fetch(), URL(), Request(), and Response() without an
+// import statement.
+func InjectGlobals(i *goipyVM.Interp) {
+	fetchMod := BuildFetch(i)
+	for _, name := range []string{"fetch", "URL", "Request", "Response", "Headers"} {
+		if v, ok := fetchMod.Dict.GetStr(name); ok {
+			i.Builtins.SetStr(name, v)
+		}
 	}
 }
 

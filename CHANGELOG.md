@@ -9,6 +9,10 @@ changes.
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-04-27
+
+See `changelog/v0.3.1.md` for the full entry.
+
 ## [0.3.0] - 2026-04-27
 
 See `changelog/v0.3.0.md` for the full entry.

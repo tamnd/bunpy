@@ -59,6 +59,7 @@ func Run(filename string, source []byte, args []string, stdout, stderr io.Writer
 	interp.Stdout = stdout
 	interp.Stderr = stderr
 	interp.NativeModules = bunpyAPI.Modules()
+	bunpyAPI.InjectGlobals(interp)
 	if abs, aerr := filepath.Abs(filepath.Dir(filename)); aerr == nil {
 		interp.SearchPath = []string{abs}
 	}

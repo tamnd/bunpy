@@ -52,7 +52,7 @@ harness goes from non-zero to zero in the same PR.
 | Version | Title                                | Status     |
 |---------|--------------------------------------|------------|
 | v0.3.0  | NativeModules hook + bunpy.base64 + bunpy.gzip | shipped |
-| v0.3.1  | fetch, URL, Request, Response globals | planned   |
+| v0.3.1  | fetch, URL, Request, Response globals | shipped   |
 | v0.3.2  | bunpy.serve HTTP server              | planned    |
 | v0.3.3  | bunpy.file, bunpy.write, bunpy.read  | planned    |
 | v0.3.4  | bunpy.shell, bunpy.spawn, bunpy.dollar | planned  |
