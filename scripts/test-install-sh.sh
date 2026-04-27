@@ -14,9 +14,23 @@ esac
 tmpdir="$(mktemp -d)"
 trap 'rm -rf "$tmpdir"' EXIT
 
-if ! BUNPY_INSTALL_DIR="$tmpdir" bash "$ROOT/install.sh" >/dev/null 2>"$tmpdir/log"; then
+# Pin the smoke to the most recent tag in this checkout. Avoids the
+# unauthenticated GitHub API "latest" lookup, which 403s on shared CI
+# IPs. We only care that the installer round-trips end-to-end; which
+# tag we hit does not matter.
+version="${BUNPY_VERSION:-}"
+if [ -z "$version" ]; then
+  version="$(git -C "$ROOT" tag --list 'v*.*.*' --sort=-v:refname | head -n1)"
+fi
+if [ -z "$version" ]; then
+  echo "test-install-sh: no v*.*.* tag found; skipping" >&2
+  exit 0
+fi
+
+if ! BUNPY_INSTALL_DIR="$tmpdir" BUNPY_VERSION="$version" \
+    bash "$ROOT/install.sh" >/dev/null 2>"$tmpdir/log"; then
   cat "$tmpdir/log" >&2
-  echo "test-install-sh: installer failed" >&2
+  echo "test-install-sh: installer failed (version=$version)" >&2
   exit 1
 fi
 
