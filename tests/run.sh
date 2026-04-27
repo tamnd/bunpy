@@ -139,6 +139,37 @@ for toml in tests/fixtures/v01*/*.pyproject.toml; do
   run_pm_config_fixture "$toml"
 done
 
+run_pm_info_fixture() {
+  local fixroot="$1"
+  local pkg="$2"
+  local expected="$3"
+  ran=$((ran + 1))
+  local got rc
+  got="$(BUNPY_PYPI_FIXTURES="$fixroot" BUNPY_CACHE_DIR="$(mktemp -d)" "$bin" pm info "$pkg" 2>&1)" || rc=$?
+  rc="${rc:-0}"
+  local want
+  want="$(cat "$expected")"
+  if [ "$rc" -ne 0 ]; then
+    echo "FAIL: pm-info    $pkg exited $rc"
+    echo "stderr+stdout:"
+    echo "$got"
+    fail=$((fail + 1))
+    return 0
+  fi
+  if [ "$got" != "$want" ]; then
+    echo "FAIL: pm-info    $pkg stdout mismatch"
+    echo "  got:  $(printf '%s' "$got" | head -c 400)"
+    echo "  want: $(printf '%s' "$want" | head -c 400)"
+    fail=$((fail + 1))
+    return 0
+  fi
+  echo "ok:   pm-info    $pkg"
+}
+
+if [ -d tests/fixtures/v011/index ]; then
+  run_pm_info_fixture tests/fixtures/v011/index widget tests/fixtures/v011/expected_widget.json
+fi
+
 echo "---"
 echo "ran $ran fixtures, $fail failed"
 exit "$fail"

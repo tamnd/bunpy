@@ -1,11 +1,11 @@
 # CLI reference
 
 bunpy ships as one binary. Subcommands land per-version per the
-roadmap. Today (v0.1.0) the wired surface is `--version` (with
+roadmap. Today (v0.1.1) the wired surface is `--version` (with
 `--short` and `--json`), `--help`, positional `bunpy <file.py>`,
 `bunpy run <file.py>`, `bunpy repl`, `bunpy stdlib`,
-`bunpy pm config`, `bunpy help`, and `bunpy man`. This page is
-the long-form reference. Running
+`bunpy pm config`, `bunpy pm info`, `bunpy help`, and
+`bunpy man`. This page is the long-form reference. Running
 `bunpy help <cmd>` gives the same body inline; `bunpy man <cmd>`
 prints the bundled roff manpage. Installing the binary itself:
 see `docs/INSTALL.md`.
@@ -57,6 +57,17 @@ The `pm` tree groups low-level plumbing; porcelain commands
   lose fidelity). Strict mode rejects a missing `[project]` table,
   a missing or PEP 503-invalid `name`, and any
   `project.dynamic` entry that is also set literally.
+- `bunpy pm info <package>` fetches a project's PEP 691 simple
+  index page and prints the parsed metadata as JSON: `name`
+  (PEP 503 normalised), `versions` (sorted), `files` (one entry
+  per release artefact with filename, url, hashes,
+  requires_python, yanked flag, kind), and `meta` (api_version,
+  last_serial, etag). Responses are ETag-cached on disk under
+  the bunpy cache root; a second call uses `If-None-Match` so a
+  304 turns into a cache hit. Flags: `--no-cache`, `--index
+  <url>`, `--cache-dir <path>`. Tests pin every byte of every
+  PyPI exchange via `BUNPY_PYPI_FIXTURES`; CI never reaches the
+  live index.
 
 The rest of the package-manager surface is aspirational and
 lands per the v0.1.x ladder in `docs/ROADMAP.md`:

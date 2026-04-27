@@ -1,0 +1,78 @@
+.TH BUNPY-PM-INFO 1 "2026-04-27" "bunpy" "User Commands"
+.SH NAME
+bunpy-pm-info \- print PEP 691 project metadata as JSON
+.SH SYNOPSIS
+.B bunpy pm info
+.I package
+.RB [ --no-cache ]
+.RB [ --index
+.IR url ]
+.RB [ --cache-dir
+.IR path ]
+.SH DESCRIPTION
+Fetches the PEP 691 simple-index page for
+.I package
+from the configured index (default
+.IR https://pypi.org/simple/ ),
+parses every release artefact, and prints a JSON object to
+stdout.
+.PP
+The output has these top-level keys:
+.TP
+.B name
+PEP 503 normalised project name.
+.TP
+.B versions
+Sorted unique versions parsed from the file list.
+.TP
+.B files
+One entry per release artefact with
+.BR filename ,
+.BR url ,
+.BR hashes ,
+.BR requires_python ,
+.BR yanked ,
+.BR yanked_reason ,
+.BR version ,
+and
+.BR kind
+.RB ( wheel ", " sdist ", " unknown ).
+.TP
+.B meta
+The page's
+.BR api_version ", " last_serial ", "
+and the response
+.B etag
+when present.
+.SH OPTIONS
+.TP
+.B --no-cache
+Skip the on-disk cache for this call.
+.TP
+.BI --index " url"
+Override the index URL.
+.TP
+.BI --cache-dir " path"
+Override the cache directory.
+.SH CACHING
+Responses are cached at
+.IR ${XDG_CACHE_HOME}/bunpy/index/<name>/page.json ,
+with a sibling
+.B etag
+file for revalidation. A second call issues an
+.B If-None-Match
+request and a 304 turns into a cache hit.
+.SH ENVIRONMENT
+.TP
+.B BUNPY_PYPI_FIXTURES
+When set, swaps the live transport for a fixture transport
+rooted at the named directory. Test-only.
+.TP
+.B BUNPY_CACHE_DIR
+Overrides the cache root.
+.SH EXIT STATUS
+Zero on a successful fetch and parse. Non-zero on a network
+error, a 404, or a parse failure.
+.SH SEE ALSO
+.BR bunpy-pm (1),
+.BR bunpy (1).

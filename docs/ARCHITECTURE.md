@@ -162,10 +162,37 @@ the same `manifest.Manifest` shape: the resolver reads
 `bunpy add` writes back via `Project.Raw`. One parser, many
 callers.
 
+## PyPI client
+
+`pkg/pypi/` is the PEP 691 simple-index client. It consumes a
+`httpkit.RoundTripper` (a tiny interface around `*http.Client`)
+and, optionally, a `cache.Index`. Tests substitute the real
+transport with `httpkit.FixturesFS(root)`, which serves canned
+responses from a directory keyed by URL host plus path. The
+binary surfaces this hook through `BUNPY_PYPI_FIXTURES` so
+end-to-end fixtures and the `live-pypi` workflow share the same
+client; only the transport differs. CI never reaches PyPI in
+unit tests.
+
+The cache is plain disk: `${XDG_CACHE_HOME}/bunpy/index/<name>/page.json`
+plus a sibling `etag` file, written atomically via tempfile +
+rename. `Client.Get` issues `If-None-Match` when an ETag is on
+disk; a 304 returns the cached body parsed identically. PEP 503
+name normalisation runs everywhere a name touches the network
+or the cache, so `Foo_Bar`, `foo-bar`, and `FOO.BAR` all share a
+single cache slot.
+
+`bunpy pm info <pkg>` is the porcelain on top: it builds a
+default client, swaps in the fixture transport when the env hook
+is set, fetches the page, and prints the parsed `pypi.Project`
+as JSON. Later v0.1.x rungs (`pm install-wheel`, `bunpy add`,
+the resolver) consume the same `Project` shape.
+
 ## Module layout
 
 ```
 cmd/bunpy/         CLI entry: subcommand router + per-command files
+internal/httpkit/  RoundTripper, per-host limiter, fixture transport
 internal/manpages/ embedded roff manpages (man1/*.1) + Go accessors
 internal/repl/     interactive line-driver shell (Loop, history)
 runtime/           embeds goipy.VM; module loader; hot reload; env

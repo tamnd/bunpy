@@ -1,0 +1,31 @@
+{
+  "name": "widget",
+  "files": [
+    {
+      "filename": "widget-1.0.0-py3-none-any.whl",
+      "url": "https://files.example/widget-1.0.0-py3-none-any.whl",
+      "hashes": {
+        "sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "requires_python": ">=3.10",
+      "version": "1.0.0",
+      "kind": "wheel"
+    },
+    {
+      "filename": "widget-1.0.0.tar.gz",
+      "url": "https://files.example/widget-1.0.0.tar.gz",
+      "hashes": {
+        "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "version": "1.0.0",
+      "kind": "sdist"
+    }
+  ],
+  "versions": [
+    "1.0.0"
+  ],
+  "meta": {
+    "api_version": "1.1",
+    "last_serial": 1
+  }
+}

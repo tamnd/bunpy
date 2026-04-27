@@ -77,15 +77,43 @@ The list is baked at build time from goipy's embedded stdlib.
 		Body: `bunpy pm: package manager plumbing.
 
 USAGE
-  bunpy pm config [path]   print parsed pyproject.toml as JSON
+  bunpy pm config [path]      print parsed pyproject.toml as JSON
+  bunpy pm info <package>     print PEP 691 project metadata as JSON
 
 The ` + "`pm`" + ` tree groups the low-level package-manager verbs.
 Porcelain commands (` + "`add`" + `, ` + "`install`" + `, ` + "`remove`" + `, ` + "`update`" + `,
 ` + "`outdated`" + `, ` + "`why`" + `, ...) land per docs/ROADMAP.md and call into
 the same machinery.
 
-v0.1.0 wires only ` + "`pm config`" + `: a JSON dump of the parsed
-pyproject.toml. No network, no installs.
+v0.1.1 wires ` + "`pm config`" + ` (parser) and ` + "`pm info`" + ` (PyPI
+client). No installs and no resolution yet; those land in
+v0.1.2 and v0.1.5 respectively.
+`,
+	},
+	"pm-info": {
+		Name:    "pm-info",
+		Summary: "Print PEP 691 project metadata as JSON",
+		Body: `bunpy pm info: fetch a PEP 691 project page and print it as JSON.
+
+USAGE
+  bunpy pm info <package>
+  bunpy pm info <package> --no-cache
+  bunpy pm info <package> --index <url>
+  bunpy pm info <package> --cache-dir <path>
+
+The default index is ` + "`https://pypi.org/simple/`" + `. Responses are
+ETag-cached on disk under ` + "`${XDG_CACHE_HOME}/bunpy/index/`" + ` (or
+the macOS / Windows equivalent); a second invocation issues an
+` + "`If-None-Match`" + ` request and a 304 turns into a cache hit.
+
+Output is a JSON object with ` + "`name`" + ` (PEP 503 normalised),
+` + "`versions`" + ` (sorted), ` + "`files`" + ` (one entry per release artefact
+with filename, url, hashes, requires_python, yanked flag, kind),
+and ` + "`meta`" + ` (api_version, last_serial, etag).
+
+Tests can pin every byte of every PyPI exchange by setting
+` + "`BUNPY_PYPI_FIXTURES`" + ` to a directory tree. The CI smoke and
+the v0.1.x test corpus both use this hook to stay offline.
 `,
 	},
 	"pm-config": {

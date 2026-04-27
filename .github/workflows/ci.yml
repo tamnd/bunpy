@@ -182,6 +182,24 @@ jobs:
             echo "want non-zero exit on missing file"; exit 1
           fi
 
+      - name: bunpy pm info smoke
+        shell: bash
+        run: |
+          fix="$(mktemp -d)/fixtures"
+          mkdir -p "$fix/pypi.org/simple/demo"
+          cat > "$fix/pypi.org/simple/demo/index.json" <<'EOF'
+          {"name":"demo","files":[{"filename":"demo-1.0-py3-none-any.whl","url":"https://x/demo-1.0-py3-none-any.whl","hashes":{"sha256":"abc"}}],"meta":{"api-version":"1.1"}}
+          EOF
+          out="$(BUNPY_PYPI_FIXTURES="$fix" BUNPY_CACHE_DIR="$(mktemp -d)" ./bunpy pm info demo)"
+          echo "$out"
+          case "$out" in
+            *demo*1.0*wheel*) ;;
+            *) echo "want demo + 1.0 + wheel, got: $out"; exit 1 ;;
+          esac
+          if BUNPY_PYPI_FIXTURES="$fix" BUNPY_CACHE_DIR="$(mktemp -d)" ./bunpy pm info nopkg-xyzzy 2>/dev/null; then
+            echo "want non-zero exit on 404"; exit 1
+          fi
+
       - name: bunpy hello.py
         run: |
           echo 'x = 1' > hello.py

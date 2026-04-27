@@ -159,6 +159,109 @@ func TestPmHelp(t *testing.T) {
 	}
 }
 
+func writeFixturePypi(t *testing.T, name, body string) string {
+	t.Helper()
+	root := t.TempDir()
+	dir := filepath.Join(root, "pypi.org", "simple", name)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "index.json"), []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return root
+}
+
+func TestPmInfoFromFixture(t *testing.T) {
+	root := writeFixturePypi(t, "demo", `{"name":"demo","files":[{"filename":"demo-1.0-py3-none-any.whl","url":"https://x/demo-1.0-py3-none-any.whl","hashes":{"sha256":"abc"}}],"meta":{"api-version":"1.1"}}`)
+	t.Setenv("BUNPY_PYPI_FIXTURES", root)
+	t.Setenv("BUNPY_CACHE_DIR", t.TempDir())
+	var stdout, stderr bytes.Buffer
+	code, err := run([]string{"pm", "info", "demo"}, &stdout, &stderr)
+	if err != nil {
+		t.Fatalf("bunpy pm info: %v\nstderr:\n%s", err, stderr.String())
+	}
+	if code != 0 {
+		t.Fatalf("code %d, want 0", code)
+	}
+	var got map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &got); err != nil {
+		t.Fatalf("invalid JSON: %v\n%s", err, stdout.String())
+	}
+	if got["name"] != "demo" {
+		t.Errorf("name: got %v", got["name"])
+	}
+	versions, ok := got["versions"].([]any)
+	if !ok || len(versions) != 1 || versions[0] != "1.0" {
+		t.Errorf("versions: got %v", got["versions"])
+	}
+}
+
+func TestPmInfoMissing404(t *testing.T) {
+	t.Setenv("BUNPY_PYPI_FIXTURES", t.TempDir())
+	t.Setenv("BUNPY_CACHE_DIR", t.TempDir())
+	var stdout, stderr bytes.Buffer
+	code, err := run([]string{"pm", "info", "nopkg-xyzzy"}, &stdout, &stderr)
+	if err == nil {
+		t.Fatal("want error on 404")
+	}
+	if code == 0 {
+		t.Error("want non-zero exit")
+	}
+}
+
+func TestPmInfoNoArg(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	code, err := run([]string{"pm", "info"}, &stdout, &stderr)
+	if err == nil {
+		t.Fatal("want error on missing package arg")
+	}
+	if code == 0 {
+		t.Error("want non-zero exit")
+	}
+}
+
+func TestPmInfoUnknownFlag(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	code, err := run([]string{"pm", "info", "--frobnicate", "demo"}, &stdout, &stderr)
+	if err == nil {
+		t.Fatal("want error on unknown flag")
+	}
+	if code == 0 {
+		t.Error("want non-zero exit")
+	}
+}
+
+func TestPmInfoIndexFlag(t *testing.T) {
+	root := writeFixturePypi(t, "thing", `{"name":"thing","files":[],"meta":{"api-version":"1.1"}}`)
+	t.Setenv("BUNPY_PYPI_FIXTURES", root)
+	t.Setenv("BUNPY_CACHE_DIR", t.TempDir())
+	var stdout, stderr bytes.Buffer
+	code, err := run([]string{"pm", "info", "thing", "--index", "https://pypi.org/simple/"}, &stdout, &stderr)
+	if err != nil {
+		t.Fatalf("bunpy pm info --index: %v\nstderr:\n%s", err, stderr.String())
+	}
+	if code != 0 {
+		t.Fatalf("code %d, want 0", code)
+	}
+}
+
+func TestPmInfoCacheRoundTrip(t *testing.T) {
+	root := writeFixturePypi(t, "rt", `{"name":"rt","files":[],"meta":{"api-version":"1.1"}}`)
+	cacheDir := t.TempDir()
+	t.Setenv("BUNPY_PYPI_FIXTURES", root)
+	for i := 0; i < 2; i++ {
+		var stdout, stderr bytes.Buffer
+		code, err := run([]string{"pm", "info", "rt", "--cache-dir", cacheDir}, &stdout, &stderr)
+		if err != nil {
+			t.Fatalf("pass %d: %v\nstderr:\n%s", i, err, stderr.String())
+		}
+		if code != 0 {
+			t.Fatalf("pass %d: code %d", i, code)
+		}
+	}
+}
+
 func TestPmConfigHelp(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 	code, err := run([]string{"pm", "config", "--help"}, &stdout, &stderr)

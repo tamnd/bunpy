@@ -25,7 +25,7 @@ harness goes from non-zero to zero in the same PR.
 | Version | Title                                | Status     |
 |---------|--------------------------------------|------------|
 | v0.1.0  | pyproject.toml reader (`bunpy pm config`) | shipped |
-| v0.1.1  | PyPI client (PEP 691 simple JSON)    | next       |
+| v0.1.1  | PyPI client (`bunpy pm info`)        | shipped    |
 | v0.1.2  | wheel installer (PEP 427)            | planned    |
 | v0.1.3  | `bunpy add` (single package, naive)  | planned    |
 | v0.1.4  | `bunpy.lock` writer plus reader      | planned    |
