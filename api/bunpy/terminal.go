@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/tamnd/bunpy/v1/internal/markdown"
 	goipyObject "github.com/tamnd/goipy/object"
 	goipyVM "github.com/tamnd/goipy/vm"
 )
@@ -138,6 +139,21 @@ func BuildTerminal(_ *goipyVM.Interp) *goipyObject.Module {
 			},
 		})
 	}
+
+	// markdown(text) — render Markdown as ANSI terminal text.
+	mod.Dict.SetStr("markdown", &goipyObject.BuiltinFunc{
+		Name: "markdown",
+		Call: func(_ any, args []goipyObject.Object, _ *goipyObject.Dict) (goipyObject.Object, error) {
+			if len(args) < 1 {
+				return nil, fmt.Errorf("terminal.markdown() requires text")
+			}
+			s, ok := args[0].(*goipyObject.Str)
+			if !ok {
+				return nil, fmt.Errorf("terminal.markdown(): text must be str")
+			}
+			return &goipyObject.Str{V: markdown.Render(s.V)}, nil
+		},
+	})
 
 	return mod
 }

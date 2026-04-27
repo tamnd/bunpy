@@ -78,3 +78,17 @@ func Run(filename string, source []byte, args []string, stdout, stderr io.Writer
 
 	return 0, nil
 }
+
+// CompileToStream compiles source and returns the marshalled IR bytes.
+// Used by --inspect to report IR size and for bytecache.
+func CompileToStream(filename string, source []byte) ([]byte, error) {
+	co, err := gocopyCompiler.Compile(source, gocopyCompiler.Options{Filename: filename})
+	if err != nil {
+		return nil, fmt.Errorf("compile %s: %w", filename, err)
+	}
+	stream, err := gocopyMarshal.Marshal(co)
+	if err != nil {
+		return nil, fmt.Errorf("marshal %s: %w", filename, err)
+	}
+	return stream, nil
+}

@@ -7,13 +7,19 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/tamnd/bunpy/v1/internal/bundler"
+	"github.com/tamnd/bunpy/v1/internal/dotenv"
 	"github.com/tamnd/bunpy/v1/runtime"
 )
 
@@ -74,6 +80,10 @@ func run(args []string, stdout, stderr io.Writer) (int, error) {
 		return testSubcommand(args[1:], stdout, stderr)
 	case "build":
 		return buildSubcommand(args[1:], stdout, stderr)
+	case "fmt":
+		return fmtSubcommand(args[1:], stdout, stderr)
+	case "check":
+		return checkSubcommand(args[1:], stdout, stderr)
 	case "audit":
 		return auditSubcommand(args[1:], stdout, stderr)
 	case "publish":
@@ -151,18 +161,38 @@ func runSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 		return 1, fmt.Errorf("bunpy run requires a script argument")
 	}
 
-	// Parse --cache / --no-cache before the file argument.
-	useCache := false
-	var rest []string
-	for _, a := range args {
-		switch a {
-		case "--cache":
+	// Parse run-specific flags before the file argument.
+	var (
+		useCache  bool
+		watchMode bool
+		cpython   bool
+		inspect   bool
+		envFiles  []string
+		rest      []string
+	)
+	for i := 0; i < len(args); i++ {
+		a := args[i]
+		switch {
+		case a == "--cache":
 			useCache = true
-		case "--no-cache", "--cache=false":
+		case a == "--no-cache" || a == "--cache=false":
 			useCache = false
-		case "-h", "--help":
+		case a == "--watch":
+			watchMode = true
+		case a == "--cpython":
+			cpython = true
+		case a == "--inspect":
+			inspect = true
+		case a == "--env-file":
+			if i+1 < len(args) {
+				i++
+				envFiles = append(envFiles, args[i])
+			}
+		case strings.HasPrefix(a, "--env-file="):
+			envFiles = append(envFiles, strings.TrimPrefix(a, "--env-file="))
+		case a == "-h" || a == "--help":
 			return printHelp("run", stdout, stderr)
-		case "-":
+		case a == "-":
 			return 1, fmt.Errorf("bunpy run -: stdin scripts not yet wired")
 		default:
 			rest = append(rest, a)
@@ -173,14 +203,31 @@ func runSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 		return 1, fmt.Errorf("bunpy run requires a script argument")
 	}
 
+	// Load .env files.
+	if err := dotenv.LoadFiles(envFiles); err != nil {
+		return 1, fmt.Errorf("run: env-file: %w", err)
+	}
+
 	if strings.HasSuffix(rest[0], ".pyz") {
 		return runPYZ(rest[0], rest[1:])
 	}
 	if !isFilePath(rest[0]) {
 		return 1, fmt.Errorf("bunpy run %q: only file paths ending in .py or .pyz are supported", rest[0])
 	}
-	_ = useCache // bytecache integration wired in runtime package
-	return runFile(rest[0], rest[1:], stdout, stderr)
+
+	path, scriptArgs := rest[0], rest[1:]
+	_ = useCache
+
+	if cpython {
+		return runWithCPython(path, scriptArgs, stderr)
+	}
+	if inspect {
+		return runWithInspect(path, scriptArgs, stdout, stderr)
+	}
+	if watchMode {
+		return runWithWatch(path, scriptArgs, stdout, stderr)
+	}
+	return runFile(path, scriptArgs, stdout, stderr)
 }
 
 func runPYZ(path string, args []string) (int, error) {
@@ -196,6 +243,165 @@ func runFile(path string, args []string, stdout, stderr io.Writer) (int, error) 
 		return 1, err
 	}
 	return runtime.Run(path, src, args, stdout, stderr)
+}
+
+func runWithWatch(path string, args []string, stdout, stderr io.Writer) (int, error) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	setupSignalCancel(cancel)
+
+	runOnce := func() {
+		ts := time.Now().Format("15:04:05")
+		fmt.Fprintf(stdout, "[%s] running %s\n", ts, path)
+		runFile(path, args, stdout, stderr)
+	}
+	runOnce()
+
+	mtimes := watchCollectMtimes(filepath.Dir(path))
+	ticker := time.NewTicker(200 * time.Millisecond)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return 0, nil
+		case <-ticker.C:
+			cur := watchCollectMtimes(filepath.Dir(path))
+			if watchMtimesChanged(mtimes, cur) {
+				mtimes = cur
+				ts := time.Now().Format("15:04:05")
+				fmt.Fprintf(stdout, "[%s] restarting...\n", ts)
+				runOnce()
+			}
+		}
+	}
+}
+
+func watchCollectMtimes(root string) map[string]time.Time {
+	m := map[string]time.Time{}
+	filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {
+		if err != nil || d.IsDir() {
+			return nil
+		}
+		if strings.HasSuffix(p, ".py") {
+			if info, err := d.Info(); err == nil {
+				m[p] = info.ModTime()
+			}
+		}
+		return nil
+	})
+	return m
+}
+
+func watchMtimesChanged(old, cur map[string]time.Time) bool {
+	if len(old) != len(cur) {
+		return true
+	}
+	for k, t := range cur {
+		if old[k] != t {
+			return true
+		}
+	}
+	return false
+}
+
+func runWithCPython(path string, args []string, stderr io.Writer) (int, error) {
+	python, err := findPython3()
+	if err != nil {
+		return 1, fmt.Errorf("bunpy run --cpython requires Python 3 on PATH: %w", err)
+	}
+	cmd := exec.Command(python, append([]string{path}, args...)...)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		if ee, ok := err.(*exec.ExitError); ok {
+			return ee.ExitCode(), nil
+		}
+		return 1, err
+	}
+	return 0, nil
+}
+
+func findPython3() (string, error) {
+	for _, candidate := range []string{"python3", "python"} {
+		p, err := exec.LookPath(candidate)
+		if err != nil {
+			continue
+		}
+		// Reject Python 2.
+		out, err := exec.Command(p, "--version").CombinedOutput()
+		if err == nil && strings.HasPrefix(string(out), "Python 3") {
+			return p, nil
+		}
+	}
+	return "", fmt.Errorf("python3 not found")
+}
+
+func runWithInspect(path string, args []string, stdout, stderr io.Writer) (int, error) {
+	src, err := os.ReadFile(path)
+	if err != nil {
+		return 1, err
+	}
+
+	fmt.Fprintf(stdout, "=== bunpy inspect: %s ===\n", path)
+
+	t0 := time.Now()
+	stream, compileErr := runtime.CompileToStream(path, src)
+	compileTime := time.Since(t0)
+
+	if compileErr != nil {
+		fmt.Fprintf(stderr, "compile error: %v\n", compileErr)
+		return 1, compileErr
+	}
+	fmt.Fprintf(stdout, "compile+marshal: %v\n", compileTime.Round(time.Microsecond))
+	fmt.Fprintf(stdout, "ir bytes: %d\n", len(stream))
+
+	// Hex dump — first 256 bytes.
+	n := len(stream)
+	if n > 256 {
+		n = 256
+	}
+	fmt.Fprintf(stdout, "\n--- IR hex dump (first %d bytes) ---\n", n)
+	fmt.Fprintf(stdout, "%s", hexDump(stream[:n]))
+	fmt.Fprintf(stdout, "--- end IR ---\n\n")
+
+	fmt.Fprintf(stdout, "=== running %s ===\n", path)
+	return runtime.Run(path, src, args, stdout, stderr)
+}
+
+func hexDump(data []byte) string {
+	var sb strings.Builder
+	for i := 0; i < len(data); i += 16 {
+		end := i + 16
+		if end > len(data) {
+			end = len(data)
+		}
+		chunk := data[i:end]
+		fmt.Fprintf(&sb, "%04x  ", i)
+		for j, b := range chunk {
+			fmt.Fprintf(&sb, "%02x ", b)
+			if j == 7 {
+				sb.WriteByte(' ')
+			}
+		}
+		// Pad short rows.
+		for j := len(chunk); j < 16; j++ {
+			sb.WriteString("   ")
+			if j == 7 {
+				sb.WriteByte(' ')
+			}
+		}
+		sb.WriteString(" |")
+		for _, b := range chunk {
+			if b >= 32 && b < 127 {
+				sb.WriteByte(b)
+			} else {
+				sb.WriteByte('.')
+			}
+		}
+		sb.WriteString("|\n")
+	}
+	return sb.String()
 }
 
 // isFilePath reports whether arg looks like a script path. A leading '-'
