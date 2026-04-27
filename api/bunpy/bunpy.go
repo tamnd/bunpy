@@ -22,7 +22,7 @@ import (
 )
 
 // Version is baked in by the bunpy build pipeline.
-const Version = "0.7.7"
+const Version = "0.8.0"
 
 // Modules returns the NativeModules map for the current v0.3.1 surface.
 // Later rungs extend this map by adding more entries.
@@ -64,6 +64,18 @@ func Modules() map[string]func(*goipyVM.Interp) *goipyObject.Module {
 		"bunpy.mock":             BuildMock,
 		"bunpy.snapshot":         BuildSnapshot,
 		"bunpy.asyncio":          BuildAsyncio,
+		"bunpy.node":                BuildNode,
+		"bunpy.node.fs":             BuildNodeFS,
+		"bunpy.node.path":           BuildNodePath,
+		"bunpy.node.os":             BuildNodeOS,
+		"bunpy.node.http":           BuildNodeHTTP,
+		"bunpy.node.https":          BuildNodeHTTPS,
+		"bunpy.node.net":            BuildNodeNet,
+		"bunpy.node.tls":            BuildNodeTLS,
+		"bunpy.node.crypto":         BuildNodeCrypto,
+		"bunpy.node.stream":         BuildNodeStream,
+		"bunpy.node.zlib":           BuildNodeZlib,
+		"bunpy.node.worker_threads": BuildNodeWorkerThreads,
 	}
 }
 
@@ -133,6 +145,7 @@ func BuildBunpy(i *goipyVM.Interp) *goipyObject.Module {
 	m.Dict.SetStr("mock", BuildMock(i))
 	m.Dict.SetStr("snapshot", BuildSnapshot(i))
 	m.Dict.SetStr("asyncio", BuildAsyncio(i))
+	m.Dict.SetStr("node", BuildNode(i))
 
 	return m
 }
