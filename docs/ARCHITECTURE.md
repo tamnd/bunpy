@@ -396,6 +396,18 @@ state — the user-visible artefact is `./patches/<name>+<version>.patch`,
 which is the input to the resolver-independent reproducible
 install.
 
+v0.2.1 lands `bunpy audit`. `pkg/audit` exposes `OSVClient` with
+`QueryBatch`, which splits the lockfile's pin list into 1000-item
+chunks (the OSV API limit) and POSTs each batch to
+`api.osv.dev/v1/querybatch`. The response is parallel to the query
+list so per-pin findings are attributed without a name lookup.
+Severity is taken from `database_specific.severity` if present,
+otherwise mapped from the highest CVSS score in the `severity` array.
+`Filter` does case-insensitive GHSA/CVE suppression; `SortFindings`
+orders by severity then name for stable table output. `pkg/audit` has
+no dependency on `pkg/pypi` or the wheel cache; it only needs the
+`lockfile.Package` slice.
+
 v0.2.0 lands workspaces. `pkg/workspace` loads a root
 `pyproject.toml` that has a `[tool.bunpy.workspace]` table, expands
 glob patterns in the `members` list, and returns a `Workspace` struct

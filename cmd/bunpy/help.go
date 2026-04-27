@@ -573,6 +573,29 @@ The result also surfaces overlay state: a linked pin shows
 and uses installer ` + "`bunpy-patch`" + `.
 `,
 	},
+	"audit": {
+		Name:    "audit",
+		Summary: "Scan pinned packages against the OSV vulnerability database",
+		Body: `bunpy audit: check bunpy.lock against OSV for known vulnerabilities.
+
+USAGE
+  bunpy audit                      table output; exit 1 if any vuln found
+  bunpy audit --json               JSON array of findings
+  bunpy audit --quiet              print count only
+  bunpy audit --ignore <id>        suppress one advisory (repeatable)
+  bunpy audit --lockfile <path>    path to bunpy.lock (default ./bunpy.lock)
+  bunpy audit --workspace <root>   audit via workspace-root lock
+
+Queries the OSV (Open Source Vulnerabilities) database at
+https://api.osv.dev/v1/querybatch for every pinned package in
+` + "`bunpy.lock`" + `. No API key is required for PyPI ecosystem queries.
+
+Exit codes: 0 (no vulns, or all suppressed), 1 (vulns found), 2 (usage error).
+
+` + "`--ignore`" + ` accepts both GHSA and CVE identifiers; comparison is
+case-insensitive and may be repeated for multiple suppressions.
+`,
+	},
 	"workspace": {
 		Name:    "workspace",
 		Summary: "List and navigate workspace members",

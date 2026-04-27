@@ -1,14 +1,14 @@
 # CLI reference
 
 bunpy ships as one binary. Subcommands land per-version per the
-roadmap. Today (v0.2.0) the wired surface is `--version` (with
+roadmap. Today (v0.2.1) the wired surface is `--version` (with
 `--short` and `--json`), `--help`, positional `bunpy <file.py>`,
 `bunpy run <file.py>`, `bunpy repl`, `bunpy stdlib`,
 `bunpy pm config`, `bunpy pm info`, `bunpy pm install-wheel`,
 `bunpy pm lock`, `bunpy add`, `bunpy install`, `bunpy outdated`,
 `bunpy update`, `bunpy remove`, `bunpy link`, `bunpy unlink`,
-`bunpy patch`, `bunpy why`, `bunpy workspace`, `bunpy help`, and
-`bunpy man`.
+`bunpy patch`, `bunpy why`, `bunpy workspace`, `bunpy audit`,
+`bunpy help`, and `bunpy man`.
 This page is the
 long-form reference. Running
 `bunpy help <cmd>` gives the same body inline; `bunpy man <cmd>`
@@ -262,11 +262,29 @@ bunpy add --member alpha requests    add a dep to the alpha member
 bunpy install                        install from workspace-root lock
 ```
 
+`bunpy audit` (v0.2.1) queries the OSV (Open Source Vulnerabilities)
+database for every pinned package in `bunpy.lock`. Exit code 1 when
+any unfiltered vulnerability is found.
+
+```
+bunpy audit                              table output
+bunpy audit --json                       JSON array of findings
+bunpy audit --quiet                      count only
+bunpy audit --ignore GHSA-xxxx-yyyy      suppress one advisory
+bunpy audit --lockfile path/bunpy.lock   override lockfile path
+bunpy audit --workspace <root>           audit from workspace root
+```
+
+Severity is mapped from OSV's `database_specific.severity` or CVSS
+score (>= 9.0: CRITICAL, >= 7.0: HIGH, >= 4.0: MEDIUM, else LOW).
+`--ignore` accepts GHSA and CVE identifiers; comparison is
+case-insensitive.
+
 The rest of the package-manager surface lands per the v0.2.x ladder
 in `docs/ROADMAP.md`:
 
-- `bunpy audit` checks for security advisories against OSV.
 - `bunpy publish` builds an sdist plus a wheel and uploads to PyPI.
+  Lands in v0.2.2.
 
 ### Project scaffolding
 

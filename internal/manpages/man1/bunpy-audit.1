@@ -1,0 +1,96 @@
+.TH BUNPY-AUDIT 1 "2026-04-27" "bunpy" "User Commands"
+.SH NAME
+bunpy-audit \- scan pinned packages against the OSV vulnerability database
+.SH SYNOPSIS
+.B bunpy audit
+.RB [ \-\-json ]
+.RB [ \-\-quiet ]
+.RB [ \-\-ignore
+.IR id ]
+.RB [ \-\-lockfile
+.IR path ]
+.RB [ \-\-workspace
+.IR root ]
+.SH DESCRIPTION
+.B bunpy audit
+reads
+.B bunpy.lock
+and queries the OSV (Open Source Vulnerabilities) database at
+.I https://api.osv.dev/v1/querybatch
+for every pinned package. No API key is required for PyPI ecosystem queries.
+.PP
+Findings are sorted by severity (CRITICAL first) then by package name.
+.B bunpy audit
+exits 1 when any unfiltered vulnerability is found, making it suitable as
+a CI gate.
+.PP
+Severity levels are mapped from the OSV
+.B database_specific.severity
+field when present, or from the CVSS score otherwise:
+.TS
+tab(@);
+l l.
+CVSS >= 9.0@CRITICAL
+CVSS >= 7.0@HIGH
+CVSS >= 4.0@MEDIUM
+CVSS >= 0.1@LOW
+missing@UNKNOWN
+.TE
+.SH OPTIONS
+.TP
+.B \-\-json
+Output findings as a JSON array. Empty result is
+.B []
+(not null). Exit code follows the same rule: 1 if any finding, 0 if none.
+.TP
+.B \-\-quiet
+Print only a one-line count summary. Useful when the table output is too
+wide for a CI log.
+.TP
+.BI \-\-ignore " id"
+Suppress a specific advisory by GHSA or CVE identifier.
+Comparison is case-insensitive. May be repeated for multiple suppressions.
+.TP
+.BI \-\-lockfile " path"
+Path to the lockfile to audit (default:
+.BR bunpy.lock ).
+.TP
+.BI \-\-workspace " root"
+Read the lock from the given workspace root directory instead of
+auto-detecting it.
+.TP
+.BR \-h ", " \-\-help
+Print a short usage summary and exit.
+.SH EXIT STATUS
+.TP
+.B 0
+No vulnerabilities found, or all found were suppressed with
+.BR \-\-ignore .
+.TP
+.B 1
+One or more vulnerabilities found.
+.TP
+.B 2
+Usage error or missing lockfile.
+.SH EXAMPLES
+Audit the current project and fail CI if any vuln is found:
+.PP
+.nf
+bunpy audit
+.fi
+.PP
+Suppress a known false-positive:
+.PP
+.nf
+bunpy audit --ignore GHSA-xxxx-yyyy-zzzz
+.fi
+.PP
+Machine-readable output for downstream tools:
+.PP
+.nf
+bunpy audit --json | jq '.[] | select(.severity == "CRITICAL")'
+.fi
+.SH SEE ALSO
+.BR bunpy-install (1),
+.BR bunpy-why (1),
+.BR bunpy-workspace (1)
