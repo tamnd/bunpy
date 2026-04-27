@@ -728,6 +728,46 @@ share/man/man1/, so install.sh and the Homebrew formula install
 them automatically.
 `,
 	},
+	"build": {
+		Name:    "build",
+		Summary: "Bundle a Python entry point into a .pyz archive",
+		Body: `bunpy build: collect entry.py and all local imports into a .pyz bundle.
+
+USAGE
+  bunpy build <entry.py> [options]
+
+OPTIONS
+  --outfile <path>      output path (default: dist/<stem>.pyz)
+  --outdir <dir>        output directory (default: dist)
+  --minify              strip comments and blank lines from source
+  --target <platform>   annotate bundle with target platform
+                        platforms: linux-x64, linux-arm64, darwin-x64,
+                                   darwin-arm64, windows-x64, browser
+  --sourcemap           write <name>.pyz.map source position map
+  --compile             produce a self-contained binary (requires Go)
+  --watch               rebuild on .py file changes (poll, 200 ms)
+  --define KEY=VALUE    replace KEY token in source (repeatable)
+  --plugin <file.py>    transform hook file (repeatable)
+
+EXAMPLES
+  bunpy build app.py
+  bunpy build app.py --outfile release/app.pyz
+  bunpy build app.py --minify --target linux-x64
+  bunpy build app.py --compile
+  bunpy build app.py --define DEBUG=False --define VERSION='"1.0"'
+  bunpy build app.py --watch
+
+RUNNING A .PYZ
+  bunpy run app.pyz
+  bunpy run app.pyz arg1 arg2
+
+NOTES
+  - Only local .py imports are bundled. Third-party packages must be
+    installed on the target system.
+  - --compile requires the Go toolchain (go command) on PATH.
+  - --plugin requires gocopy function-definition support (planned v0.1.x).
+`,
+	},
 }
 
 func helpSubcommand(args []string, stdout, stderr io.Writer) (int, error) {

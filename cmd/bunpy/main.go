@@ -13,6 +13,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/tamnd/bunpy/v1/internal/bundler"
 	"github.com/tamnd/bunpy/v1/runtime"
 )
 
@@ -71,6 +72,8 @@ func run(args []string, stdout, stderr io.Writer) (int, error) {
 		return workspaceSubcommand(args[1:], stdout, stderr)
 	case "test":
 		return testSubcommand(args[1:], stdout, stderr)
+	case "build":
+		return buildSubcommand(args[1:], stdout, stderr)
 	case "audit":
 		return auditSubcommand(args[1:], stdout, stderr)
 	case "publish":
@@ -153,10 +156,20 @@ func runSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 	case "-":
 		return 1, fmt.Errorf("bunpy run -: stdin scripts not yet wired")
 	}
+	if strings.HasSuffix(args[0], ".pyz") {
+		return runPYZ(args[0], args[1:])
+	}
 	if !isFilePath(args[0]) {
-		return 1, fmt.Errorf("bunpy run %q: only file paths ending in .py are wired in v0.0.3", args[0])
+		return 1, fmt.Errorf("bunpy run %q: only file paths ending in .py or .pyz are supported", args[0])
 	}
 	return runFile(args[0], args[1:], stdout, stderr)
+}
+
+func runPYZ(path string, args []string) (int, error) {
+	if err := bundler.RunPYZ(path, args); err != nil {
+		return 1, err
+	}
+	return 0, nil
 }
 
 func runFile(path string, args []string, stdout, stderr io.Writer) (int, error) {
