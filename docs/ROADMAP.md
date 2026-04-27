@@ -34,7 +34,7 @@ harness goes from non-zero to zero in the same PR.
 | v0.1.7  | `bunpy update` and `bunpy outdated`  | shipped    |
 | v0.1.8  | `bunpy remove`                       | shipped    |
 | v0.1.9  | `bunpy link` and `bunpy unlink`      | shipped    |
-| v0.1.10 | `bunpy patch` and `--commit`         | planned    |
+| v0.1.10 | `bunpy patch` and `--commit`         | shipped    |
 | v0.1.11 | `bunpy why`                          | planned    |
 
 ## v0.2.x: workspaces, audit, publish, create, bunpyx

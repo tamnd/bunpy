@@ -370,6 +370,32 @@ the consumer runs `bunpy link <pkg>` to drop in the proxy; either
 side can drop with `bunpy unlink` and the other side keeps
 working until it re-installs or re-links.
 
+v0.1.10 lands `bunpy patch` and the patch-apply step inside
+`bunpy install`. `pkg/patches` holds the diff/apply pair plus the
+wheel-extract helper. The diff is whole-file hunks (one hunk per
+changed file): pristine and scratch are walked, files identical
+in both trees are skipped, files that differ get a `--- a/<rel>`
+/ `+++ b/<rel>` header followed by `@@ -1,N +1,M @@` and the full
+old/new line lists. Adds and removes use `/dev/null` on the
+appropriate header. Apply is strict: pristine context must match
+the target byte-for-byte, no fuzz, no offset slack. Binary files
+are refused at diff time. The patch table lives in
+`pyproject.toml` under `[tool.bunpy.patches]` with key shape
+`<name>@<version>` and a path relative to the project root;
+`pkg/manifest` grows `AddPatchEntry` and `RemovePatchEntry` text
+mutators that mirror the v0.1.6 lane mutators. `bunpy install`
+reads the table once before the install loop, applies the
+matching patch in place after every successful wheel install, and
+rewrites `INSTALLER` to `bunpy-patch`. Linked packages
+(`INSTALLER=bunpy-link`) take precedence: the install loop skips
+them entirely so a `bunpy link <pkg>` survives unrelated install
+runs even when the pin has a registered patch. The pristine tree
+under `.bunpy/patches/.pristine/<name>-<version>` and the scratch
+under `.bunpy/patches/.scratch/<name>-<version>` are throwaway
+state — the user-visible artefact is `./patches/<name>+<version>.patch`,
+which is the input to the resolver-independent reproducible
+install.
+
 ## Module layout
 
 ```

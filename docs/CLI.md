@@ -1,13 +1,13 @@
 # CLI reference
 
 bunpy ships as one binary. Subcommands land per-version per the
-roadmap. Today (v0.1.9) the wired surface is `--version` (with
+roadmap. Today (v0.1.10) the wired surface is `--version` (with
 `--short` and `--json`), `--help`, positional `bunpy <file.py>`,
 `bunpy run <file.py>`, `bunpy repl`, `bunpy stdlib`,
 `bunpy pm config`, `bunpy pm info`, `bunpy pm install-wheel`,
 `bunpy pm lock`, `bunpy add`, `bunpy install`, `bunpy outdated`,
 `bunpy update`, `bunpy remove`, `bunpy link`, `bunpy unlink`,
-`bunpy help`, and `bunpy man`.
+`bunpy patch`, `bunpy help`, and `bunpy man`.
 This page is the
 long-form reference. Running
 `bunpy help <cmd>` gives the same body inline; `bunpy man <cmd>`
@@ -200,12 +200,31 @@ uses), removes every listed file, and drops the dist-info. Missing
 entries are not an error. Flags: `--target <dir>` (consumer-side
 site-packages root, default `./.bunpy/site-packages`).
 
+`bunpy patch` and `bunpy patch --commit` (v0.1.10) capture local
+diffs against installed packages and re-apply them on every fresh
+install. `bunpy patch <pkg>` reads `bunpy.lock`, extracts the
+cached wheel into `./.bunpy/patches/.pristine/<name>-<version>/`,
+copies it into `./.bunpy/patches/.scratch/<name>-<version>/`, and
+prints the absolute scratch path. The user edits files there.
+`bunpy patch --commit <pkg>` walks both trees, emits one
+whole-file unified-diff hunk per changed file, writes the body to
+`./patches/<name>+<version>.patch`, and registers the entry in
+`pyproject.toml` under `[tool.bunpy.patches]` (key:
+`<name>@<version>`). The scratch is removed on success.
+`bunpy install` reads the patches table after each wheel install
+and applies the matching patch on top, rewriting `INSTALLER` to
+`bunpy-patch`. The applier is strict: a context mismatch (e.g.
+the pin moved under you) fails the install with a named-file
+error. Refresh by re-running `bunpy patch <pkg>` against the new
+pin. Flags: `--commit`, `--list`, `--out <path>`, `--no-write`,
+`--target <dir>`, `--cache-dir <path>`, `--print-only`. Linked
+packages cannot be patched: edit the source directly. `bunpy
+install --no-patches` opts out for emergency recovery.
+
 The rest of the package-manager surface is aspirational and
 lands per the v0.1.x ladder in `docs/ROADMAP.md`:
 
 - `bunpy audit [--fix]` checks for security advisories.
-- `bunpy patch <pkg>` and `bunpy patch --commit <hash>` persist
-  local diffs against installed packages.
 - `bunpy publish` builds an sdist plus a wheel and uploads them
   to PyPI.
 - `bunpy why <pkg>` prints a reverse-deps tree explaining why a

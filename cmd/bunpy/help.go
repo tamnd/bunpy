@@ -492,6 +492,50 @@ After ` + "`bunpy unlink <pkg>`" + ` you can run ` + "`bunpy install`" + ` to
 re-fetch the pinned wheel and put it back in place.
 `,
 	},
+	"patch": {
+		Name:    "patch",
+		Summary: "Open and commit patches against installed packages",
+		Body: `bunpy patch: open a mutable copy of an installed package, then commit a unified-diff patch.
+
+USAGE
+  bunpy patch <pkg>                  open scratch, print the editable path
+  bunpy patch --commit <pkg>         diff scratch vs pristine, write the patch
+  bunpy patch --commit <pkg> --out <p>  override the default patch path
+  bunpy patch --commit <pkg> --no-write skip the pyproject.toml edit
+  bunpy patch --list                 print every registered patch
+  bunpy patch --target <dir>         consumer-side site-packages target
+  bunpy patch --cache-dir <p>        wheel cache root
+
+` + "`bunpy patch <pkg>`" + ` reads the pin for ` + "`<pkg>`" + ` from
+` + "`bunpy.lock`" + `, extracts the cached wheel into
+` + "`./.bunpy/patches/.pristine/<name>-<version>/`" + ` (creating
+the pristine baseline), then copies it to
+` + "`./.bunpy/patches/.scratch/<name>-<version>/`" + ` and prints
+the absolute scratch path on stdout. Edit the files there with
+your normal editor, then commit.
+
+` + "`bunpy patch --commit <pkg>`" + ` walks the scratch and pristine
+trees, emits one whole-file unified-diff hunk per changed file,
+writes the body to ` + "`./patches/<name>+<version>.patch`" + `,
+and registers the entry in pyproject.toml under
+` + "`[tool.bunpy.patches]`" + ` (key shape ` + "`<name>@<version>`" + `).
+The scratch directory is removed on success. ` + "`--no-write`" + `
+skips the pyproject.toml edit; ` + "`--out`" + ` overrides the
+patch path.
+
+` + "`bunpy install`" + ` reads the patch table after every wheel
+install lands and applies the matching patch on top. The
+applier is strict: a mismatch on context (e.g. the pin moved
+under you) fails the install with a named-file error. Re-run
+` + "`bunpy patch <pkg>`" + ` against the new pin to refresh.
+` + "`--no-patches`" + ` opts out for emergency recovery.
+
+A linked package (` + "`INSTALLER=bunpy-link`" + `, see
+` + "`bunpy link`" + `) cannot be patched: edit the source
+directly. ` + "`bunpy patch <linked-pkg>`" + ` exits with a clear
+error.
+`,
+	},
 	"man": {
 		Name:    "man",
 		Summary: "Print or install the bundled manpages",

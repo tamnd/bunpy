@@ -10,6 +10,8 @@ import (
 
 	"github.com/tamnd/bunpy/v1/pkg/editable"
 	"github.com/tamnd/bunpy/v1/pkg/lockfile"
+	"github.com/tamnd/bunpy/v1/pkg/manifest"
+	"github.com/tamnd/bunpy/v1/pkg/patches"
 	"github.com/tamnd/bunpy/v1/pkg/pypi"
 	"github.com/tamnd/bunpy/v1/pkg/wheel"
 )
@@ -24,6 +26,7 @@ func installSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 		target     = filepath.Join(".bunpy", "site-packages")
 		cacheDir   string
 		noVerify   bool
+		noPatches  bool
 		dev        bool
 		peer       bool
 		allExtras  bool
@@ -37,6 +40,8 @@ func installSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 			return printHelp("install", stdout, stderr)
 		case "--no-verify":
 			noVerify = true
+		case "--no-patches":
+			noPatches = true
 		case "-D", "--dev":
 			dev = true
 		case "-P", "--peer":
@@ -83,6 +88,15 @@ func installSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 		return 1, fmt.Errorf("bunpy install: --production cannot combine with --dev/--optional/--all-extras/--peer")
 	}
 
+	var patchEntries []patches.Entry
+	if !noPatches {
+		if mf, err := manifest.LoadOpts("pyproject.toml", manifest.LoadOptions{}); err == nil {
+			if pe, err := patches.Read(mf); err == nil {
+				patchEntries = pe
+			}
+		}
+	}
+
 	lock, err := lockfile.Read("bunpy.lock")
 	if err != nil {
 		if errors.Is(err, lockfile.ErrNotFound) {
@@ -118,7 +132,15 @@ func installSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 		}); err != nil {
 			return 1, fmt.Errorf("bunpy install: %s: %w", p.Name, err)
 		}
-		fmt.Fprintf(stdout, "installed %s %s\n", p.Name, p.Version)
+		patched, err := applyRegisteredPatch(target, p.Name, p.Version, patchEntries)
+		if err != nil {
+			return 1, fmt.Errorf("bunpy install: %s: %w", p.Name, err)
+		}
+		if patched {
+			fmt.Fprintf(stdout, "patched %s %s\n", p.Name, p.Version)
+		} else {
+			fmt.Fprintf(stdout, "installed %s %s\n", p.Name, p.Version)
+		}
 	}
 	if skipped > 0 {
 		fmt.Fprintf(stdout, "skipped %d package%s outside the selected lanes\n", skipped, pluralS(skipped))

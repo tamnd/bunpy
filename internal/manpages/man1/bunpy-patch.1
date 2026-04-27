@@ -1,0 +1,101 @@
+.TH BUNPY-PATCH 1 "2026-04-27" "bunpy" "User Commands"
+.SH NAME
+bunpy-patch \- open or commit local patches against installed packages
+.SH SYNOPSIS
+.B bunpy patch
+.I pkg
+.br
+.B bunpy patch --commit
+.I pkg
+.RB [ \-\-out
+.IR path ]
+.RB [ \-\-no-write ]
+.br
+.B bunpy patch --list
+.SH DESCRIPTION
+.B bunpy patch
+opens a mutable copy of an installed package, lets the user edit
+it, then captures the diff as a versioned patch artefact under
+.IR ./patches/ .
+The patch is registered in
+.B pyproject.toml
+under
+.RB [ tool.bunpy.patches ]
+and re-applied by
+.B bunpy install
+on every fresh install of the same pin.
+.PP
+.BI "bunpy patch " pkg
+reads
+.B bunpy.lock
+to find the pin for
+.IR pkg ,
+extracts the cached wheel into a pristine baseline at
+.IR ./.bunpy/patches/.pristine/<name>-<version>/ ,
+copies it to a scratch directory at
+.IR ./.bunpy/patches/.scratch/<name>-<version>/ ,
+and prints the absolute scratch path on stdout. The user edits
+files there with their normal editor.
+.PP
+.BI "bunpy patch --commit " pkg
+walks both trees, emits one whole-file unified-diff hunk per
+changed file, and writes the body to
+.IR ./patches/<name>+<version>.patch .
+The entry is registered in
+.B pyproject.toml
+with key
+.IB <name> @ <version>
+and the value the patch path. The scratch is removed on success.
+.PP
+.B bunpy install
+applies the patch in place after the wheel install lands. The
+applier is strict: a context mismatch (e.g. the pin moved) fails
+the install with a named-file error. Refresh the patch by
+rerunning
+.B bunpy patch
+against the new pin.
+.SH OPTIONS
+.TP
+.B --commit
+Diff scratch vs pristine and persist the patch.
+.TP
+.B --list
+Print every registered patch as
+.RI ' name " " version " -> " path " [" status ]'.
+.TP
+.BI \-\-out " path"
+Override the default patch path.
+.TP
+.B --no-write
+Write the patch file without editing
+.BR pyproject.toml .
+.TP
+.B --print-only
+Just print the scratch path without copying.
+.TP
+.BI \-\-target " dir"
+Consumer-side site-packages target. Defaults to
+.IR ./.bunpy/site-packages .
+.TP
+.BI \-\-cache-dir " path"
+Override the wheel cache root.
+.SH FILES
+.TP
+.I ./patches/<name>+<version>.patch
+The user-visible patch artefact.
+.TP
+.I ./.bunpy/patches/.pristine/<name>-<version>/
+The pristine baseline extracted from the wheel cache.
+.TP
+.I ./.bunpy/patches/.scratch/<name>-<version>/
+The mutable scratch directory.
+.SH EXIT STATUS
+Zero on a clean open, commit, or list. Non-zero on a missing
+.BR bunpy.lock ,
+a missing pin, a context mismatch at apply time, or an
+unwritable target.
+.SH SEE ALSO
+.BR bunpy-install (1),
+.BR bunpy-link (1),
+.BR bunpy-add (1),
+.BR bunpy (1).
