@@ -1,12 +1,13 @@
 # CLI reference
 
 bunpy ships as one binary. Subcommands land per-version per the
-roadmap. Today (v0.1.8) the wired surface is `--version` (with
+roadmap. Today (v0.1.9) the wired surface is `--version` (with
 `--short` and `--json`), `--help`, positional `bunpy <file.py>`,
 `bunpy run <file.py>`, `bunpy repl`, `bunpy stdlib`,
 `bunpy pm config`, `bunpy pm info`, `bunpy pm install-wheel`,
 `bunpy pm lock`, `bunpy add`, `bunpy install`, `bunpy outdated`,
-`bunpy update`, `bunpy remove`, `bunpy help`, and `bunpy man`.
+`bunpy update`, `bunpy remove`, `bunpy link`, `bunpy unlink`,
+`bunpy help`, and `bunpy man`.
 This page is the
 long-form reference. Running
 `bunpy help <cmd>` gives the same body inline; `bunpy man <cmd>`
@@ -175,12 +176,34 @@ directory cleanup. `--no-write` skips the manifest edit. The
 verb is idempotent: removing a name that is not listed prints
 `removed 0 packages` and exits 0.
 
+`bunpy link` and `bunpy unlink` (v0.1.9) are the Bun-style pair
+for editable installs. A bare `bunpy link` reads the current
+project's `pyproject.toml` and writes a registry entry under
+`$BUNPY_LINK_DIR` (default: the platform user-data dir, e.g.
+`$XDG_DATA_HOME/bunpy/links` on Linux,
+`~/Library/Application Support/bunpy/links` on macOS,
+`%LOCALAPPDATA%/bunpy/links` on Windows). The entry is a JSON
+file `<name>.json` with `name`, `version`, `source` (absolute,
+symlink-resolved path), and `registered` (timestamp). `--list`
+prints the registry as a sorted table. `bunpy link <pkg>...` looks
+up each name in the registry and lays down a PEP 660-style
+editable proxy in `./.bunpy/site-packages`: a `.pth` file
+holding the absolute source path plus a `<name>-<version>.dist-info`
+directory with `METADATA`, `RECORD`, `INSTALLER=bunpy-link`, and
+`direct_url.json` (PEP 610, `dir_info.editable=true`). `bunpy
+install` recognises `INSTALLER=bunpy-link` and skips re-installing
+linked packages, printing `kept linked <name> <version>` instead.
+`bunpy unlink` mirrors the verb: bare `unlink` deletes the registry
+entry for the current project, `bunpy unlink <pkg>...` walks the
+proxy's `RECORD` (with the same path-escape guard `bunpy remove`
+uses), removes every listed file, and drops the dist-info. Missing
+entries are not an error. Flags: `--target <dir>` (consumer-side
+site-packages root, default `./.bunpy/site-packages`).
+
 The rest of the package-manager surface is aspirational and
 lands per the v0.1.x ladder in `docs/ROADMAP.md`:
 
 - `bunpy audit [--fix]` checks for security advisories.
-- `bunpy link [pkg]` and `bunpy unlink [pkg]` do editable
-  installs.
 - `bunpy patch <pkg>` and `bunpy patch --commit <hash>` persist
   local diffs against installed packages.
 - `bunpy publish` builds an sdist plus a wheel and uploads them

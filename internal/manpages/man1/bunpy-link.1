@@ -1,0 +1,83 @@
+.TH BUNPY-LINK 1 "2026-04-27" "bunpy" "User Commands"
+.SH NAME
+bunpy-link \- register or install editable links
+.SH SYNOPSIS
+.B bunpy link
+.RB [ --list ]
+.RI [ pkg "...]"
+.RB [ \-\-target
+.IR dir ]
+.SH DESCRIPTION
+.B bunpy link
+manages a global registry of editable Python packages.
+.PP
+A bare
+.B bunpy link
+reads
+.I ./pyproject.toml ,
+normalises the project name, and writes a JSON entry into the
+registry root (one file per package). Re-registering an existing
+entry overwrites it; the verb is idempotent.
+.PP
+.BI "bunpy link " pkg ...
+reads each entry from the registry and lays down a PEP 660
+editable proxy under
+.I ./.bunpy/site-packages :
+a
+.IB name .pth
+pointing at the absolute source root, plus a
+.IB name - version .dist-info
+directory with
+.BR METADATA ,
+.BR RECORD ,
+.B direct_url.json
+(PEP 610), and an
+.B INSTALLER
+file equal to
+.BR bunpy-link .
+.PP
+.B bunpy install
+reads
+.B INSTALLER
+on each lockfile pin and skips re-installing any package whose
+installer is
+.BR bunpy-link ,
+so a link survives unrelated install runs. To flip a link back to
+a pinned wheel, run
+.B bunpy unlink <pkg>
+followed by
+.BR "bunpy install" .
+.SH OPTIONS
+.TP
+.B --list
+Print every entry in the global registry as
+.RI ' name " " version " -> " path '.
+.TP
+.BI \-\-target " dir"
+Consumer-side site-packages target. Defaults to
+.IR ./.bunpy/site-packages .
+.SH ENVIRONMENT
+.TP
+.B BUNPY_LINK_DIR
+Override the registry root. When unset, the platform's user-data
+directory is used:
+.I $XDG_DATA_HOME/bunpy/links
+on Linux,
+.I "~/Library/Application Support/bunpy/links"
+on macOS,
+.I "%LOCALAPPDATA%\\bunpy\\links"
+on Windows.
+.SH FILES
+.TP
+.IB <BUNPY_LINK_DIR> / name .json
+The JSON entry for one linked package.
+.SH EXIT STATUS
+Zero on a clean register or install. Non-zero on a missing
+.BR pyproject.toml ,
+a missing project name, an unknown registry entry, or an
+unwritable target.
+.SH SEE ALSO
+.BR bunpy-unlink (1),
+.BR bunpy-add (1),
+.BR bunpy-install (1),
+.BR bunpy (1).

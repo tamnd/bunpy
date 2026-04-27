@@ -345,6 +345,31 @@ directory when the wheel was a purelib without a RECORD. The
 verb is idempotent: removing a name that is not listed is a
 no-op (`removed 0 packages`, exit 0).
 
+v0.1.9 lands `bunpy link` and `bunpy unlink`, the Bun-style pair
+for editable installs. `pkg/links` is the tiny store: `Entry`
+(name, version, source, registered) is JSON, one file per name
+under `Dir()` (the registry root). `Dir` resolves
+`$BUNPY_LINK_DIR` first, then the platform user-data dir
+(`$XDG_DATA_HOME/bunpy/links` on Linux,
+`~/Library/Application Support/bunpy/links` on macOS,
+`%LOCALAPPDATA%/bunpy/links` on Windows). Writes are atomic
+(tempfile + rename), and `Read` returns a typed `ErrNotFound` so
+callers can distinguish "no entry" from "broken JSON". `pkg/editable`
+is the consumer-side proxy: `Install` lays down a `.pth` file
+holding the absolute source path plus a `<name>-<version>.dist-info`
+directory with `METADATA`, `RECORD`, `INSTALLER=bunpy-link`, and
+`direct_url.json` (PEP 610, `dir_info.editable=true`); `Uninstall`
+reads RECORD with the same path-escape guard `bunpy remove` uses
+and drops every listed path before removing the dist-info. The
+`INSTALLER=bunpy-link` tag is the opt-out signal: `bunpy install`
+checks each pin's installed dist-info before re-installing and
+skips the wheel install when the tag matches, printing
+`kept linked <name> <version>`. So the workflow is symmetric: the
+publisher runs `bunpy link` from the package source to register;
+the consumer runs `bunpy link <pkg>` to drop in the proxy; either
+side can drop with `bunpy unlink` and the other side keeps
+working until it re-installs or re-links.
+
 ## Module layout
 
 ```

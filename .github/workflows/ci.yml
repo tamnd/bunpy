@@ -115,7 +115,7 @@ jobs:
       - name: bunpy help / --help parity
         shell: bash
         run: |
-          for cmd in run repl stdlib version help man pm add install outdated update remove; do
+          for cmd in run repl stdlib version help man pm add install outdated update remove link unlink; do
             a="$(./bunpy help "$cmd")"
             b="$(./bunpy "$cmd" --help)"
             if [ "$a" != "$b" ]; then
@@ -517,6 +517,47 @@ jobs:
               BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" remove -D -P widget --no-install 2>/dev/null ); then
             echo "want non-zero exit on -D + -P"; exit 1
           fi
+
+      - name: bunpy link smoke (v0.1.9)
+        shell: bash
+        run: |
+          export BUNPY_LINK_DIR="$(mktemp -d)"
+          src="$(mktemp -d)"
+          cat > "$src/pyproject.toml" <<'EOF'
+          [project]
+          name = "widget"
+          version = "9.9.9"
+          EOF
+          mkdir -p "$src/widget"
+          echo "VERSION = '9.9.9'" > "$src/widget/__init__.py"
+          ( cd "$src" && "$GITHUB_WORKSPACE/bunpy" link )
+          test -f "$BUNPY_LINK_DIR/widget.json"
+          consumer="$(mktemp -d)"
+          cat > "$consumer/pyproject.toml" <<'EOF'
+          [project]
+          name = "demo"
+          version = "0.0.1"
+          EOF
+          ( cd "$consumer" && "$GITHUB_WORKSPACE/bunpy" link widget )
+          test -f "$consumer/.bunpy/site-packages/widget.pth"
+          got="$(cat "$consumer/.bunpy/site-packages/widget.pth")"
+          want="$(cd "$src" && pwd -P)"
+          test "$got" = "$want" || { echo "want $want, got $got"; exit 1; }
+          test -f "$consumer/.bunpy/site-packages/widget-9.9.9.dist-info/INSTALLER"
+          installer="$(cat "$consumer/.bunpy/site-packages/widget-9.9.9.dist-info/INSTALLER")"
+          test "$installer" = "bunpy-link" || { echo "want bunpy-link, got $installer"; exit 1; }
+          # --list shows the entry.
+          listed="$("$GITHUB_WORKSPACE/bunpy" link --list)"
+          case "$listed" in
+            *widget*9.9.9*) ;;
+            *) echo "want widget+9.9.9 in --list, got: $listed"; exit 1 ;;
+          esac
+          # Unlink consumer-side, then unregister.
+          ( cd "$consumer" && "$GITHUB_WORKSPACE/bunpy" unlink widget )
+          test ! -e "$consumer/.bunpy/site-packages/widget.pth"
+          test ! -e "$consumer/.bunpy/site-packages/widget-9.9.9.dist-info"
+          ( cd "$src" && "$GITHUB_WORKSPACE/bunpy" unlink )
+          test ! -e "$BUNPY_LINK_DIR/widget.json"
 
       - name: bunpy hello.py
         run: |

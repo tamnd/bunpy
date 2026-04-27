@@ -428,6 +428,70 @@ verb is idempotent. Removing the last entry in an array keeps the
 array (` + "`dependencies = [\n]`" + `) so the diff stays small.
 `,
 	},
+	"link": {
+		Name:    "link",
+		Summary: "Register or install editable links from the global registry",
+		Body: `bunpy link: register the current project, or install editable links into a consumer.
+
+USAGE
+  bunpy link                          register ./pyproject.toml in the global registry
+  bunpy link <pkg>...                 install each named link into ./.bunpy/site-packages
+  bunpy link --list                   print every entry in the global registry
+  bunpy link --target <dir>           consumer-side site-packages target
+
+A bare ` + "`bunpy link`" + ` reads ` + "`./pyproject.toml`" + `, normalises the
+project name, and writes a JSON entry into the global link
+registry. The registry root is ` + "`$BUNPY_LINK_DIR`" + ` (override
+for tests/CI), or the platform's user-data directory under
+` + "`bunpy/links/`" + `: ` + "`$XDG_DATA_HOME/bunpy/links`" + ` on Linux,
+` + "`~/Library/Application Support/bunpy/links`" + ` on macOS,
+` + "`%LOCALAPPDATA%\\bunpy\\links`" + ` on Windows. Re-registering an
+existing entry overwrites it (idempotent).
+
+` + "`bunpy link <pkg>...`" + ` reads each entry from the registry and
+lays down a PEP 660 editable proxy under
+` + "`./.bunpy/site-packages`" + `: a ` + "`<name>.pth`" + ` pointing at the
+absolute source root, plus a
+` + "`<name>-<version>.dist-info/`" + ` directory with METADATA,
+RECORD, ` + "`direct_url.json`" + ` (PEP 610), and an
+` + "`INSTALLER`" + ` file equal to ` + "`bunpy-link`" + `. ` + "`bunpy install`" + `
+reads ` + "`INSTALLER`" + ` and skips re-installing any linked
+package, so a link survives unrelated installs. To flip a
+linked package back to the pinned wheel, run
+` + "`bunpy unlink <pkg>`" + ` followed by ` + "`bunpy install`" + `.
+
+The verb is read-only with respect to ` + "`pyproject.toml`" + ` and
+` + "`bunpy.lock`" + `: links are tooling state and never appear in
+either file.
+`,
+	},
+	"unlink": {
+		Name:    "unlink",
+		Summary: "Unregister or remove editable links",
+		Body: `bunpy unlink: drop a registry entry, or remove links from a consumer.
+
+USAGE
+  bunpy unlink                        drop ./pyproject.toml from the global registry
+  bunpy unlink <pkg>...               remove each named link from ./.bunpy/site-packages
+  bunpy unlink --target <dir>         consumer-side site-packages target
+
+A bare ` + "`bunpy unlink`" + ` deletes the JSON entry for the current
+project from the global registry. Existing consumer-side
+installs keep working (the ` + "`.pth`" + ` is local) until the
+consumer re-links or re-installs. Missing-entry is a no-op.
+
+` + "`bunpy unlink <pkg>...`" + ` finds the
+` + "`<name>-<version>.dist-info`" + ` directory under the target,
+verifies it carries ` + "`INSTALLER=bunpy-link`" + ` (so the verb
+never accidentally removes a pinned wheel), walks RECORD with
+the same path-escape guard ` + "`bunpy remove`" + ` uses, and
+unlinks every listed file. A name that has no link installed
+prints ` + "`no link for <name>`" + ` and exits 0 (idempotent).
+
+After ` + "`bunpy unlink <pkg>`" + ` you can run ` + "`bunpy install`" + ` to
+re-fetch the pinned wheel and put it back in place.
+`,
+	},
 	"man": {
 		Name:    "man",
 		Summary: "Print or install the bundled manpages",

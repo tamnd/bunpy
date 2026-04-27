@@ -4,9 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/tamnd/bunpy/v1/pkg/editable"
 	"github.com/tamnd/bunpy/v1/pkg/lockfile"
 	"github.com/tamnd/bunpy/v1/pkg/pypi"
 	"github.com/tamnd/bunpy/v1/pkg/wheel"
@@ -97,6 +99,10 @@ func installSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 			skipped++
 			continue
 		}
+		if isLinkedPackage(target, p.Name, p.Version) {
+			fmt.Fprintf(stdout, "kept linked %s %s\n", p.Name, p.Version)
+			continue
+		}
 		f := pypi.File{Filename: p.Filename, URL: p.URL}
 		body, err := fetchAddWheel(f, p.Name, cacheDir)
 		if err != nil {
@@ -118,6 +124,30 @@ func installSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 		fmt.Fprintf(stdout, "skipped %d package%s outside the selected lanes\n", skipped, pluralS(skipped))
 	}
 	return 0, nil
+}
+
+// isLinkedPackage reports whether a previously-laid-down editable
+// install owns the dist-info for (name, version) under target.
+// `bunpy install` skips these so a `bunpy link <pkg>` survives
+// unrelated `install` runs. Callers can re-link or run
+// `bunpy unlink <pkg>` to flip the install back to the pinned wheel.
+func isLinkedPackage(target, name, version string) bool {
+	abs, err := filepath.Abs(target)
+	if err != nil {
+		return false
+	}
+	di := filepath.Join(abs, pypi.Normalize(name)+"-"+version+".dist-info", "INSTALLER")
+	body, err := os.ReadFile(di)
+	if err != nil {
+		// Try the verbatim name too: dist-info naming is not always
+		// PEP 503-normalised by the producing tool.
+		di = filepath.Join(abs, name+"-"+version+".dist-info", "INSTALLER")
+		body, err = os.ReadFile(di)
+		if err != nil {
+			return false
+		}
+	}
+	return strings.TrimSpace(string(body)) == editable.InstallerTag
 }
 
 // installLaneFilter returns a predicate that decides whether a

@@ -1,0 +1,56 @@
+.TH BUNPY-UNLINK 1 "2026-04-27" "bunpy" "User Commands"
+.SH NAME
+bunpy-unlink \- drop registry entries or remove editable links
+.SH SYNOPSIS
+.B bunpy unlink
+.RI [ pkg "...]"
+.RB [ \-\-target
+.IR dir ]
+.SH DESCRIPTION
+A bare
+.B bunpy unlink
+reads
+.I ./pyproject.toml
+and deletes the JSON entry for the current project from the
+global link registry. Existing consumer-side installs keep
+working until the consumer re-links or re-installs. Missing
+entries are not an error.
+.PP
+.BI "bunpy unlink " pkg ...
+finds the
+.IB name - version .dist-info
+directory under the target, verifies it carries
+.B INSTALLER=bunpy-link
+(so the verb never accidentally removes a pinned wheel), walks
+.B RECORD
+with the same path-escape guard
+.BR bunpy-remove (1)
+uses, and unlinks every listed file. The dist-info directory is
+then removed. A name that has no link installed prints
+.RI ' "no link for " name '
+and exits 0.
+.PP
+After
+.B bunpy unlink <pkg>
+you can run
+.B bunpy install
+to re-fetch the pinned wheel and put it back in place.
+.SH OPTIONS
+.TP
+.BI \-\-target " dir"
+Consumer-side site-packages target. Defaults to
+.IR ./.bunpy/site-packages .
+.SH ENVIRONMENT
+.TP
+.B BUNPY_LINK_DIR
+Override the registry root. See
+.BR bunpy-link (1).
+.SH EXIT STATUS
+Zero on a clean unregister or unlink. Non-zero on a missing
+.BR pyproject.toml ,
+a missing project name, or an unwritable target.
+.SH SEE ALSO
+.BR bunpy-link (1),
+.BR bunpy-remove (1),
+.BR bunpy-install (1),
+.BR bunpy (1).
