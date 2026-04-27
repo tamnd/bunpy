@@ -478,6 +478,80 @@ dependencies = []
 	}
 }
 
+func TestPmLockTagsLanesAcrossTables(t *testing.T) {
+	tmp := setupPmLockFixture(t, `[project]
+name = "demo"
+version = "0.0.1"
+dependencies = ["widget>=1.0"]
+
+[project.optional-dependencies]
+web = ["widget>=1.0"]
+
+[dependency-groups]
+dev = ["widget>=1.0"]
+
+[tool.bunpy]
+peer-dependencies = ["widget>=1.0"]
+`)
+	var stdout, stderr bytes.Buffer
+	if code, err := run([]string{"pm", "lock"}, &stdout, &stderr); err != nil || code != 0 {
+		t.Fatalf("pm lock: code=%d err=%v stderr=%s", code, err, stderr.String())
+	}
+	body, err := os.ReadFile(filepath.Join(tmp, "bunpy.lock"))
+	if err != nil {
+		t.Fatalf("read lock: %v", err)
+	}
+	got := string(body)
+	want := `lanes = ["dev", "main", "optional:web", "peer"]`
+	if !strings.Contains(got, want) {
+		t.Errorf("lock missing %q\n%s", want, got)
+	}
+}
+
+func TestPmLockOmitsLanesForMainOnly(t *testing.T) {
+	tmp := setupPmLockFixture(t, `[project]
+name = "demo"
+version = "0.0.1"
+dependencies = ["widget>=1.0"]
+`)
+	var stdout, stderr bytes.Buffer
+	if code, err := run([]string{"pm", "lock"}, &stdout, &stderr); err != nil || code != 0 {
+		t.Fatalf("pm lock: code=%d err=%v", code, err)
+	}
+	body, _ := os.ReadFile(filepath.Join(tmp, "bunpy.lock"))
+	if strings.Contains(string(body), "lanes =") {
+		t.Errorf("main-only pin should omit lanes field:\n%s", body)
+	}
+}
+
+func TestPmLockCheckDriftFromOptionalGroup(t *testing.T) {
+	tmp := setupPmLockFixture(t, `[project]
+name = "demo"
+version = "0.0.1"
+dependencies = ["widget>=1.0"]
+`)
+	var stdout, stderr bytes.Buffer
+	if code, err := run([]string{"pm", "lock"}, &stdout, &stderr); err != nil || code != 0 {
+		t.Fatalf("pm lock: code=%d err=%v", code, err)
+	}
+	if err := os.WriteFile(filepath.Join(tmp, "pyproject.toml"), []byte(`[project]
+name = "demo"
+version = "0.0.1"
+dependencies = ["widget>=1.0"]
+
+[project.optional-dependencies]
+web = ["widget>=1.0"]
+`), 0o644); err != nil {
+		t.Fatalf("rewrite manifest: %v", err)
+	}
+	stdout.Reset()
+	stderr.Reset()
+	code, _ := run([]string{"pm", "lock", "--check"}, &stdout, &stderr)
+	if code == 0 {
+		t.Errorf("expected non-zero exit when an optional group is added; stderr=%q", stderr.String())
+	}
+}
+
 func TestPmLockHelp(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 	code, err := run([]string{"pm", "lock", "--help"}, &stdout, &stderr)

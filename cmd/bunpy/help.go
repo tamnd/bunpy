@@ -80,6 +80,10 @@ USAGE
   bunpy add <pkg>                    pick the highest matching wheel
   bunpy add <pkg>==1.2.3             pin an exact version
   bunpy add <pkg>>=1.2,<2            satisfy a PEP 440 range
+  bunpy add <pkg> -D, --dev          add to [dependency-groups].dev
+  bunpy add <pkg> -D --group <name>  add to [dependency-groups].<name>
+  bunpy add <pkg> -O <group>         add to [project.optional-dependencies].<group>
+  bunpy add <pkg> -P, --peer         add to [tool.bunpy].peer-dependencies
   bunpy add <pkg> --no-install       only update the manifest and lockfile
   bunpy add <pkg> --no-write         only install
   bunpy add <pkg> --target <dir>     site-packages target (default ./.bunpy/site-packages)
@@ -96,10 +100,20 @@ manifest edit and the lockfile update; ` + "`--no-install`" + ` still
 writes the lockfile. The install reuses the v0.1.2 wheel installer
 (purelib only, RECORD-verified, atomic stage and rename).
 
-When the spec is omitted, the line written into
-` + "`[project].dependencies`" + ` is ` + "`<name>>=<resolved-version>`" + `.
-When the spec is given, it is written verbatim. Re-adding an
-already-listed package replaces its line with the new spec.
+When the spec is omitted, the line written into the manifest is
+` + "`<name>>=<resolved-version>`" + `. When the spec is given, it is
+written verbatim. Re-adding an already-listed package replaces
+its line with the new spec.
+
+v0.1.6 adds dep lanes via Bun-style flags. ` + "`-D`/`--dev`" + ` writes
+the spec to PEP 735 ` + "`[dependency-groups].dev`" + ` (or to
+` + "`[dependency-groups].<name>`" + ` when paired with ` + "`--group`" + `).
+` + "`-O <group>`/`--optional <group>`" + ` writes to PEP 621
+` + "`[project.optional-dependencies].<group>`" + `. ` + "`-P`/`--peer`" + `
+writes to ` + "`[tool.bunpy].peer-dependencies`" + `. The flags are
+mutually exclusive. Each pin in ` + "`bunpy.lock`" + ` is tagged with
+its lane, so ` + "`bunpy install`" + ` can pick a subset; the
+content-hash covers every lane.
 
 Tests can pin every byte of every PyPI exchange by setting
 ` + "`BUNPY_PYPI_FIXTURES`" + ` to a directory tree that serves both the
@@ -127,7 +141,9 @@ and ` + "`pm install-wheel`" + ` (PEP 427 single-wheel installer). v0.1.4
 adds ` + "`pm lock`" + ` (lockfile writer plus drift check). v0.1.5
 swaps the picker for the PubGrub-inspired resolver: ` + "`pm lock`" + `
 and ` + "`bunpy add`" + ` walk transitive deps, evaluate PEP 508
-markers, and pick platform wheels.
+markers, and pick platform wheels. v0.1.6 teaches ` + "`add`" + `,
+` + "`pm lock`" + `, and ` + "`install`" + ` to track dep lanes
+(main / dev / optional groups / peer) on every lockfile row.
 `,
 	},
 	"pm-lock": {
@@ -142,22 +158,28 @@ USAGE
   bunpy pm lock --cache-dir <path>    override the cache root
 
 The default lockfile path is ` + "`./bunpy.lock`" + ` next to ` + "`./pyproject.toml`" + `.
-Each direct dependency in ` + "`[project].dependencies`" + ` becomes one
+Every direct dep across ` + "`[project].dependencies`" + `,
+` + "`[project.optional-dependencies]`" + `, ` + "`[dependency-groups]`" + `,
+and ` + "`[tool.bunpy].peer-dependencies`" + ` becomes one
 ` + "`[[package]]`" + ` row pinning the resolved version, the wheel
-filename, the URL, and the sha256 from the PyPI index. The header
-records a ` + "`content-hash`" + ` derived from the sorted, trimmed dep
-specs, so a cheap byte compare detects pyproject drift without a
-re-resolve.
+filename, the URL, and the sha256 from the PyPI index. Each row
+carries a ` + "`lanes`" + ` tag listing every lane it belongs to;
+rows that only belong to ` + "`main`" + ` omit the field for stability.
+The header records a ` + "`content-hash`" + ` derived from every lane's
+sorted, trimmed dep specs, so a cheap byte compare detects
+pyproject drift without a re-resolve.
 
 ` + "`--check`" + ` exits non-zero when the lockfile is missing, the
-content-hash drifts from pyproject.toml, or the lockfile holds an
-entry that ` + "`[project].dependencies`" + ` no longer lists. Use it in
-CI to keep the lockfile honest.
+content-hash drifts from pyproject.toml, or any direct dep no
+longer has a corresponding lockfile entry. Use it in CI to keep
+the lockfile honest.
 
 v0.1.5 fills transitive entries: the resolver walks every
 Requires-Dist edge, evaluates PEP 508 markers, and picks
 platform-aware wheels via the host tag ladder before writing the
-lockfile.
+lockfile. v0.1.6 resolves every lane (main, dev, optional groups,
+peer) in one pass and tags each pin with the lanes that pulled it
+in, so ` + "`bunpy install`" + ` can pick a subset without re-resolving.
 `,
 	},
 	"pm-info": {
@@ -271,7 +293,12 @@ Equivalent to ` + "`bunpy <command> --help`" + `.
 		Body: `bunpy install: install every pinned wheel from bunpy.lock.
 
 USAGE
-  bunpy install                       install all pins into ./.bunpy/site-packages
+  bunpy install                       install main-lane pins into ./.bunpy/site-packages
+  bunpy install -D, --dev             also install [dependency-groups] pins
+  bunpy install -O <group>            also install one optional-dependencies group
+  bunpy install --all-extras          also install every optional-dependencies group
+  bunpy install -P, --peer            also install [tool.bunpy].peer-dependencies
+  bunpy install --production          alias for the default (main only); rejects lane flags
   bunpy install --target <dir>        site-packages target
   bunpy install --cache-dir <dir>     override the wheel cache root
   bunpy install --no-verify           skip RECORD hash verification
@@ -282,6 +309,13 @@ httpkit + cache path ` + "`bunpy add`" + ` uses, and each pin is
 installed via the v0.1.2 wheel installer. Run
 ` + "`bunpy pm lock`" + ` first to refresh the lockfile from
 ` + "`pyproject.toml`" + `.
+
+v0.1.6 reads the per-pin ` + "`lanes`" + ` tag and filters by the
+lane flags above. The default keeps only ` + "`main`" + `; pins
+without a ` + "`lanes`" + ` field are treated as ` + "`main`" + `.
+` + "`-O`" + ` may be repeated to enable several optional groups.
+` + "`--production`" + ` is mutually exclusive with the lane flags
+and is provided for Bun parity.
 `,
 	},
 	"man": {

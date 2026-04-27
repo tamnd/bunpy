@@ -1,0 +1,6 @@
+[project]
+name = "demo"
+version = "0.0.1"
+
+[project.optional-dependencies]
+web = ["widget>=1.0"]

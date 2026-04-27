@@ -32,9 +32,10 @@ type LoadOptions struct {
 
 // Manifest is the parsed pyproject.toml.
 type Manifest struct {
-	Project Project        `json:"project"`
-	Tool    Tool           `json:"tool"`
-	Other   map[string]any `json:"other,omitempty"`
+	Project          Project             `json:"project"`
+	Tool             Tool                `json:"tool"`
+	DependencyGroups map[string][]string `json:"dependency_groups,omitempty"`
+	Other            map[string]any      `json:"other,omitempty"`
 
 	// Warnings is non-nil only in soft mode.
 	Warnings []string `json:"warnings,omitempty"`
@@ -93,11 +94,21 @@ type Readme struct {
 // Tool holds the [tool.bunpy] table verbatim. Future rungs grow
 // typed fields here as we use them; everything else stays in Raw.
 type Tool struct {
+	// PeerDependencies is the [tool.bunpy.peer-dependencies] list:
+	// deps that downstream consumers must provide. Resolved for
+	// compat checks but never installed by default.
+	PeerDependencies []string `json:"peer_dependencies,omitempty"`
+
 	Raw map[string]any `json:"raw,omitempty"`
 }
 
 // nameRE is PEP 503's normalised-name regex.
 var nameRE = regexp.MustCompile(`^[A-Za-z0-9]([A-Za-z0-9._-]*[A-Za-z0-9])?$`)
+
+// groupNameRE is the PEP 685 / PEP 621 group name regex. Group
+// names share PEP 503's shape but are typically lowercased; we
+// accept either case and let callers normalise.
+var groupNameRE = regexp.MustCompile(`^[A-Za-z0-9]([A-Za-z0-9._-]*[A-Za-z0-9])?$`)
 
 // Load reads a pyproject.toml from disk and parses it.
 func Load(path string) (*Manifest, error) {
@@ -148,6 +159,7 @@ func ParseOpts(data []byte, opts LoadOptions) (*Manifest, error) {
 			}
 			if bunpy, ok := tt["bunpy"].(map[string]any); ok {
 				m.Tool.Raw = bunpy
+				m.Tool.PeerDependencies = stringSlice(bunpy["peer-dependencies"])
 			}
 			// Preserve the rest of [tool.*] verbatim under Other.
 			rest := map[string]any{}
@@ -159,6 +171,15 @@ func ParseOpts(data []byte, opts LoadOptions) (*Manifest, error) {
 			}
 			if len(rest) > 0 {
 				m.Other["tool"] = rest
+			}
+		case "dependency-groups":
+			gt, _ := v.(map[string]any)
+			if gt == nil {
+				return nil, errors.New("manifest: [dependency-groups] must be a table")
+			}
+			m.DependencyGroups = map[string][]string{}
+			for name, entries := range gt {
+				m.DependencyGroups[name] = stringSlice(entries)
 			}
 		default:
 			m.Other[k] = v
@@ -202,6 +223,26 @@ func (m *Manifest) validate(opts LoadOptions) error {
 		}
 		if _, ok := m.Project.Raw[k]; ok {
 			if err := report(fmt.Sprintf("project.dynamic includes %q but %q is also set literally", k, k)); err != nil {
+				return err
+			}
+		}
+	}
+
+	for name := range m.Project.OptionalDeps {
+		if !groupNameRE.MatchString(name) {
+			if err := report(fmt.Sprintf("project.optional-dependencies group %q is not a valid PEP 685 name", name)); err != nil {
+				return err
+			}
+		}
+	}
+	for name := range m.DependencyGroups {
+		if !groupNameRE.MatchString(name) {
+			if err := report(fmt.Sprintf("dependency-groups name %q is not a valid PEP 685 name", name)); err != nil {
+				return err
+			}
+		}
+		if _, dup := m.Project.OptionalDeps[name]; dup {
+			if err := report(fmt.Sprintf("dependency-groups name %q also appears in [project.optional-dependencies]", name)); err != nil {
 				return err
 			}
 		}

@@ -310,6 +310,69 @@ jobs:
           test -f "$work/.bunpy/site-packages/widget/__init__.py"
           test -f "$work/.bunpy/site-packages/gizmo/__init__.py"
 
+      - name: bunpy lane smoke - dev (v0.1.6)
+        shell: bash
+        run: |
+          work="$(mktemp -d)"
+          cache="$(mktemp -d)"
+          cat > "$work/pyproject.toml" <<'EOF'
+          [project]
+          name = "smoke"
+          version = "0.0.1"
+
+          [dependency-groups]
+          dev = ["widget>=1.0"]
+          EOF
+          ( cd "$work" && BUNPY_PYPI_FIXTURES="$GITHUB_WORKSPACE/tests/fixtures/v013/index" \
+              BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" pm lock )
+          grep -q 'lanes = \["dev"\]' "$work/bunpy.lock"
+          ( cd "$work" && BUNPY_PYPI_FIXTURES="$GITHUB_WORKSPACE/tests/fixtures/v013/index" \
+              BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" install )
+          test ! -e "$work/.bunpy/site-packages/widget"
+          ( cd "$work" && BUNPY_PYPI_FIXTURES="$GITHUB_WORKSPACE/tests/fixtures/v013/index" \
+              BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" install -D )
+          test -f "$work/.bunpy/site-packages/widget/__init__.py"
+
+      - name: bunpy lane smoke - optional extras (v0.1.6)
+        shell: bash
+        run: |
+          work="$(mktemp -d)"
+          cache="$(mktemp -d)"
+          cat > "$work/pyproject.toml" <<'EOF'
+          [project]
+          name = "smoke"
+          version = "0.0.1"
+
+          [project.optional-dependencies]
+          web = ["widget>=1.0"]
+          EOF
+          ( cd "$work" && BUNPY_PYPI_FIXTURES="$GITHUB_WORKSPACE/tests/fixtures/v013/index" \
+              BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" pm lock )
+          grep -q 'lanes = \["optional:web"\]' "$work/bunpy.lock"
+          ( cd "$work" && BUNPY_PYPI_FIXTURES="$GITHUB_WORKSPACE/tests/fixtures/v013/index" \
+              BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" install --all-extras )
+          test -f "$work/.bunpy/site-packages/widget/__init__.py"
+
+      - name: bunpy lane smoke - peer (v0.1.6)
+        shell: bash
+        run: |
+          work="$(mktemp -d)"
+          cache="$(mktemp -d)"
+          cat > "$work/pyproject.toml" <<'EOF'
+          [project]
+          name = "smoke"
+          version = "0.0.1"
+
+          [tool.bunpy]
+          peer-dependencies = ["widget>=1.0"]
+          EOF
+          ( cd "$work" && BUNPY_PYPI_FIXTURES="$GITHUB_WORKSPACE/tests/fixtures/v013/index" \
+              BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" pm lock )
+          grep -q 'lanes = \["peer"\]' "$work/bunpy.lock"
+          ( cd "$work" && BUNPY_PYPI_FIXTURES="$GITHUB_WORKSPACE/tests/fixtures/v013/index" \
+              BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" install -P )
+          test -f "$work/.bunpy/site-packages/widget/__init__.py"
+
       - name: bunpy hello.py
         run: |
           echo 'x = 1' > hello.py

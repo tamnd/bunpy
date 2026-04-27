@@ -294,6 +294,19 @@ compares the content-hash against pyproject's, and verifies that
 every direct dep in `[project].dependencies` has a matching pin.
 Transitive rows are expected and never trigger a drift.
 
+v0.1.6 grows each `[[package]]` row an optional `lanes` array
+listing every lane the pin belongs to. Lane labels are `main`,
+`dev`, `group:<name>` (non-dev PEP 735 groups), `optional:<group>`
+(PEP 621 optional-dependencies), and `peer`
+(`[tool.bunpy].peer-dependencies`). Rows that only belong to `main`
+omit the field so v0.1.5 fixtures stay byte-identical and the
+schema version stays at 1. The content-hash now covers every lane,
+sorted, so adding a new optional group triggers drift on
+`--check`. `bunpy pm lock` resolves every lane in one pass and
+post-processes the registry to compute per-lane closures via BFS
+over Requires-Dist edges; `bunpy install` filters by the per-pin
+`lanes` tag (default keeps `main` only).
+
 ## Module layout
 
 ```

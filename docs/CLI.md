@@ -1,7 +1,7 @@
 # CLI reference
 
 bunpy ships as one binary. Subcommands land per-version per the
-roadmap. Today (v0.1.5) the wired surface is `--version` (with
+roadmap. Today (v0.1.6) the wired surface is `--version` (with
 `--short` and `--json`), `--help`, positional `bunpy <file.py>`,
 `bunpy run <file.py>`, `bunpy repl`, `bunpy stdlib`,
 `bunpy pm config`, `bunpy pm info`, `bunpy pm install-wheel`,
@@ -86,30 +86,44 @@ The `pm` tree groups low-level plumbing; porcelain commands
   PubGrub-inspired resolver, walks transitive Requires-Dist edges,
   evaluates PEP 508 markers against the host environment, and
   picks platform wheels (manylinux, musllinux, macosx, win) before
-  writing each `[[package]]` row. The header carries a
-  `content-hash` derived from the sorted, trimmed dep specs joined
-  by newlines, so a cheap byte compare detects pyproject drift
-  without a re-resolve. Flags: `--check` (verify and exit non-zero
-  on drift; missing lockfile, content-hash mismatch, or a
-  pyproject dep with no lockfile entry), `--index <url>`,
-  `--cache-dir <path>`.
+  writing each `[[package]]` row. v0.1.6 resolves every lane
+  (`[project].dependencies`, `[project.optional-dependencies]`,
+  `[dependency-groups]`, `[tool.bunpy].peer-dependencies`) in one
+  pass and tags each pin with the lanes that pulled it in. Rows
+  that only belong to `main` omit the `lanes` field for stability
+  with v0.1.5 lockfiles. The header carries a `content-hash`
+  derived from every lane's sorted, trimmed dep specs, so a cheap
+  byte compare detects pyproject drift without a re-resolve. Flags:
+  `--check` (verify and exit non-zero on drift; missing lockfile,
+  content-hash mismatch, or a direct dep in any lane with no
+  lockfile entry), `--index <url>`, `--cache-dir <path>`.
 
 The porcelain `bunpy add <pkg>[<spec>]` hands the requirement to
 the resolver, walks transitive edges, and writes the resolved spec
-back into `[project].dependencies`. Flags: `--no-install` (manifest
-+ lockfile only), `--no-write` (install only), `--target <dir>`,
-`--index <url>`, `--cache-dir <path>`. Re-adding an already-listed
-package replaces its line. Pre-releases are skipped unless the
-spec pins one. Every successful add rewrites `bunpy.lock` with the
-full transitive set; `--no-write` suppresses both files. Dev and
-optional lanes (`-D`, `-O`, `-P`) land at v0.1.6.
+back into the matching manifest table. Flags: `-D`/`--dev` (PEP 735
+`[dependency-groups].dev`, or `--group <name>` for a non-dev group),
+`-O <group>`/`--optional <group>` (PEP 621
+`[project.optional-dependencies].<group>`), `-P`/`--peer`
+(`[tool.bunpy].peer-dependencies`), `--no-install` (manifest +
+lockfile only), `--no-write` (install only), `--target <dir>`,
+`--index <url>`, `--cache-dir <path>`. The lane flags are mutually
+exclusive. Re-adding an already-listed package replaces its line.
+Pre-releases are skipped unless the spec pins one. Every successful
+add rewrites `bunpy.lock` with the full transitive set and tags the
+new pin with its lane; `--no-write` suppresses both files.
 
 `bunpy install` walks `bunpy.lock` (treated as the source of
-truth, no re-resolve) and installs every pin into
+truth, no re-resolve) and installs pins into
 `./.bunpy/site-packages/` via the same wheel installer
-`pm install-wheel` uses. Flags: `--target <dir>`, `--cache-dir
-<path>`, `--no-verify`. Run `bunpy pm lock` first when the
-lockfile is missing or stale.
+`pm install-wheel` uses. Lane flags filter the install: the default
+keeps only pins tagged `main` (and pins with no `lanes` field).
+`-D`/`--dev` adds dev and `group:<name>` lanes; `-O <group>` adds
+one `optional:<group>` (may be repeated); `--all-extras` adds every
+optional group; `-P`/`--peer` adds `peer`. `--production` is an
+alias for the default and is mutually exclusive with the lane
+flags (Bun parity). Flags: `--target <dir>`, `--cache-dir <path>`,
+`--no-verify`. Run `bunpy pm lock` first when the lockfile is
+missing or stale.
 
 The rest of the package-manager surface is aspirational and
 lands per the v0.1.x ladder in `docs/ROADMAP.md`:

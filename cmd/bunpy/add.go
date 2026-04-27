@@ -37,6 +37,10 @@ func addSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 		target    = filepath.Join(".bunpy", "site-packages")
 		baseURL   string
 		cacheDir  string
+		dev       bool
+		group     string
+		optional  string
+		peer      bool
 	)
 	for i := 0; i < len(args); i++ {
 		a := args[i]
@@ -47,6 +51,22 @@ func addSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 			noInstall = true
 		case "--no-write":
 			noWrite = true
+		case "-D", "--dev":
+			dev = true
+		case "-P", "--peer":
+			peer = true
+		case "--group":
+			if i+1 >= len(args) {
+				return 1, fmt.Errorf("bunpy add: --group requires a value")
+			}
+			i++
+			group = args[i]
+		case "-O", "--optional":
+			if i+1 >= len(args) {
+				return 1, fmt.Errorf("bunpy add: %s requires a group name", a)
+			}
+			i++
+			optional = args[i]
 		case "--target":
 			if i+1 >= len(args) {
 				return 1, fmt.Errorf("bunpy add: --target requires a value")
@@ -78,14 +98,38 @@ func addSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 				cacheDir = strings.TrimPrefix(a, "--cache-dir=")
 				continue
 			}
+			if strings.HasPrefix(a, "--optional=") {
+				optional = strings.TrimPrefix(a, "--optional=")
+				continue
+			}
+			if strings.HasPrefix(a, "--group=") {
+				group = strings.TrimPrefix(a, "--group=")
+				continue
+			}
 			if strings.HasPrefix(a, "-") {
-				return 1, fmt.Errorf("bunpy add: unknown flag %q (known: --no-install, --no-write, --target, --index, --cache-dir, --help)", a)
+				return 1, fmt.Errorf("bunpy add: unknown flag %q", a)
 			}
 			if spec != "" {
 				return 1, fmt.Errorf("bunpy add: too many positional arguments (%q after %q)", a, spec)
 			}
 			spec = a
 		}
+	}
+	lanes := 0
+	if dev {
+		lanes++
+	}
+	if optional != "" {
+		lanes++
+	}
+	if peer {
+		lanes++
+	}
+	if lanes > 1 {
+		return 1, fmt.Errorf("bunpy add: -D, -O, -P are mutually exclusive")
+	}
+	if group != "" && !dev {
+		return 1, fmt.Errorf("bunpy add: --group requires -D/--dev")
 	}
 	if spec == "" {
 		return 1, fmt.Errorf("usage: bunpy add <pkg>[<spec>]")
@@ -160,19 +204,50 @@ func addSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 		}
 	}
 
+	lane := lockfile.LaneMain
+	switch {
+	case dev:
+		gname := group
+		if gname == "" {
+			gname = "dev"
+		}
+		lane = lockfile.GroupLane(gname)
+	case optional != "":
+		lane = lockfile.OptionalLane(optional)
+	case peer:
+		lane = lockfile.LanePeer
+	}
+
 	if !noWrite {
 		depLine := spec
 		if vSpec == "" {
 			depLine = name + ">=" + chosen
 		}
-		out, err := mf.AddDependency(depLine)
+		var (
+			out []byte
+			err error
+		)
+		switch {
+		case dev:
+			gname := group
+			if gname == "" {
+				gname = "dev"
+			}
+			out, err = mf.AddGroupDependency(gname, depLine)
+		case optional != "":
+			out, err = mf.AddOptionalDependency(optional, depLine)
+		case peer:
+			out, err = mf.AddPeerDependency(depLine)
+		default:
+			out, err = mf.AddDependency(depLine)
+		}
 		if err != nil {
 			return 1, fmt.Errorf("bunpy add: %w", err)
 		}
 		if err := os.WriteFile("pyproject.toml", out, 0o644); err != nil {
 			return 1, fmt.Errorf("bunpy add: %w", err)
 		}
-		if err := updateLockfile("bunpy.lock", out, res, reg); err != nil {
+		if err := updateLockfile("bunpy.lock", out, res, reg, lane, name); err != nil {
 			return 1, fmt.Errorf("bunpy add: %w", err)
 		}
 	}
@@ -187,9 +262,13 @@ func addSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 
 // updateLockfile rewrites bunpy.lock so every pin in res lands in
 // the file. Existing entries are upserted; the content-hash is
-// recomputed from the freshly written pyproject's
-// [project].dependencies.
-func updateLockfile(path string, manifestBytes []byte, res *resolver.Resolution, reg *pypiRegistry) error {
+// recomputed from every lane in the freshly written pyproject.
+//
+// rootLane and rootName tag the just-added direct dep with the
+// caller's chosen lane. Transitive pins inherit the same lane.
+// When a pin already exists with a different lane set, the lanes
+// merge so a package shared across main and dev carries both.
+func updateLockfile(path string, manifestBytes []byte, res *resolver.Resolution, reg *pypiRegistry, rootLane, rootName string) error {
 	mf, err := manifest.Parse(manifestBytes)
 	if err != nil {
 		return fmt.Errorf("re-parse manifest: %w", err)
@@ -201,22 +280,69 @@ func updateLockfile(path string, manifestBytes []byte, res *resolver.Resolution,
 	if lock == nil {
 		lock = &lockfile.Lock{Version: lockfile.Version}
 	}
+	rootNorm := pypi.Normalize(rootName)
 	for _, pin := range res.Pins {
 		f, ok := reg.Pick(pin.Name, pin.Version)
 		if !ok {
 			return fmt.Errorf("missing wheel pick for %s %s", pin.Name, pin.Version)
 		}
+		lanes := mergePinLanes(lock, pin.Name, rootLane, pin.Name == rootNorm)
 		lock.Upsert(lockfile.Package{
 			Name:     pin.Name,
 			Version:  pin.Version,
 			Filename: f.Filename,
 			URL:      f.URL,
 			Hash:     wheelSha256(f),
+			Lanes:    lanes,
 		})
 	}
-	lock.ContentHash = lockfile.HashDependencies(mf.Project.Dependencies)
+	lock.ContentHash = lockfile.HashLanes(manifestLaneMap(mf))
 	lock.Generated = time.Now().UTC()
 	return lock.WriteFile(path)
+}
+
+// mergePinLanes returns the lane set the given pin should carry
+// after this add: existing lanes (if any) plus rootLane.
+func mergePinLanes(lock *lockfile.Lock, name, rootLane string, isRoot bool) []string {
+	if rootLane == "" {
+		rootLane = lockfile.LaneMain
+	}
+	seen := map[string]bool{rootLane: true}
+	if !isRoot {
+		// transitive pins inherit the root lane only.
+	}
+	if existing, ok := lock.Find(name); ok {
+		for _, l := range existing.Lanes {
+			seen[l] = true
+		}
+		if len(existing.Lanes) == 0 {
+			seen[lockfile.LaneMain] = true
+		}
+	}
+	out := make([]string, 0, len(seen))
+	for l := range seen {
+		out = append(out, l)
+	}
+	return out
+}
+
+// manifestLaneMap collects every dep lane from a parsed manifest
+// keyed by the canonical lane label used in the lockfile.
+func manifestLaneMap(mf *manifest.Manifest) map[string][]string {
+	out := map[string][]string{}
+	if len(mf.Project.Dependencies) > 0 {
+		out[lockfile.LaneMain] = mf.Project.Dependencies
+	}
+	for group, deps := range mf.DependencyGroups {
+		out[lockfile.GroupLane(group)] = deps
+	}
+	for group, deps := range mf.Project.OptionalDeps {
+		out[lockfile.OptionalLane(group)] = deps
+	}
+	if len(mf.Tool.PeerDependencies) > 0 {
+		out[lockfile.LanePeer] = mf.Tool.PeerDependencies
+	}
+	return out
 }
 
 // wheelSha256 returns "sha256:<hex>" from f.Hashes if present.

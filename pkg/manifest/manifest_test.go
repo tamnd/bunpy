@@ -526,3 +526,82 @@ func TestAddDependencyMissingProject(t *testing.T) {
 		t.Error("missing [project]: want error")
 	}
 }
+
+func TestParseDependencyGroups(t *testing.T) {
+	src := `[project]
+name = "demo"
+version = "0.1.0"
+
+[dependency-groups]
+dev = ["pytest>=8", "ruff"]
+test = ["pytest-cov"]
+`
+	m, err := Parse([]byte(src))
+	if err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+	if got := m.DependencyGroups["dev"]; len(got) != 2 || got[0] != "pytest>=8" || got[1] != "ruff" {
+		t.Errorf("dependency-groups.dev: got %v", got)
+	}
+	if got := m.DependencyGroups["test"]; len(got) != 1 || got[0] != "pytest-cov" {
+		t.Errorf("dependency-groups.test: got %v", got)
+	}
+}
+
+func TestParsePeerDependencies(t *testing.T) {
+	src := `[project]
+name = "demo"
+version = "0.1.0"
+
+[tool.bunpy]
+peer-dependencies = ["typing-extensions>=4"]
+`
+	m, err := Parse([]byte(src))
+	if err != nil {
+		t.Fatalf("Parse: %v", err)
+	}
+	if got := m.Tool.PeerDependencies; len(got) != 1 || got[0] != "typing-extensions>=4" {
+		t.Errorf("peer-dependencies: got %v", got)
+	}
+}
+
+func TestParseDependencyGroupsRejectsTableShape(t *testing.T) {
+	src := `dependency-groups = "broken"
+
+[project]
+name = "demo"
+version = "0.1.0"
+`
+	if _, err := Parse([]byte(src)); err == nil {
+		t.Error("dependency-groups as string: want error")
+	}
+}
+
+func TestStrictRejectsDuplicateGroupNames(t *testing.T) {
+	src := `[project]
+name = "demo"
+version = "0.1.0"
+
+[project.optional-dependencies]
+test = ["pytest"]
+
+[dependency-groups]
+test = ["pytest-cov"]
+`
+	if _, err := Parse([]byte(src)); err == nil {
+		t.Error("duplicate group: want error in strict mode")
+	}
+}
+
+func TestStrictRejectsBadGroupName(t *testing.T) {
+	src := `[project]
+name = "demo"
+version = "0.1.0"
+
+[project.optional-dependencies]
+"bad name" = ["pytest"]
+`
+	if _, err := Parse([]byte(src)); err == nil {
+		t.Error("bad group name: want error in strict mode")
+	}
+}

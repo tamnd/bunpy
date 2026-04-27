@@ -236,6 +236,122 @@ version = "0.0.1"
 	}
 }
 
+func TestAddDevWritesDependencyGroup(t *testing.T) {
+	tmp := setupAddFixture(t, `[project]
+name = "demo"
+version = "0.0.1"
+`)
+	var stdout, stderr bytes.Buffer
+	code, err := run([]string{"add", "widget", "-D"}, &stdout, &stderr)
+	if err != nil || code != 0 {
+		t.Fatalf("bunpy add widget -D: code=%d err=%v stderr=%s", code, err, stderr.String())
+	}
+	body, _ := os.ReadFile(filepath.Join(tmp, "pyproject.toml"))
+	got := string(body)
+	if !strings.Contains(got, "[dependency-groups]") {
+		t.Errorf("manifest missing [dependency-groups]:\n%s", got)
+	}
+	if !strings.Contains(got, `dev = [`) || !strings.Contains(got, `"widget>=1.1.0"`) {
+		t.Errorf("manifest missing dev dep:\n%s", got)
+	}
+	lock, _ := os.ReadFile(filepath.Join(tmp, "bunpy.lock"))
+	if !strings.Contains(string(lock), `lanes = ["dev"]`) {
+		t.Errorf("lockfile missing dev lane tag:\n%s", lock)
+	}
+}
+
+func TestAddDevWithGroupName(t *testing.T) {
+	tmp := setupAddFixture(t, `[project]
+name = "demo"
+version = "0.0.1"
+`)
+	var stdout, stderr bytes.Buffer
+	code, err := run([]string{"add", "widget", "-D", "--group", "test"}, &stdout, &stderr)
+	if err != nil || code != 0 {
+		t.Fatalf("bunpy add widget -D --group test: code=%d err=%v stderr=%s", code, err, stderr.String())
+	}
+	body, _ := os.ReadFile(filepath.Join(tmp, "pyproject.toml"))
+	if !strings.Contains(string(body), `test = [`) {
+		t.Errorf("manifest missing test group:\n%s", body)
+	}
+	lock, _ := os.ReadFile(filepath.Join(tmp, "bunpy.lock"))
+	if !strings.Contains(string(lock), `lanes = ["group:test"]`) {
+		t.Errorf("lockfile missing group:test lane tag:\n%s", lock)
+	}
+}
+
+func TestAddOptionalWritesProjectOptionalDeps(t *testing.T) {
+	tmp := setupAddFixture(t, `[project]
+name = "demo"
+version = "0.0.1"
+`)
+	var stdout, stderr bytes.Buffer
+	code, err := run([]string{"add", "widget", "-O", "web"}, &stdout, &stderr)
+	if err != nil || code != 0 {
+		t.Fatalf("bunpy add widget -O web: code=%d err=%v stderr=%s", code, err, stderr.String())
+	}
+	body, _ := os.ReadFile(filepath.Join(tmp, "pyproject.toml"))
+	got := string(body)
+	if !strings.Contains(got, "[project.optional-dependencies]") {
+		t.Errorf("manifest missing optional-dependencies table:\n%s", got)
+	}
+	if !strings.Contains(got, `web = [`) {
+		t.Errorf("manifest missing web group:\n%s", got)
+	}
+	lock, _ := os.ReadFile(filepath.Join(tmp, "bunpy.lock"))
+	if !strings.Contains(string(lock), `lanes = ["optional:web"]`) {
+		t.Errorf("lockfile missing optional:web lane tag:\n%s", lock)
+	}
+}
+
+func TestAddPeerWritesToolBunpy(t *testing.T) {
+	tmp := setupAddFixture(t, `[project]
+name = "demo"
+version = "0.0.1"
+`)
+	var stdout, stderr bytes.Buffer
+	code, err := run([]string{"add", "widget", "-P"}, &stdout, &stderr)
+	if err != nil || code != 0 {
+		t.Fatalf("bunpy add widget -P: code=%d err=%v stderr=%s", code, err, stderr.String())
+	}
+	body, _ := os.ReadFile(filepath.Join(tmp, "pyproject.toml"))
+	got := string(body)
+	if !strings.Contains(got, "[tool.bunpy]") {
+		t.Errorf("manifest missing tool.bunpy:\n%s", got)
+	}
+	if !strings.Contains(got, `peer-dependencies = [`) {
+		t.Errorf("manifest missing peer-dependencies:\n%s", got)
+	}
+	lock, _ := os.ReadFile(filepath.Join(tmp, "bunpy.lock"))
+	if !strings.Contains(string(lock), `lanes = ["peer"]`) {
+		t.Errorf("lockfile missing peer lane tag:\n%s", lock)
+	}
+}
+
+func TestAddRejectsConflictingLaneFlags(t *testing.T) {
+	setupAddFixture(t, `[project]
+name = "demo"
+version = "0.0.1"
+`)
+	var stdout, stderr bytes.Buffer
+	code, _ := run([]string{"add", "widget", "-D", "-P"}, &stdout, &stderr)
+	if code == 0 {
+		t.Errorf("expected non-zero exit for -D -P together; stderr=%q", stderr.String())
+	}
+}
+
+func TestAddRejectsGroupWithoutDev(t *testing.T) {
+	setupAddFixture(t, `[project]
+name = "demo"
+version = "0.0.1"
+`)
+	var stdout, stderr bytes.Buffer
+	code, _ := run([]string{"add", "widget", "--group", "test"}, &stdout, &stderr)
+	if code == 0 {
+		t.Errorf("expected non-zero exit for --group without -D; stderr=%q", stderr.String())
+	}
+}
+
 func TestAddHelp(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 	code, err := run([]string{"add", "--help"}, &stdout, &stderr)

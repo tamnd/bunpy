@@ -1,8 +1,14 @@
 .TH BUNPY-INSTALL 1 "2026-04-27" "bunpy" "User Commands"
 .SH NAME
-bunpy-install \- install every pinned wheel from bunpy.lock
+bunpy-install \- install pinned wheels from bunpy.lock
 .SH SYNOPSIS
 .B bunpy install
+.RB [ -D | --dev ]
+.RB [ -O | --optional
+.IR group ]
+.RB [ --all-extras ]
+.RB [ -P | --peer ]
+.RB [ --production ]
 .RB [ \-\-target
 .IR dir ]
 .RB [ \-\-cache-dir
@@ -11,7 +17,7 @@ bunpy-install \- install every pinned wheel from bunpy.lock
 .SH DESCRIPTION
 Reads
 .I ./bunpy.lock
-and installs every
+and installs each
 .B [[package]]
 pin into
 .IR ./.bunpy/site-packages .
@@ -23,10 +29,43 @@ cache path
 uses, then installed via the v0.1.2 wheel installer (purelib only,
 RECORD-verified, atomic stage and rename).
 .PP
+v0.1.6 reads the per-pin
+.B lanes
+field and filters by the lane flags below. The default keeps only
+.BR main ;
+pins without a
+.B lanes
+field are treated as
+.BR main .
 Run
 .BR bunpy-pm-lock (1)
 first when the lockfile is missing or stale.
 .SH OPTIONS
+.TP
+.B -D, --dev
+Also install pins tagged with lane
+.B dev
+or
+.BI group: name
+(PEP 735 dependency groups).
+.TP
+.BR -O ", " --optional " " \fIgroup\fR
+Also install pins tagged with lane
+.BI optional: group .
+May be repeated.
+.TP
+.B --all-extras
+Also install every
+.BI optional: group
+lane.
+.TP
+.B -P, --peer
+Also install pins tagged with lane
+.BR peer .
+.TP
+.B --production
+Alias for the default (main only). Mutually exclusive with the lane
+flags. Provided for Bun parity.
 .TP
 .BI \-\-target " dir"
 Site-packages target directory. Defaults to
@@ -41,8 +80,11 @@ or the platform XDG default.
 Skip RECORD hash verification. Use when the lockfile and a private
 mirror agree on integrity by other means.
 .SH EXIT STATUS
-Zero when every pin installs cleanly. Non-zero when the lockfile is
-missing, a wheel cannot be fetched, or RECORD verification fails.
+Zero when every selected pin installs cleanly. Non-zero when the
+lockfile is missing, a wheel cannot be fetched, RECORD verification
+fails, or
+.B --production
+is combined with a lane flag.
 .SH SEE ALSO
 .BR bunpy-add (1),
 .BR bunpy-pm-lock (1),

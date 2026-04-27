@@ -28,11 +28,37 @@ type Lock struct {
 
 // Package is one row in the lockfile.
 type Package struct {
-	Name     string `toml:"name"`
-	Version  string `toml:"version"`
-	Filename string `toml:"filename"`
-	URL      string `toml:"url"`
-	Hash     string `toml:"hash"`
+	Name     string   `toml:"name"`
+	Version  string   `toml:"version"`
+	Filename string   `toml:"filename"`
+	URL      string   `toml:"url"`
+	Hash     string   `toml:"hash"`
+	Lanes    []string `toml:"lanes,omitempty"`
+}
+
+// Lane labels carried on Package.Lanes. Order in serialised
+// rows is sorted alphabetically; on the wire the empty/unset
+// field is implicitly LaneMain so v0.1.5 lockfiles continue to
+// read as all-main.
+const (
+	LaneMain = "main"
+	LaneDev  = "dev"
+	LanePeer = "peer"
+)
+
+// OptionalLane returns the canonical lane label for an optional
+// group: "optional:<group>".
+func OptionalLane(group string) string { return "optional:" + group }
+
+// GroupLane returns the canonical lane label for a non-dev
+// [dependency-groups].<name> entry: "group:<name>". The reserved
+// "dev" name uses LaneDev so the on-disk shape stays compact for
+// the common case.
+func GroupLane(name string) string {
+	if name == LaneDev {
+		return LaneDev
+	}
+	return "group:" + name
 }
 
 // ErrNotFound is returned by Read when bunpy.lock does not exist.
@@ -113,6 +139,12 @@ func Parse(data []byte) (*Lock, error) {
 			curr.URL = unquote(v)
 		case "hash":
 			curr.Hash = unquote(v)
+		case "lanes":
+			lanes, err := parseInlineStringArray(v)
+			if err != nil {
+				return nil, fmt.Errorf("lockfile: lanes: %w", err)
+			}
+			curr.Lanes = lanes
 		default:
 			return nil, fmt.Errorf("lockfile: unknown package key %q", k)
 		}
@@ -181,8 +213,56 @@ func (l *Lock) Bytes() []byte {
 		fmt.Fprintf(&sb, "filename = %q\n", p.Filename)
 		fmt.Fprintf(&sb, "url = %q\n", p.URL)
 		fmt.Fprintf(&sb, "hash = %q\n", p.Hash)
+		if writeLanes(p.Lanes) {
+			lanes := append([]string(nil), p.Lanes...)
+			sort.Strings(lanes)
+			sb.WriteString("lanes = [")
+			for i, lane := range lanes {
+				if i > 0 {
+					sb.WriteString(", ")
+				}
+				fmt.Fprintf(&sb, "%q", lane)
+			}
+			sb.WriteString("]\n")
+		}
 	}
 	return []byte(sb.String())
+}
+
+// writeLanes returns true when lanes should be written to the
+// row. The empty set and the bare ["main"] both imply main and
+// stay implicit so v0.1.5 fixtures remain byte-identical.
+func writeLanes(lanes []string) bool {
+	if len(lanes) == 0 {
+		return false
+	}
+	if len(lanes) == 1 && lanes[0] == LaneMain {
+		return false
+	}
+	return true
+}
+
+// parseInlineStringArray parses `["a", "b"]` style TOML inline
+// arrays into a Go slice.
+func parseInlineStringArray(s string) ([]string, error) {
+	s = strings.TrimSpace(s)
+	if !strings.HasPrefix(s, "[") || !strings.HasSuffix(s, "]") {
+		return nil, fmt.Errorf("expected [...] array, got %q", s)
+	}
+	body := strings.TrimSpace(s[1 : len(s)-1])
+	if body == "" {
+		return []string{}, nil
+	}
+	parts := strings.Split(body, ",")
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		t := strings.TrimSpace(p)
+		if len(t) < 2 || t[0] != '"' || t[len(t)-1] != '"' {
+			return nil, fmt.Errorf("expected quoted string, got %q", t)
+		}
+		out = append(out, t[1:len(t)-1])
+	}
+	return out, nil
 }
 
 // WriteFile writes the lockfile to path with 0o644.
@@ -253,6 +333,10 @@ func Normalize(s string) string {
 // HashDependencies returns sha256:<hex> over the sorted, trimmed
 // dependency specs. Used as the lockfile's content-hash so a
 // drift check can detect pyproject mutations without re-resolving.
+//
+// Equivalent to HashLanes(map{"main": deps}) without the lane
+// label header so v0.1.4/v0.1.5 lockfiles continue to verify
+// byte-identically when no non-main lanes exist.
 func HashDependencies(deps []string) string {
 	cleaned := make([]string, 0, len(deps))
 	for _, d := range deps {
@@ -269,4 +353,106 @@ func HashDependencies(deps []string) string {
 		h.Write([]byte{'\n'})
 	}
 	return "sha256:" + hex.EncodeToString(h.Sum(nil))
+}
+
+// HashLanes returns sha256:<hex> over every populated dep lane,
+// emitted in fixed order: main, dev, optional:<sorted>, peer.
+// Empty lanes are skipped so a project that uses only main keeps
+// the v0.1.4 hash exactly.
+//
+// The lane label and a newline precede the lane's sorted, trimmed
+// specs. A spec moving lanes counts as drift even though the
+// total spec set is unchanged.
+func HashLanes(lanes map[string][]string) string {
+	if len(lanes) == 0 {
+		return HashDependencies(nil)
+	}
+	if onlyMain(lanes) {
+		return HashDependencies(lanes[LaneMain])
+	}
+
+	keys := orderedLaneKeys(lanes)
+	h := sha256.New()
+	for _, k := range keys {
+		cleaned := trimSort(lanes[k])
+		if len(cleaned) == 0 {
+			continue
+		}
+		h.Write([]byte(k))
+		h.Write([]byte{'\n'})
+		for _, c := range cleaned {
+			h.Write([]byte(c))
+			h.Write([]byte{'\n'})
+		}
+	}
+	return "sha256:" + hex.EncodeToString(h.Sum(nil))
+}
+
+func onlyMain(lanes map[string][]string) bool {
+	for k, v := range lanes {
+		if k == LaneMain {
+			continue
+		}
+		if len(trimSort(v)) > 0 {
+			return false
+		}
+	}
+	return true
+}
+
+func trimSort(deps []string) []string {
+	out := make([]string, 0, len(deps))
+	for _, d := range deps {
+		t := strings.TrimSpace(d)
+		if t == "" {
+			continue
+		}
+		out = append(out, t)
+	}
+	sort.Strings(out)
+	return out
+}
+
+func orderedLaneKeys(lanes map[string][]string) []string {
+	var (
+		main      bool
+		dev       bool
+		peer      bool
+		groupKeys []string
+		optKeys   []string
+		other     []string
+	)
+	for k := range lanes {
+		switch {
+		case k == LaneMain:
+			main = true
+		case k == LaneDev:
+			dev = true
+		case k == LanePeer:
+			peer = true
+		case strings.HasPrefix(k, "group:"):
+			groupKeys = append(groupKeys, k)
+		case strings.HasPrefix(k, "optional:"):
+			optKeys = append(optKeys, k)
+		default:
+			other = append(other, k)
+		}
+	}
+	sort.Strings(groupKeys)
+	sort.Strings(optKeys)
+	sort.Strings(other)
+	out := make([]string, 0, len(lanes))
+	if main {
+		out = append(out, LaneMain)
+	}
+	if dev {
+		out = append(out, LaneDev)
+	}
+	out = append(out, groupKeys...)
+	out = append(out, optKeys...)
+	out = append(out, other...)
+	if peer {
+		out = append(out, LanePeer)
+	}
+	return out
 }

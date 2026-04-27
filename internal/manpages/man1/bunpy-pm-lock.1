@@ -9,32 +9,40 @@ bunpy-pm-lock \- regenerate bunpy.lock from pyproject.toml
 .RB [ \-\-cache-dir
 .IR path ]
 .SH DESCRIPTION
-Walks
-.B [project].dependencies
-in
-.IR ./pyproject.toml ,
-hands every direct requirement to the resolver, walks transitive
-Requires-Dist edges, and writes
+Walks every dep lane in
+.IR ./pyproject.toml \(em
+.BR [project].dependencies ,
+.BR [project.optional-dependencies] ,
+.BR [dependency-groups] ,
+and
+.BR [tool.bunpy].peer-dependencies \(em
+hands the union to the resolver, walks transitive Requires-Dist
+edges, and writes
 .I ./bunpy.lock
 with one
 .B [[package]]
 row per pin. No install. The lockfile freezes the resolved version,
-wheel filename, URL, and sha256 from the PyPI index so a re-run on a
-second machine resolves to the same artefact.
+wheel filename, URL, and sha256 from the PyPI index so a re-run on
+a second machine resolves to the same artefact.
 .PP
-The header carries a
+Each row carries a
+.B lanes
+field listing the lanes that pulled it in. Rows that only belong
+to
+.B main
+omit the field for stability with v0.1.5 lockfiles. The header
+records a
 .B content-hash
-derived from the sorted, trimmed dep specs joined by newlines.
-A cheap byte compare detects pyproject drift without re-resolving.
+derived from every lane's sorted, trimmed dep specs, so a cheap
+byte compare detects pyproject drift without re-resolving.
 .SH OPTIONS
 .TP
 .B \-\-check
 Verify the lockfile against
 .I ./pyproject.toml
 and exit non-zero on drift: the lockfile is missing, the
-content-hash differs, or a direct dependency in
-.B [project].dependencies
-has no matching lockfile entry. No PyPI traffic, no rewrite.
+content-hash differs, or a direct dependency in any lane has no
+matching lockfile entry. No PyPI traffic, no rewrite.
 .TP
 .BI \-\-index " url"
 Override the PEP 691 simple index. Defaults to
@@ -50,12 +58,20 @@ Requires-Dist edge of every direct dep is walked, PEP 508 markers
 are evaluated against the host environment, and platform wheels
 (manylinux, musllinux, macosx, win) are picked through the host
 tag ladder before each pin is written.
+.PP
+v0.1.6 resolves every lane in one pass and tags each pin with the
+set of lanes that pulled it in. The lane labels are
+.BR main ,
+.BR dev ,
+.BI group: name
+(non-dev PEP 735 groups),
+.BI optional: group
+(PEP 621 optional-dependencies), and
+.BR peer .
 .SH FILES
 .TP
 .I ./pyproject.toml
-Source of
-.B [project].dependencies
-and the content-hash inputs.
+Source of every lane and of the content-hash inputs.
 .TP
 .I ./bunpy.lock
 Output of
@@ -69,4 +85,5 @@ any drift.
 .SH SEE ALSO
 .BR bunpy-pm (1),
 .BR bunpy-add (1),
+.BR bunpy-install (1),
 .BR bunpy (1).

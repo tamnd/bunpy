@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"time"
@@ -284,7 +285,8 @@ func pmLock(args []string, stdout, stderr io.Writer) (int, error) {
 	if err != nil {
 		return 1, fmt.Errorf("bunpy pm lock: %w", err)
 	}
-	wantHash := lockfile.HashDependencies(mf.Project.Dependencies)
+	laneMap := manifestLaneMap(mf)
+	wantHash := lockfile.HashLanes(laneMap)
 
 	if check {
 		existing, err := lockfile.Read("bunpy.lock")
@@ -299,17 +301,15 @@ func pmLock(args []string, stdout, stderr io.Writer) (int, error) {
 			fmt.Fprintf(stderr, "bunpy pm lock --check: content-hash drift (lock=%s want=%s)\n", existing.ContentHash, wantHash)
 			return 1, fmt.Errorf("content-hash drift")
 		}
-		direct := map[string]struct{}{}
 		for _, dep := range mf.Project.Dependencies {
 			name, _ := splitNameSpec(dep)
-			if name != "" {
-				direct[lockfile.Normalize(name)] = struct{}{}
+			if name == "" {
+				continue
 			}
-		}
-		for name := range direct {
+			norm := lockfile.Normalize(name)
 			found := false
 			for _, p := range existing.Packages {
-				if lockfile.Normalize(p.Name) == name {
+				if lockfile.Normalize(p.Name) == norm {
 					found = true
 					break
 				}
@@ -336,22 +336,37 @@ func pmLock(args []string, stdout, stderr io.Writer) (int, error) {
 			body, _, err := loadWheelSource(f.URL)
 			return body, err
 		})
+
 	var roots []resolver.Requirement
-	for _, dep := range mf.Project.Dependencies {
-		dname, vSpec := splitNameSpec(dep)
-		if dname == "" {
-			return 1, fmt.Errorf("bunpy pm lock: invalid dep %q", dep)
+	seenRoot := map[string]bool{}
+	for _, deps := range laneMap {
+		for _, dep := range deps {
+			dname, vSpec := splitNameSpec(dep)
+			if dname == "" {
+				return 1, fmt.Errorf("bunpy pm lock: invalid dep %q", dep)
+			}
+			spec, err := version.ParseSpec(vSpec)
+			if err != nil {
+				return 1, fmt.Errorf("bunpy pm lock: parse %q: %w", dep, err)
+			}
+			key := pypi.Normalize(dname) + "|" + dep
+			if seenRoot[key] {
+				continue
+			}
+			seenRoot[key] = true
+			roots = append(roots, resolver.Requirement{Name: pypi.Normalize(dname), Spec: spec})
 		}
-		spec, err := version.ParseSpec(vSpec)
-		if err != nil {
-			return 1, fmt.Errorf("bunpy pm lock: parse %q: %w", dep, err)
-		}
-		roots = append(roots, resolver.Requirement{Name: pypi.Normalize(dname), Spec: spec})
 	}
 	res, err := resolver.New(reg).Solve(roots)
 	if err != nil {
 		return 1, fmt.Errorf("bunpy pm lock: %w", err)
 	}
+
+	pinLanes, err := computePinLanes(reg, res, laneMap)
+	if err != nil {
+		return 1, fmt.Errorf("bunpy pm lock: %w", err)
+	}
+
 	lock := &lockfile.Lock{Version: lockfile.Version}
 	for _, pin := range res.Pins {
 		f, ok := reg.Pick(pin.Name, pin.Version)
@@ -364,6 +379,7 @@ func pmLock(args []string, stdout, stderr io.Writer) (int, error) {
 			Filename: f.Filename,
 			URL:      f.URL,
 			Hash:     wheelSha256(f),
+			Lanes:    pinLanes[pin.Name],
 		})
 	}
 	lock.ContentHash = wantHash
@@ -373,6 +389,76 @@ func pmLock(args []string, stdout, stderr io.Writer) (int, error) {
 	}
 	fmt.Fprintf(stdout, "wrote bunpy.lock (%d package%s)\n", len(lock.Packages), pluralS(len(lock.Packages)))
 	return 0, nil
+}
+
+// computePinLanes returns pinName -> sorted lane labels by walking
+// each lane's direct deps through the resolution graph and tagging
+// every reachable pin.
+func computePinLanes(reg *pypiRegistry, res *resolver.Resolution, laneMap map[string][]string) (map[string][]string, error) {
+	pinned := map[string]string{}
+	for _, p := range res.Pins {
+		pinned[p.Name] = p.Version
+	}
+	out := map[string]map[string]bool{}
+	for lane, deps := range laneMap {
+		closure, err := laneClosure(reg, pinned, deps)
+		if err != nil {
+			return nil, err
+		}
+		for pkg := range closure {
+			set, ok := out[pkg]
+			if !ok {
+				set = map[string]bool{}
+				out[pkg] = set
+			}
+			set[lane] = true
+		}
+	}
+	final := map[string][]string{}
+	for pkg, set := range out {
+		lanes := make([]string, 0, len(set))
+		for l := range set {
+			lanes = append(lanes, l)
+		}
+		sort.Strings(lanes)
+		final[pkg] = lanes
+	}
+	return final, nil
+}
+
+// laneClosure walks every dependency reachable from the given
+// rootSpecs through the resolution graph. Returns the set of
+// PEP 503 normalised pinned names.
+func laneClosure(reg *pypiRegistry, pinned map[string]string, rootSpecs []string) (map[string]bool, error) {
+	visited := map[string]bool{}
+	queue := []string{}
+	for _, dep := range rootSpecs {
+		name, _ := splitNameSpec(dep)
+		if name == "" {
+			continue
+		}
+		queue = append(queue, pypi.Normalize(name))
+	}
+	for len(queue) > 0 {
+		pkg := queue[0]
+		queue = queue[1:]
+		if visited[pkg] {
+			continue
+		}
+		visited[pkg] = true
+		ver, ok := pinned[pkg]
+		if !ok {
+			continue
+		}
+		deps, err := reg.Dependencies(pkg, ver)
+		if err != nil {
+			return nil, err
+		}
+		for _, d := range deps {
+			queue = append(queue, d.Name)
+		}
+	}
+	return visited, nil
 }
 
 func pluralS(n int) string {

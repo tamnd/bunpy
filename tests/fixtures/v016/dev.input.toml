@@ -1,0 +1,6 @@
+[project]
+name = "demo"
+version = "0.0.1"
+
+[dependency-groups]
+dev = ["widget>=1.0"]
