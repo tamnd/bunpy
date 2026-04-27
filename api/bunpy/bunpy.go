@@ -22,7 +22,7 @@ import (
 )
 
 // Version is baked in by the bunpy build pipeline.
-const Version = "0.4.16"
+const Version = "0.4.17"
 
 // Modules returns the NativeModules map for the current v0.3.1 surface.
 // Later rungs extend this map by adding more entries.
@@ -56,6 +56,7 @@ func Modules() map[string]func(*goipyVM.Interp) *goipyObject.Module {
 		"bunpy.cookie":        BuildCookie,
 		"bunpy.csrf":          BuildCSRF,
 		"bunpy.yaml":          BuildYAML,
+		"bunpy.URLPattern":    BuildURLPattern,
 	}
 }
 
@@ -117,6 +118,7 @@ func BuildBunpy(i *goipyVM.Interp) *goipyObject.Module {
 	m.Dict.SetStr("cookie", BuildCookie(i))
 	m.Dict.SetStr("csrf", BuildCSRF(i))
 	m.Dict.SetStr("yaml", BuildYAML(i))
+	m.Dict.SetStr("URLPattern", BuildURLPattern(i))
 
 	return m
 }
