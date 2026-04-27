@@ -53,6 +53,20 @@ The marshal hop is in-memory; nothing touches disk. When gocopy
 and goipy unify under one module path the bridge collapses to a
 direct hand-off, but the surface bunpy depends on stays the same.
 
+## Embedded stdlib
+
+goipy ships ~184 Python stdlib modules baked into the binary.
+bunpy mirrors that list in `runtime/stdlib_index.go`, generated
+from goipy's module switch by `scripts/sync-stdlib-index.sh`.
+The list is the only thing bunpy needs to know at build time:
+the actual module bodies live inside goipy and are imported
+through goipy's normal `__import__` machinery once gocopy lands
+import statements. Until then, `bunpy stdlib` is the answer to
+"what would `import X` find" without having to spin up a Python
+program. CI re-runs the generator against a clean checkout and
+diffs against the checked-in file so a goipy bump that adds or
+removes a module fails CI loudly.
+
 ## Module layout
 
 ```

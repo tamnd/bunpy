@@ -4,8 +4,11 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/tamnd/bunpy/v1/runtime"
 )
 
 func TestVersion(t *testing.T) {
@@ -174,6 +177,72 @@ func TestRunSubcommandRejectsNonPyArg(t *testing.T) {
 	code, err := run([]string{"run", "frobnicate"}, &stdout, &stderr)
 	if err == nil {
 		t.Fatal("expected error for non-.py argument")
+	}
+	if code == 0 {
+		t.Error("expected non-zero exit code")
+	}
+}
+
+func TestStdlibSubcommand(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	code, err := run([]string{"stdlib"}, &stdout, &stderr)
+	if err != nil {
+		t.Fatalf("bunpy stdlib: %v\nstderr:\n%s", err, stderr.String())
+	}
+	if code != 0 {
+		t.Fatalf("code %d, want 0", code)
+	}
+	lines := strings.Split(strings.TrimRight(stdout.String(), "\n"), "\n")
+	if len(lines) != runtime.StdlibCount() {
+		t.Errorf("stdlib output has %d lines, want %d", len(lines), runtime.StdlibCount())
+	}
+	found := false
+	for _, l := range lines {
+		if l == "math" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("`bunpy stdlib` output missing `math`")
+	}
+}
+
+func TestStdlibCount(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	code, err := run([]string{"stdlib", "count"}, &stdout, &stderr)
+	if err != nil {
+		t.Fatalf("bunpy stdlib count: %v", err)
+	}
+	if code != 0 {
+		t.Fatalf("code %d, want 0", code)
+	}
+	got := strings.TrimSpace(stdout.String())
+	want := strconv.Itoa(runtime.StdlibCount())
+	if got != want {
+		t.Errorf("stdlib count = %q, want %q", got, want)
+	}
+}
+
+func TestStdlibHelp(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	code, err := run([]string{"stdlib", "--help"}, &stdout, &stderr)
+	if err != nil {
+		t.Fatalf("bunpy stdlib --help: %v", err)
+	}
+	if code != 0 {
+		t.Fatalf("code %d, want 0", code)
+	}
+	if !strings.Contains(stdout.String(), "stdlib") {
+		t.Errorf("help output missing `stdlib`: %q", stdout.String())
+	}
+}
+
+func TestStdlibUnknownMode(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	code, err := run([]string{"stdlib", "frobnicate"}, &stdout, &stderr)
+	if err == nil {
+		t.Fatal("expected error for unknown stdlib mode")
 	}
 	if code == 0 {
 		t.Error("expected non-zero exit code")

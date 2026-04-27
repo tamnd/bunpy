@@ -45,6 +45,17 @@ jobs:
       - name: go test
         run: go test ./...
 
+      - name: stdlib index in sync with goipy
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          tmp="$(mktemp)"
+          bash scripts/sync-stdlib-index.sh "$tmp"
+          if ! diff -u runtime/stdlib_index.go "$tmp"; then
+            echo "runtime/stdlib_index.go is stale; run scripts/sync-stdlib-index.sh and commit." >&2
+            exit 1
+          fi
+
       - name: end-to-end fixtures
         shell: bash
         run: bash tests/run.sh

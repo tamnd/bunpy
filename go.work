@@ -1,11 +1,12 @@
-// Workspace for local development. CI runs scripts/sync-deps.sh
-// first, which clones gopapy, gocopy, and goipy as siblings of
-// the bunpy checkout.
+// Workspace for local development. scripts/sync-deps.sh clones
+// gopapy, gocopy, and goipy into ./.deps at pinned commits. CI
+// runs the script before any go command. The .deps tree is in
+// .gitignore so it never lands in the repo.
 go 1.26
 
 use (
 	.
-	../gocopy
-	../goipy
-	../gopapy
+	./.deps/gocopy
+	./.deps/goipy
+	./.deps/gopapy
 )

@@ -16,7 +16,7 @@ import (
 )
 
 // version is overwritten at build time via -ldflags "-X main.version=...".
-var version = "0.0.3"
+var version = "0.0.4"
 
 // commit is overwritten at build time. Empty in dev builds.
 var commit = ""
@@ -50,6 +50,8 @@ func run(args []string, stdout, stderr io.Writer) (int, error) {
 		return 0, nil
 	case "run":
 		return runSubcommand(args[1:], stdout, stderr)
+	case "stdlib":
+		return stdlibSubcommand(args[1:], stdout, stderr)
 	}
 
 	if isFilePath(args[0]) {
@@ -57,7 +59,36 @@ func run(args []string, stdout, stderr io.Writer) (int, error) {
 	}
 
 	usage(stderr)
-	return 1, fmt.Errorf("unknown command %q (v0.0.3 wires --version, --help, `bunpy <file.py>`, `bunpy run`)", args[0])
+	return 1, fmt.Errorf("unknown command %q (v0.0.4 wires --version, --help, `bunpy <file.py>`, `bunpy run`, `bunpy stdlib`)", args[0])
+}
+
+func stdlibSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
+	mode := "ls"
+	if len(args) > 0 {
+		mode = args[0]
+	}
+	switch mode {
+	case "ls":
+		for _, m := range runtime.StdlibModules() {
+			fmt.Fprintln(stdout, m)
+		}
+		return 0, nil
+	case "count":
+		fmt.Fprintln(stdout, runtime.StdlibCount())
+		return 0, nil
+	case "-h", "--help", "help":
+		fmt.Fprintln(stdout, "bunpy stdlib: list the Python stdlib modules embedded in this binary.")
+		fmt.Fprintln(stdout, "")
+		fmt.Fprintln(stdout, "USAGE")
+		fmt.Fprintln(stdout, "  bunpy stdlib            list module names, one per line")
+		fmt.Fprintln(stdout, "  bunpy stdlib ls         same as `bunpy stdlib`")
+		fmt.Fprintln(stdout, "  bunpy stdlib count      print the number of embedded modules")
+		fmt.Fprintln(stdout, "")
+		fmt.Fprintln(stdout, "The list is baked at build time from goipy's embedded stdlib.")
+		return 0, nil
+	default:
+		return 1, fmt.Errorf("bunpy stdlib %q: known modes are ls, count, --help", mode)
+	}
 }
 
 func runSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
@@ -148,8 +179,9 @@ func usage(w io.Writer) {
 	fmt.Fprintln(w, "  repl              Interactive REPL")
 	fmt.Fprintln(w, "  fmt               Format Python source (delegates to gopapy)")
 	fmt.Fprintln(w, "  check             Lint Python source (delegates to gopapy)")
+	fmt.Fprintln(w, "  stdlib            List Python stdlib modules embedded in the binary")
 	fmt.Fprintln(w, "")
-	fmt.Fprintln(w, "v0.0.3 ships --version, --help, `bunpy <file.py>`, and `bunpy run`.")
-	fmt.Fprintln(w, "Each rung in docs/ROADMAP.md adds one capability with a green")
-	fmt.Fprintln(w, "CI matrix on linux, macOS, and Windows.")
+	fmt.Fprintln(w, "v0.0.4 ships --version, --help, `bunpy <file.py>`, `bunpy run`,")
+	fmt.Fprintln(w, "and `bunpy stdlib`. Each rung in docs/ROADMAP.md adds one")
+	fmt.Fprintln(w, "capability with a green CI matrix on linux, macOS, and Windows.")
 }

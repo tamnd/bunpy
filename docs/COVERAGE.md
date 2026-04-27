@@ -16,6 +16,7 @@ codes:
 | done   | bunpy --help       | bunpy --help         | Shipped in v0.0.1 |
 | done   | bun <file>         | bunpy <file>         | Shipped in v0.0.2 (wires gocopy + goipy) |
 | done   | bun run            | bunpy run            | Shipped in v0.0.3 |
+| done   | (no Bun analogue)  | bunpy stdlib         | Shipped in v0.0.4 (lists embedded Python stdlib modules) |
 | todo   | bun repl           | bunpy repl           | v0.0.8 |
 | todo   | bun install        | bunpy install        | v0.1.x |
 | todo   | bun add            | bunpy add            | v0.1.3 |

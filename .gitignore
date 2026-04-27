@@ -9,6 +9,9 @@
 /vendor/
 /go.work.sum
 
+# Sibling toolchain clones (managed by scripts/sync-deps.sh)
+/.deps/
+
 # Editor / OS
 .DS_Store
 .idea/
