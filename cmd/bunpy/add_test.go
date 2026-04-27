@@ -154,6 +154,88 @@ func TestAddNoArg(t *testing.T) {
 	}
 }
 
+func TestAddWritesLockfile(t *testing.T) {
+	tmp := setupAddFixture(t, `[project]
+name = "demo"
+version = "0.0.1"
+`)
+	var stdout, stderr bytes.Buffer
+	code, err := run([]string{"add", "widget"}, &stdout, &stderr)
+	if err != nil || code != 0 {
+		t.Fatalf("bunpy add widget: code=%d err=%v stderr=%s", code, err, stderr.String())
+	}
+	body, err := os.ReadFile(filepath.Join(tmp, "bunpy.lock"))
+	if err != nil {
+		t.Fatalf("read lockfile: %v", err)
+	}
+	got := string(body)
+	for _, want := range []string{
+		"version = 1",
+		"content-hash = \"sha256:",
+		"[[package]]",
+		"name = \"widget\"",
+		"version = \"1.1.0\"",
+		"filename = \"widget-1.1.0-py3-none-any.whl\"",
+		"hash = \"sha256:5b9866d1a5e11d85e37f88de9a941f9349ed18f4cd46508b12b1603d2ad63e2b\"",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("lockfile missing %q\n%s", want, got)
+		}
+	}
+}
+
+func TestAddNoWriteSkipsLockfile(t *testing.T) {
+	tmp := setupAddFixture(t, `[project]
+name = "demo"
+version = "0.0.1"
+`)
+	var stdout, stderr bytes.Buffer
+	code, err := run([]string{"add", "widget", "--no-write"}, &stdout, &stderr)
+	if err != nil || code != 0 {
+		t.Fatalf("bunpy add --no-write: code=%d err=%v", code, err)
+	}
+	if _, err := os.Stat(filepath.Join(tmp, "bunpy.lock")); !os.IsNotExist(err) {
+		t.Errorf("bunpy.lock must not exist with --no-write: err=%v", err)
+	}
+}
+
+func TestAddRefreshesLockfile(t *testing.T) {
+	tmp := setupAddFixture(t, `[project]
+name = "demo"
+version = "0.0.1"
+`)
+	var stdout, stderr bytes.Buffer
+	if code, err := run([]string{"add", "widget==1.0.0"}, &stdout, &stderr); err != nil || code != 0 {
+		t.Fatalf("first add: code=%d err=%v stderr=%s", code, err, stderr.String())
+	}
+	first, err := os.ReadFile(filepath.Join(tmp, "bunpy.lock"))
+	if err != nil {
+		t.Fatalf("read lock: %v", err)
+	}
+	if !strings.Contains(string(first), "version = \"1.0.0\"") {
+		t.Fatalf("first lockfile not pinned to 1.0.0:\n%s", first)
+	}
+	stdout.Reset()
+	stderr.Reset()
+	if code, err := run([]string{"add", "widget==1.1.0"}, &stdout, &stderr); err != nil || code != 0 {
+		t.Fatalf("second add: code=%d err=%v stderr=%s", code, err, stderr.String())
+	}
+	second, err := os.ReadFile(filepath.Join(tmp, "bunpy.lock"))
+	if err != nil {
+		t.Fatalf("read lock 2: %v", err)
+	}
+	got := string(second)
+	if !strings.Contains(got, "version = \"1.1.0\"") {
+		t.Errorf("lockfile not upgraded:\n%s", got)
+	}
+	if strings.Contains(got, "version = \"1.0.0\"") {
+		t.Errorf("lockfile still has old 1.0.0 entry:\n%s", got)
+	}
+	if strings.Count(got, "[[package]]") != 1 {
+		t.Errorf("expected single package entry:\n%s", got)
+	}
+}
+
 func TestAddHelp(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 	code, err := run([]string{"add", "--help"}, &stdout, &stderr)

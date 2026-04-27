@@ -243,6 +243,33 @@ jobs:
           grep -q 'widget==1.0.0' "$work2/pyproject.toml"
           test ! -d "$work2/.bunpy/site-packages"
 
+      - name: bunpy pm lock smoke
+        shell: bash
+        run: |
+          work="$(mktemp -d)"
+          cache="$(mktemp -d)"
+          cat > "$work/pyproject.toml" <<'EOF'
+          [project]
+          name = "smoke"
+          version = "0.0.1"
+          dependencies = ["widget>=1.0"]
+          EOF
+          ( cd "$work" && BUNPY_PYPI_FIXTURES="$GITHUB_WORKSPACE/tests/fixtures/v013/index" \
+              BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" pm lock )
+          test -f "$work/bunpy.lock"
+          grep -q 'name = "widget"' "$work/bunpy.lock"
+          grep -q 'version = "1.1.0"' "$work/bunpy.lock"
+          grep -q 'content-hash = "sha256:' "$work/bunpy.lock"
+          # --check on a clean state passes.
+          ( cd "$work" && BUNPY_PYPI_FIXTURES="$GITHUB_WORKSPACE/tests/fixtures/v013/index" \
+              BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" pm lock --check )
+          # Mutate pyproject and assert --check exits non-zero.
+          sed -i.bak 's/widget>=1.0/widget>=2.0/' "$work/pyproject.toml"
+          if ( cd "$work" && BUNPY_PYPI_FIXTURES="$GITHUB_WORKSPACE/tests/fixtures/v013/index" \
+              BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" pm lock --check 2>/dev/null ); then
+            echo "want non-zero exit on drift"; exit 1
+          fi
+
       - name: bunpy hello.py
         run: |
           echo 'x = 1' > hello.py

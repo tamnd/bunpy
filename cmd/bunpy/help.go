@@ -86,8 +86,13 @@ USAGE
   bunpy add <pkg> --index <url>      override the simple index
   bunpy add <pkg> --cache-dir <dir>  override the cache root
 
-v0.1.3 is naive on purpose: no transitive walk, no lockfile, no
-resolver. The fetch path is restricted to universal wheels
+v0.1.3 was naive on purpose: no transitive walk, no lockfile, no
+resolver. v0.1.4 adds the lockfile writer: every successful
+` + "`bunpy add`" + ` rewrites ` + "`bunpy.lock`" + ` next to
+` + "`pyproject.toml`" + ` with the resolved version, wheel filename,
+URL, and sha256. ` + "`--no-write`" + ` suppresses both the manifest
+edit and the lockfile update; ` + "`--no-install`" + ` still writes the
+lockfile. The fetch path is restricted to universal wheels
 (` + "`py3-none-any`" + `); platform wheels and the resolver land
 together in v0.1.5. Among matching wheels the highest version
 satisfying the spec wins; the install reuses the v0.1.2 wheel
@@ -112,6 +117,7 @@ USAGE
   bunpy pm config [path]                  print parsed pyproject.toml as JSON
   bunpy pm info <package>                 print PEP 691 project metadata as JSON
   bunpy pm install-wheel <url|path>       install one wheel into site-packages
+  bunpy pm lock                           regenerate bunpy.lock from pyproject.toml
 
 The ` + "`pm`" + ` tree groups the low-level package-manager verbs.
 Porcelain commands (` + "`add`" + `, ` + "`install`" + `, ` + "`remove`" + `, ` + "`update`" + `,
@@ -119,10 +125,41 @@ Porcelain commands (` + "`add`" + `, ` + "`install`" + `, ` + "`remove`" + `, ` 
 the same machinery.
 
 v0.1.3 wires ` + "`pm config`" + ` (parser), ` + "`pm info`" + ` (PyPI client),
-and ` + "`pm install-wheel`" + ` (PEP 427 single-wheel installer). The
-naive ` + "`bunpy add`" + ` porcelain layered on top lands at the top
-level. No resolution or transitive walk yet; the resolver lands
-in v0.1.5.
+and ` + "`pm install-wheel`" + ` (PEP 427 single-wheel installer). v0.1.4
+adds ` + "`pm lock`" + ` (lockfile writer plus drift check). The naive
+` + "`bunpy add`" + ` porcelain layered on top lands at the top level. No
+transitive resolution yet; the resolver lands in v0.1.5.
+`,
+	},
+	"pm-lock": {
+		Name:    "pm-lock",
+		Summary: "Regenerate bunpy.lock from pyproject.toml",
+		Body: `bunpy pm lock: regenerate bunpy.lock from pyproject.toml without installing.
+
+USAGE
+  bunpy pm lock                       write bunpy.lock from [project].dependencies
+  bunpy pm lock --check               verify bunpy.lock matches pyproject.toml
+  bunpy pm lock --index <url>         override the simple index
+  bunpy pm lock --cache-dir <path>    override the cache root
+
+The default lockfile path is ` + "`./bunpy.lock`" + ` next to ` + "`./pyproject.toml`" + `.
+Each direct dependency in ` + "`[project].dependencies`" + ` becomes one
+` + "`[[package]]`" + ` row pinning the resolved version, the wheel
+filename, the URL, and the sha256 from the PyPI index. The header
+records a ` + "`content-hash`" + ` derived from the sorted, trimmed dep
+specs, so a cheap byte compare detects pyproject drift without a
+re-resolve.
+
+` + "`--check`" + ` exits non-zero when the lockfile is missing, the
+content-hash drifts from pyproject.toml, or the lockfile holds an
+entry that ` + "`[project].dependencies`" + ` no longer lists. Use it in
+CI to keep the lockfile honest.
+
+v0.1.4 is the writer plus reader. There is still no transitive
+walk; the lockfile records only the direct deps that
+` + "`bunpy add`" + ` and ` + "`pm lock`" + ` resolve today. The PubGrub
+resolver in v0.1.5 fills transitive entries against the same
+schema.
 `,
 	},
 	"pm-info": {

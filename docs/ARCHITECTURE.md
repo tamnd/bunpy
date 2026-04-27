@@ -252,10 +252,41 @@ between `[` and `]`. The whole file is otherwise left alone.
    line written is the caller's spec verbatim, or
    `name>=resolved-version` when the caller gave no spec.
 
-v0.1.3 is naive on purpose: no transitive walk, no lockfile, no
-resolver. Those land at v0.1.4 (lockfile) and v0.1.5 (PubGrub
-plus platform wheels and markers). The porcelain surface is
-fixed; later rungs swap algorithms in behind it.
+v0.1.3 is naive on purpose: no transitive walk, no resolver.
+v0.1.4 layers the lockfile (see below); v0.1.5 swaps the picker
+for PubGrub plus platform wheels and markers. The porcelain
+surface is fixed; later rungs swap algorithms in behind it.
+
+## Lockfile (`pkg/lockfile`, `bunpy.lock`)
+
+`pkg/lockfile` reads and writes `bunpy.lock`, the byte-stable
+freeze of every dependency `bunpy add` and `bunpy pm lock`
+resolve. The schema is version 1 and the on-disk format is a
+small TOML subset emitted by a custom serialiser so rewrites are
+deterministic regardless of host TOML library version:
+
+- A header with `version`, `generated` (RFC3339, UTC), and
+  `content-hash` (`sha256:<hex>` of the sorted, trimmed dep specs
+  joined by `\n`).
+- One `[[package]]` row per direct dependency with `name`,
+  `version`, `filename`, `url`, `hash` (`sha256:<hex>` from the
+  PEP 691 page).
+- Rows are sorted by PEP 503-normalised name. Line endings are
+  LF. Empty/zero values still emit the key so the shape stays
+  stable.
+
+`bunpy add` upserts the resolved row by normalised name and
+recomputes the content-hash from the post-edit
+`[project].dependencies`. `bunpy pm lock` walks the manifest from
+scratch; `--check` re-reads the lockfile, compares the
+content-hash against pyproject's, and verifies that every
+lockfile entry is still listed in `[project].dependencies`.
+Either drift exits non-zero so CI can catch a stale lockfile
+without a network round-trip.
+
+v0.1.4 records only the direct deps the naive picker chooses.
+The PubGrub resolver in v0.1.5 fills transitive entries against
+the same `[[package]]` shape; the schema does not bump.
 
 ## Module layout
 

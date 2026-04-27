@@ -11,10 +11,14 @@ import (
 	"path/filepath"
 	"strings"
 
+	"time"
+
 	"github.com/tamnd/bunpy/v1/internal/httpkit"
 	"github.com/tamnd/bunpy/v1/pkg/cache"
+	"github.com/tamnd/bunpy/v1/pkg/lockfile"
 	"github.com/tamnd/bunpy/v1/pkg/manifest"
 	"github.com/tamnd/bunpy/v1/pkg/pypi"
+	"github.com/tamnd/bunpy/v1/pkg/version"
 	"github.com/tamnd/bunpy/v1/pkg/wheel"
 )
 
@@ -33,10 +37,12 @@ func pmSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 		return pmInfo(args[1:], stdout, stderr)
 	case "install-wheel":
 		return pmInstallWheel(args[1:], stdout, stderr)
+	case "lock":
+		return pmLock(args[1:], stdout, stderr)
 	case "-h", "--help", "help":
 		return printHelp("pm", stdout, stderr)
 	}
-	return 1, fmt.Errorf("bunpy pm: unknown verb %q (known: config, info, install-wheel, --help)", args[0])
+	return 1, fmt.Errorf("bunpy pm: unknown verb %q (known: config, info, install-wheel, lock, --help)", args[0])
 }
 
 // pmConfig parses pyproject.toml and prints the structured manifest
@@ -226,6 +232,135 @@ func pmInstallWheel(args []string, stdout, stderr io.Writer) (int, error) {
 		fmt.Fprintln(stdout, p)
 	}
 	return 0, nil
+}
+
+// pmLock regenerates bunpy.lock from pyproject.toml without
+// installing. With --check, exits non-zero on drift: missing
+// lockfile, content-hash mismatch, or entries unique to the
+// lockfile. v0.1.4 ships the naive single-package picker; the
+// PubGrub resolver in v0.1.5 fills transitive entries.
+func pmLock(args []string, stdout, stderr io.Writer) (int, error) {
+	var (
+		check    bool
+		baseURL  string
+		cacheDir string
+	)
+	for i := 0; i < len(args); i++ {
+		a := args[i]
+		switch a {
+		case "-h", "--help":
+			return printHelp("pm-lock", stdout, stderr)
+		case "--check":
+			check = true
+		case "--index":
+			if i+1 >= len(args) {
+				return 1, fmt.Errorf("bunpy pm lock: --index requires a value")
+			}
+			i++
+			baseURL = args[i]
+		case "--cache-dir":
+			if i+1 >= len(args) {
+				return 1, fmt.Errorf("bunpy pm lock: --cache-dir requires a value")
+			}
+			i++
+			cacheDir = args[i]
+		default:
+			if strings.HasPrefix(a, "--index=") {
+				baseURL = strings.TrimPrefix(a, "--index=")
+				continue
+			}
+			if strings.HasPrefix(a, "--cache-dir=") {
+				cacheDir = strings.TrimPrefix(a, "--cache-dir=")
+				continue
+			}
+			return 1, fmt.Errorf("bunpy pm lock: unknown flag %q (known: --check, --index, --cache-dir, --help)", a)
+		}
+	}
+	_ = cacheDir
+
+	mf, err := manifest.Load("pyproject.toml")
+	if err != nil {
+		return 1, fmt.Errorf("bunpy pm lock: %w", err)
+	}
+	wantHash := lockfile.HashDependencies(mf.Project.Dependencies)
+
+	if check {
+		existing, err := lockfile.Read("bunpy.lock")
+		if err != nil {
+			if errors.Is(err, lockfile.ErrNotFound) {
+				fmt.Fprintln(stderr, "bunpy pm lock --check: bunpy.lock missing")
+				return 1, fmt.Errorf("bunpy.lock missing")
+			}
+			return 1, fmt.Errorf("bunpy pm lock: %w", err)
+		}
+		if existing.ContentHash != wantHash {
+			fmt.Fprintf(stderr, "bunpy pm lock --check: content-hash drift (lock=%s want=%s)\n", existing.ContentHash, wantHash)
+			return 1, fmt.Errorf("content-hash drift")
+		}
+		direct := map[string]struct{}{}
+		for _, dep := range mf.Project.Dependencies {
+			name, _ := splitNameSpec(dep)
+			if name != "" {
+				direct[lockfile.Normalize(name)] = struct{}{}
+			}
+		}
+		for _, p := range existing.Packages {
+			if _, ok := direct[lockfile.Normalize(p.Name)]; !ok {
+				fmt.Fprintf(stderr, "bunpy pm lock --check: lockfile has %q not in pyproject\n", p.Name)
+				return 1, fmt.Errorf("stale lockfile entry: %s", p.Name)
+			}
+		}
+		return 0, nil
+	}
+
+	client := pypi.New()
+	if baseURL != "" {
+		client.BaseURL = baseURL
+	}
+	if fix := os.Getenv("BUNPY_PYPI_FIXTURES"); fix != "" {
+		client.HTTP = httpkit.FixturesFS(fix)
+	}
+
+	lock := &lockfile.Lock{Version: lockfile.Version}
+	for _, dep := range mf.Project.Dependencies {
+		name, vSpec := splitNameSpec(dep)
+		if name == "" {
+			return 1, fmt.Errorf("bunpy pm lock: invalid dep %q", dep)
+		}
+		spec, err := version.ParseSpec(vSpec)
+		if err != nil {
+			return 1, fmt.Errorf("bunpy pm lock: parse %q: %w", dep, err)
+		}
+		proj, err := client.Get(context.Background(), name)
+		if err != nil {
+			return 1, fmt.Errorf("bunpy pm lock: %w", err)
+		}
+		chosen, file, ok := pickUniversalWheel(proj, spec)
+		if !ok {
+			return 1, fmt.Errorf("bunpy pm lock: no py3-none-any wheel matches %q", dep)
+		}
+		lock.Upsert(lockfile.Package{
+			Name:     name,
+			Version:  chosen,
+			Filename: file.Filename,
+			URL:      file.URL,
+			Hash:     wheelSha256(file),
+		})
+	}
+	lock.ContentHash = wantHash
+	lock.Generated = time.Now().UTC()
+	if err := lock.WriteFile("bunpy.lock"); err != nil {
+		return 1, fmt.Errorf("bunpy pm lock: %w", err)
+	}
+	fmt.Fprintf(stdout, "wrote bunpy.lock (%d package%s)\n", len(lock.Packages), pluralS(len(lock.Packages)))
+	return 0, nil
+}
+
+func pluralS(n int) string {
+	if n == 1 {
+		return ""
+	}
+	return "s"
 }
 
 // loadWheelSource resolves source to (body, filename). A path source

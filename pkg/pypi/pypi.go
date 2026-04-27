@@ -42,7 +42,7 @@ func New() *Client {
 	return &Client{
 		BaseURL:   DefaultBaseURL,
 		HTTP:      httpkit.Default(4),
-		UserAgent: "bunpy/0.1.3",
+		UserAgent: "bunpy/0.1.4",
 	}
 }
 

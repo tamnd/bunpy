@@ -1,0 +1,75 @@
+.TH BUNPY-PM-LOCK 1 "2026-04-27" "bunpy" "User Commands"
+.SH NAME
+bunpy-pm-lock \- regenerate bunpy.lock from pyproject.toml
+.SH SYNOPSIS
+.B bunpy pm lock
+.RB [ \-\-check ]
+.RB [ \-\-index
+.IR url ]
+.RB [ \-\-cache-dir
+.IR path ]
+.SH DESCRIPTION
+Walks
+.B [project].dependencies
+in
+.IR ./pyproject.toml ,
+runs the same naive picker
+.BR bunpy-add (1)
+uses, and writes
+.I ./bunpy.lock
+with one
+.B [[package]]
+row per direct dependency. No install. The lockfile freezes the
+resolved version, wheel filename, URL, and sha256 from the PyPI
+index so a re-run on a second machine resolves to the same artefact.
+.PP
+The header carries a
+.B content-hash
+derived from the sorted, trimmed dep specs joined by newlines.
+A cheap byte compare detects pyproject drift without re-resolving.
+.SH OPTIONS
+.TP
+.B \-\-check
+Verify the lockfile against
+.I ./pyproject.toml
+and exit non-zero on drift: the lockfile is missing, the
+content-hash differs, or the lockfile holds an entry that
+.B [project].dependencies
+no longer lists. No PyPI traffic, no rewrite.
+.TP
+.BI \-\-index " url"
+Override the PEP 691 simple index. Defaults to
+.IR https://pypi.org/simple/ .
+.TP
+.BI \-\-cache-dir " path"
+Override the cache root. Defaults to
+.I $BUNPY_CACHE_DIR
+or the platform XDG default.
+.SH SCOPE
+v0.1.4 lands the writer plus reader. There is no transitive walk
+yet; the lockfile records only the direct dependencies that
+.BR bunpy-add (1)
+and
+.B pm lock
+resolve today. The PubGrub resolver in v0.1.5 fills transitive
+entries against the same schema, version 1.
+.SH FILES
+.TP
+.I ./pyproject.toml
+Source of
+.B [project].dependencies
+and the content-hash inputs.
+.TP
+.I ./bunpy.lock
+Output of
+.BR pm lock .
+Sorted by PEP 503 normalised name. LF line endings. Byte-stable.
+.SH EXIT STATUS
+Zero on a successful write. Non-zero on a missing pyproject, an
+unresolvable spec, or (with
+.BR \-\-check )
+any drift.
+.SH SEE ALSO
+.BR bunpy-pm (1),
+.BR bunpy-add (1),
+.BR bunpy (1).

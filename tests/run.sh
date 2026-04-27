@@ -271,6 +271,57 @@ for in in tests/fixtures/v01*/*.add_in; do
   run_add_fixture "$in"
 done
 
+run_lock_fixture() {
+  local in="$1"
+  local dir name input expected args work cache rc=0 fixroot
+  dir="$(dirname "$in")"
+  name="$(basename "$in" .lock_in)"
+  input="$dir/${name}.input.toml"
+  expected="$dir/expected_${name}.lock"
+
+  if [ ! -f "$input" ] || [ ! -f "$expected" ]; then
+    echo "skip: lock       $in (missing inputs/expectations)"
+    return 0
+  fi
+
+  fixroot="$ROOT/$dir/index"
+  if [ ! -d "$fixroot" ]; then
+    fixroot="$ROOT/tests/fixtures/v013/index"
+  fi
+
+  ran=$((ran + 1))
+  args="$(cat "$in")"
+  work="$(mktemp -d)"
+  cache="$(mktemp -d)"
+  cp "$input" "$work/pyproject.toml"
+
+  if ! ( cd "$work" && BUNPY_PYPI_FIXTURES="$fixroot" BUNPY_CACHE_DIR="$cache" "$bin" $args >/dev/null 2>&1 ); then
+    rc=$?
+    echo "FAIL: lock       $in exited $rc"
+    fail=$((fail + 1))
+    return 0
+  fi
+
+  local got want
+  got="$(grep -v '^generated = ' "$work/bunpy.lock")"
+  want="$(cat "$expected")"
+  if [ "$got" != "$want" ]; then
+    echo "FAIL: lock       $in lockfile mismatch"
+    echo "  got:"
+    printf '%s\n' "$got" | sed 's/^/    /'
+    echo "  want:"
+    printf '%s\n' "$want" | sed 's/^/    /'
+    fail=$((fail + 1))
+    return 0
+  fi
+  echo "ok:   lock       $in"
+}
+
+for in in tests/fixtures/v01*/*.lock_in; do
+  [ -e "$in" ] || continue
+  run_lock_fixture "$in"
+done
+
 echo "---"
 echo "ran $ran fixtures, $fail failed"
 exit "$fail"

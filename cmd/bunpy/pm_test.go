@@ -359,3 +359,132 @@ func TestPmConfigHelp(t *testing.T) {
 		t.Errorf("stdout missing `bunpy pm config`: %q", stdout.String())
 	}
 }
+
+func setupPmLockFixture(t *testing.T, manifest string) string {
+	t.Helper()
+	tmp := t.TempDir()
+	cache := t.TempDir()
+	if err := os.WriteFile(filepath.Join(tmp, "pyproject.toml"), []byte(manifest), 0o644); err != nil {
+		t.Fatalf("write manifest: %v", err)
+	}
+	old, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
+	t.Cleanup(func() { _ = os.Chdir(old) })
+	if err := os.Chdir(tmp); err != nil {
+		t.Fatalf("chdir: %v", err)
+	}
+	abs, err := filepath.Abs(filepath.Join(old, "..", "..", "tests", "fixtures", "v013", "index"))
+	if err != nil {
+		t.Fatalf("abs fixtures: %v", err)
+	}
+	t.Setenv("BUNPY_PYPI_FIXTURES", abs)
+	t.Setenv("BUNPY_CACHE_DIR", cache)
+	return tmp
+}
+
+func TestPmLockGenerates(t *testing.T) {
+	tmp := setupPmLockFixture(t, `[project]
+name = "demo"
+version = "0.0.1"
+dependencies = ["widget>=1.0"]
+`)
+	var stdout, stderr bytes.Buffer
+	code, err := run([]string{"pm", "lock"}, &stdout, &stderr)
+	if err != nil || code != 0 {
+		t.Fatalf("pm lock: code=%d err=%v stderr=%s", code, err, stderr.String())
+	}
+	body, err := os.ReadFile(filepath.Join(tmp, "bunpy.lock"))
+	if err != nil {
+		t.Fatalf("read lock: %v", err)
+	}
+	got := string(body)
+	for _, want := range []string{
+		"version = 1",
+		"content-hash = \"sha256:",
+		"name = \"widget\"",
+		"version = \"1.1.0\"",
+		"hash = \"sha256:5b9866d1a5e11d85e37f88de9a941f9349ed18f4cd46508b12b1603d2ad63e2b\"",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("lock missing %q\n%s", want, got)
+		}
+	}
+	if _, err := os.Stat(filepath.Join(tmp, ".bunpy")); !os.IsNotExist(err) {
+		t.Errorf(".bunpy should not exist after pm lock: err=%v", err)
+	}
+}
+
+func TestPmLockCheckPasses(t *testing.T) {
+	setupPmLockFixture(t, `[project]
+name = "demo"
+version = "0.0.1"
+dependencies = ["widget>=1.0"]
+`)
+	var stdout, stderr bytes.Buffer
+	if code, err := run([]string{"pm", "lock"}, &stdout, &stderr); err != nil || code != 0 {
+		t.Fatalf("pm lock: code=%d err=%v", code, err)
+	}
+	stdout.Reset()
+	stderr.Reset()
+	code, err := run([]string{"pm", "lock", "--check"}, &stdout, &stderr)
+	if err != nil {
+		t.Fatalf("pm lock --check: %v", err)
+	}
+	if code != 0 {
+		t.Fatalf("pm lock --check: code=%d stderr=%s", code, stderr.String())
+	}
+}
+
+func TestPmLockCheckDrift(t *testing.T) {
+	tmp := setupPmLockFixture(t, `[project]
+name = "demo"
+version = "0.0.1"
+dependencies = ["widget>=1.0"]
+`)
+	var stdout, stderr bytes.Buffer
+	if code, err := run([]string{"pm", "lock"}, &stdout, &stderr); err != nil || code != 0 {
+		t.Fatalf("pm lock: code=%d err=%v", code, err)
+	}
+	if err := os.WriteFile(filepath.Join(tmp, "pyproject.toml"), []byte(`[project]
+name = "demo"
+version = "0.0.1"
+dependencies = ["widget>=2.0"]
+`), 0o644); err != nil {
+		t.Fatalf("rewrite manifest: %v", err)
+	}
+	stdout.Reset()
+	stderr.Reset()
+	code, _ := run([]string{"pm", "lock", "--check"}, &stdout, &stderr)
+	if code == 0 {
+		t.Errorf("expected non-zero exit on drift; stderr=%q", stderr.String())
+	}
+	if !strings.Contains(stderr.String(), "drift") {
+		t.Errorf("stderr missing drift message: %q", stderr.String())
+	}
+}
+
+func TestPmLockCheckMissing(t *testing.T) {
+	setupPmLockFixture(t, `[project]
+name = "demo"
+version = "0.0.1"
+dependencies = []
+`)
+	var stdout, stderr bytes.Buffer
+	code, _ := run([]string{"pm", "lock", "--check"}, &stdout, &stderr)
+	if code == 0 {
+		t.Errorf("expected non-zero exit when lockfile missing; stderr=%q", stderr.String())
+	}
+}
+
+func TestPmLockHelp(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	code, err := run([]string{"pm", "lock", "--help"}, &stdout, &stderr)
+	if err != nil || code != 0 {
+		t.Fatalf("pm lock --help: code=%d err=%v", code, err)
+	}
+	if !strings.Contains(stdout.String(), "bunpy pm lock") {
+		t.Errorf("help output missing header: %q", stdout.String())
+	}
+}

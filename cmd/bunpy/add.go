@@ -10,20 +10,24 @@ import (
 	"path/filepath"
 	"strings"
 
+	"time"
+
 	"github.com/tamnd/bunpy/v1/internal/httpkit"
 	"github.com/tamnd/bunpy/v1/pkg/cache"
+	"github.com/tamnd/bunpy/v1/pkg/lockfile"
 	"github.com/tamnd/bunpy/v1/pkg/manifest"
 	"github.com/tamnd/bunpy/v1/pkg/pypi"
 	"github.com/tamnd/bunpy/v1/pkg/version"
 	"github.com/tamnd/bunpy/v1/pkg/wheel"
 )
 
-// addSubcommand wires `bunpy add <pkg>[<spec>]`. v0.1.3 is the
-// naive single-package porcelain: load pyproject.toml, fetch the
-// PyPI project page, pick the highest universal wheel matching the
-// caller's spec, install it, and write the resolved spec back. No
-// transitive walk, no lockfile, no resolver yet; those land in
-// v0.1.4 and v0.1.5.
+// addSubcommand wires `bunpy add <pkg>[<spec>]`. The v0.1.3 base
+// is the naive single-package porcelain: load pyproject.toml, fetch
+// the PyPI project page, pick the highest universal wheel matching
+// the caller's spec, install it, and write the resolved spec back.
+// v0.1.4 layers the lockfile writer: every successful add upserts
+// the resolved row into bunpy.lock and refreshes the content-hash.
+// No transitive walk and no resolver yet; those land in v0.1.5.
 func addSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 	var (
 		spec      string
@@ -150,10 +154,49 @@ func addSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 		if err := os.WriteFile("pyproject.toml", out, 0o644); err != nil {
 			return 1, fmt.Errorf("bunpy add: %w", err)
 		}
+		if err := updateLockfile("bunpy.lock", out, name, chosen, file); err != nil {
+			return 1, fmt.Errorf("bunpy add: %w", err)
+		}
 	}
 
 	fmt.Fprintf(stdout, "added %s %s\n", name, chosen)
 	return 0, nil
+}
+
+// updateLockfile rewrites bunpy.lock so the entry for name reflects
+// the resolved wheel. The content-hash is recomputed from the new
+// pyproject's [project].dependencies.
+func updateLockfile(path string, manifestBytes []byte, name, chosen string, f pypi.File) error {
+	mf, err := manifest.Parse(manifestBytes)
+	if err != nil {
+		return fmt.Errorf("re-parse manifest: %w", err)
+	}
+	lock, err := lockfile.Read(path)
+	if err != nil && !errors.Is(err, lockfile.ErrNotFound) {
+		return err
+	}
+	if lock == nil {
+		lock = &lockfile.Lock{Version: lockfile.Version}
+	}
+	lock.Upsert(lockfile.Package{
+		Name:     name,
+		Version:  chosen,
+		Filename: f.Filename,
+		URL:      f.URL,
+		Hash:     wheelSha256(f),
+	})
+	lock.ContentHash = lockfile.HashDependencies(mf.Project.Dependencies)
+	lock.Generated = time.Now().UTC()
+	return lock.WriteFile(path)
+}
+
+// wheelSha256 returns "sha256:<hex>" from f.Hashes if present.
+// Empty when the index gave no sha256 entry.
+func wheelSha256(f pypi.File) string {
+	if h, ok := f.Hashes["sha256"]; ok && h != "" {
+		return "sha256:" + h
+	}
+	return ""
 }
 
 // pickUniversalWheel filters proj.Files to py3-none-any wheels and
