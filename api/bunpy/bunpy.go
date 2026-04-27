@@ -22,7 +22,7 @@ import (
 )
 
 // Version is baked in by the bunpy build pipeline.
-const Version = "0.3.12"
+const Version = "0.4.0"
 
 // Modules returns the NativeModules map for the current v0.3.1 surface.
 // Later rungs extend this map by adding more entries.
@@ -32,10 +32,11 @@ func Modules() map[string]func(*goipyVM.Interp) *goipyObject.Module {
 		"bunpy.base64": BuildBase64,
 		"bunpy.gzip":   BuildGzip,
 		"bunpy._fetch": BuildFetch,
-		"bunpy.redis":      BuildRedis,
-		"bunpy.s3":         BuildS3,
+		"bunpy.redis":    BuildRedis,
+		"bunpy.s3":       BuildS3,
 		"bunpy.WebSocket": BuildWebSocket,
-		"bunpy.password":  BuildPassword,
+		"bunpy.password": BuildPassword,
+		"bunpy.env":      BuildEnv,
 	}
 }
 
@@ -76,6 +77,7 @@ func BuildBunpy(i *goipyVM.Interp) *goipyObject.Module {
 	m.Dict.SetStr("WebSocket", BuildWebSocket(i))
 	m.Dict.SetStr("cron", BuildCron(i))
 	m.Dict.SetStr("password", BuildPassword(i))
+	m.Dict.SetStr("env", BuildEnv(i))
 
 	return m
 }
