@@ -396,6 +396,21 @@ state — the user-visible artefact is `./patches/<name>+<version>.patch`,
 which is the input to the resolver-independent reproducible
 install.
 
+v0.2.3 lands `bunpy create`. `pkg/scaffold` holds four built-in
+templates (app, lib, script, workspace) embedded via
+`//go:embed all:templates` -- the `all:` prefix is required because
+Python source files like `__init__.py` and `__main__.py` start with
+`_`, which Go embed excludes by default. Each template is a directory
+tree of `.tmpl` files passed through `text/template` at render time;
+the `.tmpl` suffix is stripped from output filenames. `Vars` carries
+`.Name`, `.SnakeName`, `.Description`, `.Author`, and `.PythonMin`.
+Directory names that contain `{{.SnakeName}}` are expanded via string
+replacement in `expandPath` before the output directory is created, so
+`src/{{.SnakeName}}/` becomes `src/my_lib/` for a project named
+`my-lib`. `cmd/bunpy/create.go` runs an interactive prompt unless
+`--yes` is given; it calls `git config user.name` to pre-fill the
+author field.
+
 v0.2.2 lands `bunpy publish`. `pkg/build` wraps PEP 517 build hooks
 via a Python subprocess call: `build_sdist` and `build_wheel` are
 invoked via `importlib.import_module` using the backend declared in

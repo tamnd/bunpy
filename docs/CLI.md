@@ -1,14 +1,14 @@
 # CLI reference
 
 bunpy ships as one binary. Subcommands land per-version per the
-roadmap. Today (v0.2.2) the wired surface is `--version` (with
+roadmap. Today (v0.2.3) the wired surface is `--version` (with
 `--short` and `--json`), `--help`, positional `bunpy <file.py>`,
 `bunpy run <file.py>`, `bunpy repl`, `bunpy stdlib`,
 `bunpy pm config`, `bunpy pm info`, `bunpy pm install-wheel`,
 `bunpy pm lock`, `bunpy add`, `bunpy install`, `bunpy outdated`,
 `bunpy update`, `bunpy remove`, `bunpy link`, `bunpy unlink`,
 `bunpy patch`, `bunpy why`, `bunpy workspace`, `bunpy audit`,
-`bunpy publish`, `bunpy help`, and `bunpy man`.
+`bunpy publish`, `bunpy create`, `bunpy help`, and `bunpy man`.
 This page is the
 long-form reference. Running
 `bunpy help <cmd>` gives the same body inline; `bunpy man <cmd>`
@@ -301,8 +301,17 @@ build backend must be installed before running `bunpy publish`; run
 The rest of the package-manager surface lands per the v0.2.x ladder
 in `docs/ROADMAP.md`:
 
-- `bunpy create` scaffolds new projects from built-in templates.
-  Lands in v0.2.3.
+`bunpy create` (v0.2.3) scaffolds new projects from built-in templates.
+Four templates ship: `app` (CLI app with src/ layout), `lib` (library),
+`script` (single .py file with shebang), and `workspace` (multi-member
+root with two member stubs).
+
+```
+bunpy create app my-cli         interactive prompts
+bunpy create lib my-lib --yes   accept all defaults
+bunpy create workspace mono     workspace skeleton
+bunpy create --list             list templates
+```
 
 ### Project scaffolding
 

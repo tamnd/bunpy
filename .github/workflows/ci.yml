@@ -115,7 +115,7 @@ jobs:
       - name: bunpy help / --help parity
         shell: bash
         run: |
-          for cmd in run repl stdlib version help man pm add install outdated update remove link unlink patch why workspace audit publish; do
+          for cmd in run repl stdlib version help man pm add install outdated update remove link unlink patch why workspace audit publish create; do
             a="$(./bunpy help "$cmd")"
             b="$(./bunpy "$cmd" --help)"
             if [ "$a" != "$b" ]; then
@@ -754,6 +754,34 @@ jobs:
           echo "$out2" | grep -q 'beta'
           # unknown workspace root should error
           ( "$GITHUB_WORKSPACE/bunpy" workspace --list --workspace /tmp ) && exit 1 || true
+
+      - name: bunpy create smoke (v0.2.3)
+        shell: bash
+        run: |
+          dest="$(mktemp -d)"
+          # create app
+          ( cd "$dest" && "$GITHUB_WORKSPACE/bunpy" create app smoke-app --yes )
+          test -f "$dest/smoke-app/pyproject.toml"
+          test -f "$dest/smoke-app/src/smoke_app/__main__.py"
+          grep -q 'smoke-app' "$dest/smoke-app/pyproject.toml"
+          # create lib
+          ( cd "$dest" && "$GITHUB_WORKSPACE/bunpy" create lib smoke-lib --yes )
+          test -f "$dest/smoke-lib/pyproject.toml"
+          test -f "$dest/smoke-lib/src/smoke_lib/__init__.py"
+          # create script
+          ( cd "$dest" && "$GITHUB_WORKSPACE/bunpy" create script smoke-script --yes )
+          test -f "$dest/smoke-script/smoke-script.py"
+          grep -q 'bunpy' "$dest/smoke-script/smoke-script.py"
+          # create workspace
+          ( cd "$dest" && "$GITHUB_WORKSPACE/bunpy" create workspace smoke-ws --yes )
+          test -f "$dest/smoke-ws/pyproject.toml"
+          grep -q 'workspace' "$dest/smoke-ws/pyproject.toml"
+          # --list
+          "$GITHUB_WORKSPACE/bunpy" create --list | grep -q 'app'
+          # --help
+          "$GITHUB_WORKSPACE/bunpy" create --help > /dev/null
+          # unknown template should exit 1
+          ( cd "$dest" && "$GITHUB_WORKSPACE/bunpy" create badtemplate myproj --yes ) && exit 1 || true
 
       - name: bunpy hello.py
         run: |

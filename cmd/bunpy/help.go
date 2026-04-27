@@ -573,6 +573,33 @@ The result also surfaces overlay state: a linked pin shows
 and uses installer ` + "`bunpy-patch`" + `.
 `,
 	},
+	"create": {
+		Name:    "create",
+		Summary: "Scaffold a new project from a built-in template",
+		Body: `bunpy create: scaffold a new project from a built-in template.
+
+USAGE
+  bunpy create <template> <name>        interactive prompts
+  bunpy create <template> <name> --yes  accept all defaults
+  bunpy create --list                   list available templates
+
+TEMPLATES
+  app        CLI application with src/ layout and __main__.py entry point
+  lib        Library with src/ layout and tests/
+  script     Single .py script with shebang line
+  workspace  Root workspace with two member package stubs
+
+The project name is used as the directory name and the pyproject.toml
+` + "`[project].name`" + `. Hyphens are converted to underscores for Python
+module names (` + "`my-cli`" + ` -> ` + "`my_cli`" + `).
+
+Without ` + "`--yes`" + `, prompts ask for description, author, and Python
+version constraint. Author defaults to ` + "`git config user.name`" + `
+if available.
+
+After scaffolding: cd <name> && bunpy install
+`,
+	},
 	"publish": {
 		Name:    "publish",
 		Summary: "Build and upload a wheel and/or sdist to PyPI",

@@ -1,0 +1,14 @@
+[project]
+name = "{{.Name}}"
+version = "0.1.0"
+description = "{{.Description}}"
+authors = [{name = "{{.Author}}"}]
+requires-python = "{{.PythonMin}}"
+dependencies = []
+
+[project.scripts]
+{{.SnakeName}} = "{{.SnakeName}}.__main__:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

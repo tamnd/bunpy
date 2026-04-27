@@ -73,6 +73,8 @@ func run(args []string, stdout, stderr io.Writer) (int, error) {
 		return auditSubcommand(args[1:], stdout, stderr)
 	case "publish":
 		return publishSubcommand(args[1:], stdout, stderr)
+	case "create":
+		return createSubcommand(args[1:], stdout, stderr)
 	case "man":
 		return manSubcommand(args[1:], stdout, stderr)
 	}
@@ -82,7 +84,7 @@ func run(args []string, stdout, stderr io.Writer) (int, error) {
 	}
 
 	usage(stderr)
-	return 1, fmt.Errorf("unknown command %q (v0.2.2 wires --version, --help, `bunpy <file.py>`, `bunpy run`, `bunpy repl`, `bunpy stdlib`, `bunpy pm`, `bunpy add`, `bunpy install`, `bunpy outdated`, `bunpy update`, `bunpy remove`, `bunpy link`, `bunpy unlink`, `bunpy patch`, `bunpy why`, `bunpy workspace`, `bunpy audit`, `bunpy publish`, `bunpy help`, `bunpy man`)", args[0])
+	return 1, fmt.Errorf("unknown command %q (v0.2.3 wires --version, --help, `bunpy <file.py>`, `bunpy run`, `bunpy repl`, `bunpy stdlib`, `bunpy pm`, `bunpy add`, `bunpy install`, `bunpy outdated`, `bunpy update`, `bunpy remove`, `bunpy link`, `bunpy unlink`, `bunpy patch`, `bunpy why`, `bunpy workspace`, `bunpy audit`, `bunpy publish`, `bunpy create`, `bunpy help`, `bunpy man`)", args[0])
 }
 
 func versionSubcommand(args []string, stdout, stderr io.Writer) (int, error) {

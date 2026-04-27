@@ -1,0 +1,111 @@
+.TH BUNPY-CREATE 1 "2026-04-27" "bunpy" "User Commands"
+.SH NAME
+bunpy-create \- scaffold a new project from a built-in template
+.SH SYNOPSIS
+.B bunpy create
+.I template
+.I name
+.RB [ \-\-yes ]
+.br
+.B bunpy create
+.B \-\-list
+.SH DESCRIPTION
+.B bunpy create
+generates a new Python project directory from one of four built-in
+templates.
+.PP
+The
+.I name
+argument becomes both the directory name and the
+.B project.name
+in the generated
+.IR pyproject.toml .
+Hyphens and dots in the name are converted to underscores when used as
+a Python module name (e.g.
+.B my-cli
+becomes
+.B my_cli
+in import paths).
+.PP
+Without
+.BR \-\-yes ,
+an interactive prompt collects project description, author name, and
+Python version constraint. Defaults are shown in brackets; pressing
+Enter accepts them.
+.SH TEMPLATES
+.TP
+.B app
+CLI application with
+.B src/
+layout, a
+.B __main__.py
+entry point, and a
+.B [project.scripts]
+entry in
+.BR pyproject.toml .
+.TP
+.B lib
+Library with
+.B src/
+layout and a
+.B tests/
+stub.
+.TP
+.B script
+A single
+.B .py
+file with a bunpy shebang. No
+.IR pyproject.toml .
+.TP
+.B workspace
+A root
+.IR pyproject.toml
+with
+.B [tool.bunpy.workspace]
+and two member package stubs under
+.BR packages/ .
+.SH OPTIONS
+.TP
+.BR \-\-yes ", " \-y
+Accept all prompt defaults without asking.
+.TP
+.B \-\-list
+Print the available templates and exit.
+.TP
+.BR \-h ", " \-\-help
+Print a short usage summary and exit.
+.SH EXIT STATUS
+.TP
+.B 0
+Project scaffolded successfully.
+.TP
+.B 1
+Unknown template, destination directory exists, or other error.
+.SH EXAMPLES
+Create a CLI application interactively:
+.PP
+.nf
+bunpy create app my-cli
+.fi
+.PP
+Create a library accepting all defaults:
+.PP
+.nf
+bunpy create lib my-lib --yes
+.fi
+.PP
+Create a workspace skeleton:
+.PP
+.nf
+bunpy create workspace mono --yes
+.fi
+.PP
+List available templates:
+.PP
+.nf
+bunpy create --list
+.fi
+.SH SEE ALSO
+.BR bunpy-publish (1),
+.BR bunpy-workspace (1),
+.BR bunpy-add (1)
