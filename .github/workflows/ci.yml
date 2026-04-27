@@ -115,7 +115,7 @@ jobs:
       - name: bunpy help / --help parity
         shell: bash
         run: |
-          for cmd in run repl stdlib version help man; do
+          for cmd in run repl stdlib version help man pm; do
             a="$(./bunpy help "$cmd")"
             b="$(./bunpy "$cmd" --help)"
             if [ "$a" != "$b" ]; then
@@ -155,6 +155,32 @@ jobs:
             *bunpy*repl*) ;;
             *) echo "expected banner, got: $banner"; exit 1 ;;
           esac
+
+      - name: bunpy pm config smoke
+        shell: bash
+        run: |
+          dir="$(mktemp -d)"
+          cat > "$dir/pyproject.toml" <<'EOF'
+          [project]
+          name = "smoke"
+          version = "0.0.1"
+
+          [tool.bunpy]
+          profile = "fast"
+          EOF
+          out="$(./bunpy pm config "$dir/pyproject.toml")"
+          echo "$out"
+          case "$out" in
+            *smoke*0.0.1*) ;;
+            *) echo "want smoke + 0.0.1, got: $out"; exit 1 ;;
+          esac
+          case "$out" in
+            *fast*) ;;
+            *) echo "want tool.bunpy.profile=fast, got: $out"; exit 1 ;;
+          esac
+          if ./bunpy pm config /no/such/path/pyproject.toml 2>/dev/null; then
+            echo "want non-zero exit on missing file"; exit 1
+          fi
 
       - name: bunpy hello.py
         run: |

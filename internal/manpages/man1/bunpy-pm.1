@@ -1,0 +1,31 @@
+.TH BUNPY-PM 1 "2026-04-27" "bunpy" "User Commands"
+.SH NAME
+bunpy-pm \- package manager plumbing
+.SH SYNOPSIS
+.B bunpy pm
+.I verb
+.RI [ args... ]
+.SH DESCRIPTION
+The
+.B pm
+tree groups the low-level package-manager verbs. Porcelain
+commands (
+.BR add ", " install ", " remove ", " update ", " outdated ", " why
+) call into the same machinery and live at the top level of the
+CLI.
+.PP
+v0.1.0 wires only
+.BR "pm config" :
+a JSON dump of the parsed
+.IR pyproject.toml .
+No network, no installs.
+.SH VERBS
+.TP
+.B config
+Print the parsed
+.I pyproject.toml
+as JSON. See
+.BR bunpy-pm-config (1).
+.SH SEE ALSO
+.BR bunpy (1),
+.BR bunpy-pm-config (1).

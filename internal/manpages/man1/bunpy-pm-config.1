@@ -1,0 +1,58 @@
+.TH BUNPY-PM-CONFIG 1 "2026-04-27" "bunpy" "User Commands"
+.SH NAME
+bunpy-pm-config \- print parsed pyproject.toml as JSON
+.SH SYNOPSIS
+.B bunpy pm config
+.RI [ path ]
+.SH DESCRIPTION
+Reads
+.I pyproject.toml
+(default
+.IR ./pyproject.toml ),
+parses it as a PEP 621
+.B [project]
+table plus an optional
+.B [tool.bunpy]
+table, and prints a JSON object to stdout.
+.PP
+The output has three top-level keys:
+.TP
+.B project
+PEP 621 fields: name, version, dependencies, optional-dependencies,
+authors, maintainers, license, readme, scripts, gui-scripts,
+entry-points, urls, keywords, classifiers, dynamic.
+.TP
+.B tool
+The
+.B [tool.bunpy]
+table, kept verbatim. Empty when not set.
+.TP
+.B other
+Any unrecognised top-level table (for example
+.BR [build-system] )
+preserved verbatim so callers do not lose fidelity.
+.SH STRICT MODE
+.B bunpy pm config
+runs in strict mode and rejects:
+.IP \[bu] 2
+A missing
+.B [project]
+table.
+.IP \[bu] 2
+A missing or empty
+.BR project.name .
+.IP \[bu] 2
+A
+.B project.name
+that does not match the PEP 503 regex
+.RB ( ^[A-Za-z0-9]([A-Za-z0-9._-]*[A-Za-z0-9])?$ ).
+.IP \[bu] 2
+A
+.B project.dynamic
+entry that is also set literally (PEP 621 \(sc5.4).
+.SH EXIT STATUS
+Zero on a successful parse. Non-zero on a missing file, a TOML
+syntax error, or any of the validation failures above.
+.SH SEE ALSO
+.BR bunpy-pm (1),
+.BR bunpy (1).

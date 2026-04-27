@@ -101,6 +101,44 @@ for input in tests/fixtures/v00*/*.repl_in; do
   run_repl_fixture "$input"
 done
 
+run_pm_config_fixture() {
+  local toml="$1"
+  local dir name expected got rc want
+  dir="$(dirname "$toml")"
+  name="$(basename "$toml" .pyproject.toml)"
+  expected="$dir/expected_${name}.json"
+
+  if [ ! -f "$expected" ]; then
+    echo "skip: pm-config  $toml (no expected_${name}.json)"
+    return 0
+  fi
+
+  ran=$((ran + 1))
+  got="$("$bin" pm config "$toml" 2>&1)" || rc=$?
+  rc="${rc:-0}"
+  want="$(cat "$expected")"
+  if [ "$rc" -ne 0 ]; then
+    echo "FAIL: pm-config  $toml exited $rc"
+    echo "stderr+stdout:"
+    echo "$got"
+    fail=$((fail + 1))
+    return 0
+  fi
+  if [ "$got" != "$want" ]; then
+    echo "FAIL: pm-config  $toml stdout mismatch"
+    echo "  got:  $(printf '%s' "$got" | head -c 400)"
+    echo "  want: $(printf '%s' "$want" | head -c 400)"
+    fail=$((fail + 1))
+    return 0
+  fi
+  echo "ok:   pm-config  $toml"
+}
+
+for toml in tests/fixtures/v01*/*.pyproject.toml; do
+  [ -e "$toml" ] || continue
+  run_pm_config_fixture "$toml"
+done
+
 echo "---"
 echo "ran $ran fixtures, $fail failed"
 exit "$fail"

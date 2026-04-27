@@ -391,6 +391,8 @@ func TestHelpFlagAliasesParity(t *testing.T) {
 		{"version", []string{"version", "-h"}},
 		{"man", []string{"man", "--help"}},
 		{"man", []string{"man", "-h"}},
+		{"pm", []string{"pm", "--help"}},
+		{"pm", []string{"pm", "-h"}},
 	}
 	for _, tc := range cases {
 		t.Run(strings.Join(tc.viaSubcmd, " "), func(t *testing.T) {

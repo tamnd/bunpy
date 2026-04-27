@@ -22,9 +22,20 @@ harness goes from non-zero to zero in the same PR.
 
 ## v0.1.x: package manager (twelve rungs)
 
-`bunpy add`, `bunpy install`, lockfile, PubGrub resolver, PyPI
-client, wheel installer, `bunpy update`, `bunpy outdated`,
-`bunpy remove`, `bunpy link`, `bunpy patch`, `bunpy why`.
+| Version | Title                                | Status     |
+|---------|--------------------------------------|------------|
+| v0.1.0  | pyproject.toml reader (`bunpy pm config`) | shipped |
+| v0.1.1  | PyPI client (PEP 691 simple JSON)    | next       |
+| v0.1.2  | wheel installer (PEP 427)            | planned    |
+| v0.1.3  | `bunpy add` (single package, naive)  | planned    |
+| v0.1.4  | `bunpy.lock` writer plus reader      | planned    |
+| v0.1.5  | PubGrub resolver                     | planned    |
+| v0.1.6  | dep lanes (`-D`, `-O`, `-P`)         | planned    |
+| v0.1.7  | `bunpy update` and `bunpy outdated`  | planned    |
+| v0.1.8  | `bunpy remove`                       | planned    |
+| v0.1.9  | `bunpy link` and `bunpy unlink`      | planned    |
+| v0.1.10 | `bunpy patch` and `--commit`         | planned    |
+| v0.1.11 | `bunpy why`                          | planned    |
 
 ## v0.2.x: workspaces, audit, publish, create, bunpyx
 

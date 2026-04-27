@@ -1,0 +1,44 @@
+{
+  "project": {
+    "name": "full",
+    "version": "1.2.3",
+    "description": "fully populated pyproject for bunpy v0.1.0",
+    "requires_python": ">=3.10",
+    "dependencies": [
+      "click>=8",
+      "requests>=2"
+    ],
+    "optional_dependencies": {
+      "dev": [
+        "pytest",
+        "ruff"
+      ]
+    },
+    "authors": [
+      {
+        "name": "Ada Lovelace",
+        "email": "ada@example.com"
+      }
+    ],
+    "license": {
+      "spdx": "MIT"
+    },
+    "readme": {
+      "file": "README.md"
+    },
+    "scripts": {
+      "full": "full.cli:main"
+    },
+    "keywords": [
+      "alpha",
+      "beta"
+    ],
+    "classifiers": [
+      "Programming Language :: Python :: 3"
+    ],
+    "urls": {
+      "Home": "https://example.com"
+    }
+  },
+  "tool": {}
+}

@@ -1,0 +1,15 @@
+{
+  "project": {
+    "name": "tool-bunpy",
+    "version": "0.0.1"
+  },
+  "tool": {
+    "raw": {
+      "cache": {
+        "ttl": 600
+      },
+      "parallel": 4,
+      "profile": "fast"
+    }
+  }
+}

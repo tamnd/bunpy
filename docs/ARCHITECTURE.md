@@ -136,6 +136,32 @@ Ctrl-A/E, completion) lands in v0.7.x. Meta commands prefixed
 with `:` are reserved syntax (Python statements never start
 with `:`) so they never conflict with user code.
 
+## Manifest
+
+The package manager begins at the parser. `pkg/manifest/` reads
+`pyproject.toml` into a `Manifest` with three slots: a typed
+`Project` (PEP 621), a `Tool` that holds `[tool.bunpy]` verbatim,
+and an `Other` map that preserves anything else (`[build-system]`,
+`[tool.ruff]`, ...) so we never lose fidelity for tools we do not
+understand yet. `Project.Raw` keeps the original `[project]` table
+so `bunpy add` can round-trip it back to disk in v0.1.3.
+
+Validation is deliberately narrow: in strict mode we reject a
+missing `[project]` table, a missing or PEP 503-invalid name, and
+any `project.dynamic` entry that is also set literally (PEP 621
+§5.4). Everything else is accepted as written; PEP 508 marker
+parsing lives under `pkg/marker/` and lands with the resolver in
+v0.1.5. Soft mode collects the same checks as warnings, for
+callers (`bunpy pm config`) that want to surface issues without
+hard-failing.
+
+`bunpy pm config` is the porcelain on top: it loads the manifest
+and prints it as indented JSON. Every later v0.1.x rung consumes
+the same `manifest.Manifest` shape: the resolver reads
+`Project.Dependencies`, the installer reads `Project.Name`,
+`bunpy add` writes back via `Project.Raw`. One parser, many
+callers.
+
 ## Module layout
 
 ```

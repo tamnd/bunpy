@@ -1,10 +1,11 @@
 # CLI reference
 
 bunpy ships as one binary. Subcommands land per-version per the
-roadmap. Today (v0.0.8) the wired surface is `--version` (with
+roadmap. Today (v0.1.0) the wired surface is `--version` (with
 `--short` and `--json`), `--help`, positional `bunpy <file.py>`,
-`bunpy run <file.py>`, `bunpy repl`, `bunpy stdlib`, `bunpy help`,
-and `bunpy man`. This page is the long-form reference. Running
+`bunpy run <file.py>`, `bunpy repl`, `bunpy stdlib`,
+`bunpy pm config`, `bunpy help`, and `bunpy man`. This page is
+the long-form reference. Running
 `bunpy help <cmd>` gives the same body inline; `bunpy man <cmd>`
 prints the bundled roff manpage. Installing the binary itself:
 see `docs/INSTALL.md`.
@@ -45,6 +46,21 @@ thing.
 
 ### Package manager
 
+The `pm` tree groups low-level plumbing; porcelain commands
+(`add`, `install`, `remove`, ...) live at the top level.
+
+- `bunpy pm config [path]` parses `pyproject.toml` (default
+  `./pyproject.toml`) and prints it as JSON. The output has three
+  top-level keys: `project` (PEP 621 fields), `tool` (the
+  `[tool.bunpy]` table, kept verbatim), and `other` (any
+  unrecognised top-level table, kept verbatim so callers do not
+  lose fidelity). Strict mode rejects a missing `[project]` table,
+  a missing or PEP 503-invalid `name`, and any
+  `project.dynamic` entry that is also set literally.
+
+The rest of the package-manager surface is aspirational and
+lands per the v0.1.x ladder in `docs/ROADMAP.md`:
+
 - `bunpy install` installs dependencies from `pyproject.toml`
   and `bunpy.lock`. `--frozen` refuses to mutate the lockfile.
 - `bunpy add <pkg>` adds a dependency. `-D` for dev, `-O` for
@@ -61,6 +77,9 @@ thing.
   to PyPI.
 - `bunpy why <pkg>` prints a reverse-deps tree explaining why a
   package is in the lockfile.
+- `bunpy pm info <pkg>` fetches PEP 691 metadata.
+- `bunpy pm install-wheel <url|path>` installs a single wheel
+  with no dependency resolution.
 - `bunpy pm cache rm` clears on-disk caches.
 - `bunpy pm ls` lists installed packages.
 - `bunpy pm hash` prints the lockfile content hash.

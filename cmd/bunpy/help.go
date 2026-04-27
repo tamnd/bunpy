@@ -71,6 +71,47 @@ USAGE
 The list is baked at build time from goipy's embedded stdlib.
 `,
 	},
+	"pm": {
+		Name:    "pm",
+		Summary: "Package manager plumbing (config, info, install-wheel...)",
+		Body: `bunpy pm: package manager plumbing.
+
+USAGE
+  bunpy pm config [path]   print parsed pyproject.toml as JSON
+
+The ` + "`pm`" + ` tree groups the low-level package-manager verbs.
+Porcelain commands (` + "`add`" + `, ` + "`install`" + `, ` + "`remove`" + `, ` + "`update`" + `,
+` + "`outdated`" + `, ` + "`why`" + `, ...) land per docs/ROADMAP.md and call into
+the same machinery.
+
+v0.1.0 wires only ` + "`pm config`" + `: a JSON dump of the parsed
+pyproject.toml. No network, no installs.
+`,
+	},
+	"pm-config": {
+		Name:    "pm-config",
+		Summary: "Print parsed pyproject.toml as JSON",
+		Body: `bunpy pm config: print the parsed pyproject.toml as JSON.
+
+USAGE
+  bunpy pm config              read ./pyproject.toml
+  bunpy pm config <path>       read a specific file
+
+The output is a JSON object with three top-level keys:
+  project   PEP 621 fields (name, version, dependencies, ...)
+  tool      the [tool.bunpy] table, kept verbatim
+  other     any unrecognised top-level table, kept verbatim
+
+In strict mode (the default) bunpy rejects:
+  - a missing [project] table
+  - a missing or empty project.name
+  - a project.name that does not match the PEP 503 regex
+  - a project.dynamic entry that is also set literally
+
+Exit status is 1 on any of those, or on a filesystem or TOML
+syntax error.
+`,
+	},
 	"version": {
 		Name:    "version",
 		Summary: "Print version, commit, build date, and toolchain pins",

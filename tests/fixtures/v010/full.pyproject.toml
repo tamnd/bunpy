@@ -1,0 +1,23 @@
+[project]
+name = "full"
+version = "1.2.3"
+description = "fully populated pyproject for bunpy v0.1.0"
+requires-python = ">=3.10"
+dependencies = ["click>=8", "requests>=2"]
+keywords = ["alpha", "beta"]
+classifiers = ["Programming Language :: Python :: 3"]
+license = "MIT"
+readme = "README.md"
+
+[project.optional-dependencies]
+dev = ["pytest", "ruff"]
+
+[project.urls]
+Home = "https://example.com"
+
+[project.scripts]
+full = "full.cli:main"
+
+[[project.authors]]
+name = "Ada Lovelace"
+email = "ada@example.com"
