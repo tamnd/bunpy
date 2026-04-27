@@ -43,6 +43,8 @@ func run(args []string, stdout, stderr io.Writer) (int, error) {
 		return 0, nil
 	case "run":
 		return runSubcommand(args[1:], stdout, stderr)
+	case "repl":
+		return replSubcommand(args[1:], stdout, stderr)
 	case "stdlib":
 		return stdlibSubcommand(args[1:], stdout, stderr)
 	case "man":
@@ -54,7 +56,7 @@ func run(args []string, stdout, stderr io.Writer) (int, error) {
 	}
 
 	usage(stderr)
-	return 1, fmt.Errorf("unknown command %q (v0.0.7 wires --version, --help, `bunpy <file.py>`, `bunpy run`, `bunpy stdlib`, `bunpy help`, `bunpy man`)", args[0])
+	return 1, fmt.Errorf("unknown command %q (v0.0.8 wires --version, --help, `bunpy <file.py>`, `bunpy run`, `bunpy repl`, `bunpy stdlib`, `bunpy help`, `bunpy man`)", args[0])
 }
 
 func versionSubcommand(args []string, stdout, stderr io.Writer) (int, error) {

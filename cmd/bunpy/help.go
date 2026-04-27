@@ -33,6 +33,31 @@ Script names defined in pyproject.toml will be supported once
 the package manager lands in v0.1.x.
 `,
 	},
+	"repl": {
+		Name:    "repl",
+		Summary: "Open the interactive Python prompt",
+		Body: `bunpy repl: open the interactive Python prompt.
+
+USAGE
+  bunpy repl              start the prompt
+  bunpy repl --quiet      no banner, no prompts (for piped stdin)
+
+The REPL is a line-driver: each chunk is read until a blank
+line, then handed to ` + "`bunpy run`" + ` as a one-shot module.
+v0.0.8 is stateless: chunks do not share globals. Persistent
+globals waits for gocopy to grow expression and call support.
+
+Meta commands (prefixed with ` + "`:`" + `):
+  :help            print this list of commands
+  :quit, :exit     leave the REPL
+  :history [N]     print the last N entries (default all)
+  :clear           drop the in-flight buffer
+
+History persists at ` + "`$HOME/.bunpy_history`" + `. Override with
+` + "`BUNPY_HISTORY`" + `; cap entries with ` + "`BUNPY_HISTORY_SIZE`" + `
+(default 1000, ` + "`0`" + ` disables).
+`,
+	},
 	"stdlib": {
 		Name:    "stdlib",
 		Summary: "List Python stdlib modules embedded in the binary",

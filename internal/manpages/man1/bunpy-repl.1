@@ -1,0 +1,59 @@
+.TH BUNPY-REPL 1 "2026-04-27" "bunpy" "User Commands"
+.SH NAME
+bunpy-repl \- interactive Python prompt
+.SH SYNOPSIS
+.B bunpy repl
+[\fB--quiet\fR]
+.SH DESCRIPTION
+Opens the interactive Python prompt. Each chunk is read until a
+blank line and then handed to
+.BR "bunpy run"
+as a one-shot module. v0.0.8 is stateless: chunks do not share
+globals. Persistent globals waits for gocopy to grow expression
+and call compilation; the CLI surface is stable and will not
+change when that lands.
+.SH OPTIONS
+.TP
+.B --quiet
+Suppress the startup banner and the
+.B >>>
+and
+.B ...
+prompts. Useful for piped stdin and scripted smokes.
+.SH META COMMANDS
+Lines starting with
+.B :
+are REPL meta commands and never reach the compiler.
+.TP
+.B :help
+Print the list of REPL commands.
+.TP
+.BR :quit ", " :exit
+Leave the REPL with exit status zero.
+.TP
+.BI :history " " [N]
+Print the last
+.I N
+history entries (default: all).
+.TP
+.B :clear
+Drop the in-flight buffer.
+.SH ENVIRONMENT
+.TP
+.B BUNPY_HISTORY
+Path to the history file. Defaults to
+.IR "$HOME/.bunpy_history" .
+.TP
+.B BUNPY_HISTORY_SIZE
+Maximum number of entries (default 1000). Setting this to
+.B 0
+disables history.
+.SH EXIT STATUS
+Zero on
+.BR :quit ", " :exit ", "
+or end of stdin. Non-zero on an internal error (history file I/O,
+unreadable stdin). User-side compile errors are reported to stderr
+and the loop continues.
+.SH SEE ALSO
+.BR bunpy (1),
+.BR bunpy-run (1).

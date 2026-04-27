@@ -18,7 +18,7 @@ harness goes from non-zero to zero in the same PR.
 | v0.0.5  | binary metadata baked at build time  | shipped    |
 | v0.0.6  | release tooling actually publishes   | shipped    |
 | v0.0.7  | embedded help and man pages          | shipped    |
-| v0.0.8  | `bunpy repl`                         | next       |
+| v0.0.8  | `bunpy repl`                         | shipped    |
 
 ## v0.1.x: package manager (twelve rungs)
 

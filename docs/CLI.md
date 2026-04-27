@@ -1,10 +1,10 @@
 # CLI reference
 
 bunpy ships as one binary. Subcommands land per-version per the
-roadmap. Today (v0.0.7) the wired surface is `--version` (with
+roadmap. Today (v0.0.8) the wired surface is `--version` (with
 `--short` and `--json`), `--help`, positional `bunpy <file.py>`,
-`bunpy run <file.py>`, `bunpy stdlib`, `bunpy help`, and
-`bunpy man`. This page is the long-form reference. Running
+`bunpy run <file.py>`, `bunpy repl`, `bunpy stdlib`, `bunpy help`,
+and `bunpy man`. This page is the long-form reference. Running
 `bunpy help <cmd>` gives the same body inline; `bunpy man <cmd>`
 prints the bundled roff manpage. Installing the binary itself:
 see `docs/INSTALL.md`.
@@ -31,8 +31,17 @@ thing.
   `-` (read from stdin), `--no-globals` (do not inject Web
   platform globals). v0.0.3 wires the basic file path; the flags
   follow on the v0.7.x rungs.
-- `bunpy repl` opens an interactive REPL. History at
-  `~/.bunpy_history`.
+- `bunpy repl` opens the interactive Python prompt. v0.0.8 ships
+  a stateless line-driver: each chunk is read until a blank line
+  and handed to `bunpy run` as a one-shot module. Persistent
+  globals across chunks waits for gocopy to grow expression and
+  call compilation; the CLI surface is stable and will not change
+  when that lands. `--quiet` suppresses the banner and prompts
+  for piped stdin. Meta commands prefixed with `:` (`:help`,
+  `:quit`, `:history`, `:clear`) drive the shell. History is
+  persisted at `$HOME/.bunpy_history`; override with
+  `BUNPY_HISTORY`, cap with `BUNPY_HISTORY_SIZE` (default 1000,
+  `0` disables).
 
 ### Package manager
 

@@ -119,11 +119,29 @@ so the linux and darwin tarballs ship `share/man/man1/*.1`
 alongside the binary; `install.sh` and the Homebrew formula
 both pick those up. Windows archives skip the manpages.
 
+## REPL
+
+`bunpy repl` is a thin line-driver around `runtime.Run`. Each
+input chunk is accumulated until a blank line, then handed to
+the same compile-marshal-eval pipeline that `bunpy run` uses.
+v0.0.8 is stateless: each flush starts with a fresh module
+globals dict. Persistent globals across chunks would need a
+goipy entry point that takes a caller-supplied dict; that lands
+once gocopy grows expression and call compilation and the use
+case becomes meaningful.
+
+The shell itself lives in `internal/repl/`. Line editing is
+plain `bufio.Scanner`; raw-mode terminal editing (arrow keys,
+Ctrl-A/E, completion) lands in v0.7.x. Meta commands prefixed
+with `:` are reserved syntax (Python statements never start
+with `:`) so they never conflict with user code.
+
 ## Module layout
 
 ```
 cmd/bunpy/         CLI entry: subcommand router + per-command files
 internal/manpages/ embedded roff manpages (man1/*.1) + Go accessors
+internal/repl/     interactive line-driver shell (Loop, history)
 runtime/           embeds goipy.VM; module loader; hot reload; env
 api/               bunpy.* Python-side API written in Go
 pkg/               package manager (resolver, wheel install, lock)

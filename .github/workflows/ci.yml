@@ -115,7 +115,7 @@ jobs:
       - name: bunpy help / --help parity
         shell: bash
         run: |
-          for cmd in run stdlib version help man; do
+          for cmd in run repl stdlib version help man; do
             a="$(./bunpy help "$cmd")"
             b="$(./bunpy "$cmd" --help)"
             if [ "$a" != "$b" ]; then
@@ -141,6 +141,20 @@ jobs:
           ./bunpy man --install "$dest"
           test -f "$dest/man1/bunpy.1"
           test -f "$dest/man1/bunpy-run.1"
+          test -f "$dest/man1/bunpy-repl.1"
+
+      - name: bunpy repl piped smoke
+        shell: bash
+        run: |
+          out="$(printf 'x = 1\n\n:quit\n' | ./bunpy repl --quiet 2>&1)"
+          if [ -n "$out" ]; then
+            echo "expected empty output, got: $out"; exit 1
+          fi
+          banner="$(printf ':quit\n' | ./bunpy repl 2>&1)"
+          case "$banner" in
+            *bunpy*repl*) ;;
+            *) echo "expected banner, got: $banner"; exit 1 ;;
+          esac
 
       - name: bunpy hello.py
         run: |

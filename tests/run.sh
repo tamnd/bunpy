@@ -63,6 +63,44 @@ for script in tests/fixtures/v00*/*.py; do
   run_fixture "run       " "$script" run
 done
 
+run_repl_fixture() {
+  local input="$1"
+  local dir name expected got rc want
+  dir="$(dirname "$input")"
+  name="$(basename "$input" .repl_in)"
+  expected="$dir/expected_${name}.txt"
+
+  if [ ! -f "$expected" ]; then
+    echo "skip: repl       $input (no expected_${name}.txt)"
+    return 0
+  fi
+
+  ran=$((ran + 1))
+  got="$("$bin" repl --quiet < "$input" 2>&1)" || rc=$?
+  rc="${rc:-0}"
+  want="$(cat "$expected")"
+  if [ "$rc" -ne 0 ]; then
+    echo "FAIL: repl       $input exited $rc"
+    echo "stderr+stdout:"
+    echo "$got"
+    fail=$((fail + 1))
+    return 0
+  fi
+  if [ "$got" != "$want" ]; then
+    echo "FAIL: repl       $input stdout mismatch"
+    echo "  got:  $(printf '%s' "$got" | head -c 200)"
+    echo "  want: $(printf '%s' "$want" | head -c 200)"
+    fail=$((fail + 1))
+    return 0
+  fi
+  echo "ok:   repl       $input"
+}
+
+for input in tests/fixtures/v00*/*.repl_in; do
+  [ -e "$input" ] || continue
+  run_repl_fixture "$input"
+done
+
 echo "---"
 echo "ran $ran fixtures, $fail failed"
 exit "$fail"

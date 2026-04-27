@@ -9,6 +9,73 @@ changes.
 
 ## [Unreleased]
 
+## [0.0.8] - 2026-04-27
+
+`bunpy` no longer needs a script file to run. v0.0.8 lands the
+interactive prompt: `bunpy repl` reads chunks of Python from
+stdin, accumulates a multi-line buffer, and flushes through
+`bunpy run` on every blank line.
+
+The REPL is intentionally a line-driver, not a stateful
+interpreter. Each flushed chunk is its own one-shot module:
+globals do not survive across flushes. Persistent state will
+ride alongside gocopy's expression and call support; the
+shell's CLI surface is stable so the language story can grow
+under it without breaking callers.
+
+`:` is reserved as the meta-command prefix. `:help`, `:quit`,
+`:exit`, `:history`, `:clear` drive the shell without ever
+reaching the compiler. History is persisted at
+`$HOME/.bunpy_history`, capped, and overridable via env.
+
+### Added
+
+- `bunpy repl` subcommand. Flags: `--quiet` (no banner, no
+  prompts; for piped stdin and fixtures), `-h`/`--help`.
+- `internal/repl/`: `Loop` (the state machine) and a small
+  `history` (load, append, persist) helper. No third-party
+  deps, no terminal raw mode in v0.0.8.
+- `internal/manpages/man1/bunpy-repl.1`: roff manpage covering
+  synopsis, options, meta commands, environment, exit status.
+- `helpRegistry` entry for `repl` in `cmd/bunpy/help.go`. The
+  parity smoke automatically asserts `bunpy help repl` matches
+  `bunpy repl --help` byte-for-byte.
+- `tests/fixtures/v008/`: `assign.repl_in` and
+  `multiline.repl_in` plus matching empty `expected_*.txt`,
+  exercising the flush path through `bunpy repl --quiet < input`.
+- Tests: `internal/repl/repl_test.go` (12 cases covering quit,
+  EOF, single and multi-line flush, error recovery, every
+  meta command, prompt suppression, and the loud-mode banner)
+  and `internal/repl/history_test.go` (round-trip, cap,
+  size-zero disable, and a multiline-on-disk escape check).
+
+### Changed
+
+- `cmd/bunpy/main.go`: dispatch grows a `repl` case; the
+  unknown-command error message updates to v0.0.8.
+- `tests/run.sh`: walks `tests/fixtures/v00*/*.repl_in` and
+  pipes each through `bunpy repl --quiet`, comparing stdout
+  against `expected_<name>.txt`.
+- `.github/workflows/ci.yml`: smoke job adds a `bunpy repl
+  --quiet` round-trip and a banner check on the loud path; the
+  help-parity loop now includes `repl`; the man-install smoke
+  asserts `bunpy-repl.1` is materialised.
+- `docs/CLI.md`, `docs/ARCHITECTURE.md`, `docs/ROADMAP.md`:
+  REPL paragraph, layout entry, roadmap status flip.
+
+### Notes
+
+- v0.0.8 does not change runtime semantics: every flush is
+  still a fresh `runtime.Run` call. The compiler still only
+  accepts what gocopy supports today (assignments,
+  no-op statements, docstrings). The REPL surfaces compile
+  errors verbatim and recovers; the loop continues.
+- Raw-mode line editing (arrow history, Ctrl-A/E) is
+  deliberately out of scope. v0.7.x grows the runtime polish
+  along with `--hot`, `--watch`, and friends.
+- The history file format is one entry per line; embedded
+  newlines are escaped as `\n` on disk and restored on load.
+
 ## [0.0.7] - 2026-04-27
 
 `bunpy --help` is no longer the only thing that prints help.
