@@ -1,0 +1,136 @@
+.TH BUNPY-UPDATE 1 "2026-04-27" "bunpy" "User Commands"
+.SH NAME
+bunpy-update \- re-resolve pins and refresh installed wheels
+.SH SYNOPSIS
+.B bunpy update
+.RI [ pkg ...]
+.RB [ --latest ]
+.RB [ --no-install ]
+.RB [ --no-verify ]
+.RB [ -D | --dev ]
+.RB [ -O | --optional
+.IR group ]
+.RB [ --all-extras ]
+.RB [ -P | --peer ]
+.RB [ --production ]
+.RB [ \-\-target
+.IR dir ]
+.RB [ \-\-index
+.IR url ]
+.RB [ \-\-cache-dir
+.IR path ]
+.SH DESCRIPTION
+Re-runs the resolver against
+.B ./pyproject.toml
+with the existing
+.B bunpy.lock
+fed in as a hint: every pin is preserved unless its row is dropped
+or its constraint changes. The new lockfile is written, and unless
+.B --no-install
+is set,
+.I ./.bunpy/site-packages
+is refreshed via the same install path
+.BR bunpy-install (1)
+uses.
+.PP
+With no positional arguments,
+.B bunpy update
+re-resolves the whole graph but keeps any pin still permitted by
+the manifest spec. This lets minor or patch upgrades flow in for
+packages whose spec was widened, without disturbing pins that
+remain in range.
+.PP
+With one or more positional package names, only those packages are
+unlocked: they are dropped from the lock hint, the resolver picks
+afresh subject to the manifest spec, and every other pin holds its
+current version. Use this to nudge a single package forward without
+moving its peers.
+.PP
+.B --latest
+strips the manifest spec for each named package before resolving,
+so the resolver picks the highest non-prerelease version regardless
+of what the manifest currently asks for. The on-disk manifest is
+not edited; if you want the new lower bound to be permanent, follow
+up with
+.BR bunpy-add (1).
+.B --latest
+requires at least one positional package name.
+.SH OPTIONS
+.TP
+.B --latest
+For each named package, ignore the manifest spec and pick the
+newest non-prerelease wheel.
+.TP
+.B --no-install
+Write the new lockfile only. Skip the install step.
+.TP
+.B --no-verify
+Skip RECORD hash verification during install. Use only when the
+lockfile and a private mirror agree on integrity by other means.
+.TP
+.B -D, --dev
+Include pins tagged with lane
+.B dev
+or
+.BI group: name
+when installing.
+.TP
+.BR -O ", " --optional " " \fIgroup\fR
+Include pins tagged with lane
+.BI optional: group
+when installing. May be repeated.
+.TP
+.B --all-extras
+Include every
+.BI optional: group
+lane when installing.
+.TP
+.B -P, --peer
+Include pins tagged with lane
+.B peer
+when installing.
+.TP
+.B --production
+Alias for the default install lane set (main only). Mutually
+exclusive with the lane flags.
+.TP
+.BI \-\-target " dir"
+Site-packages target directory. Defaults to
+.IR ./.bunpy/site-packages .
+.TP
+.BI \-\-index " url"
+Override the simple index URL.
+.TP
+.BI \-\-cache-dir " path"
+Override the wheel cache root.
+.SH OUTPUT
+For each pin whose version changed,
+.B bunpy update
+prints
+.RI ' name " " old " -> " new '
+to stdout. New pins are tagged
+.RB ( added ).
+When no pin moved,
+.B no changes
+is printed.
+.SH ENVIRONMENT
+.TP
+.B BUNPY_PYPI_FIXTURES
+When set, redirects index and wheel fetches to a fixture root.
+Test-only.
+.TP
+.B BUNPY_CACHE_DIR
+Overrides the cache root used for index responses and wheel bodies.
+.SH EXIT STATUS
+Zero on a clean update. Non-zero on a manifest error, an
+unsatisfiable constraint, a fetch failure, an unsafe wheel,
+.B --latest
+without a positional package name, or
+.B --production
+combined with a lane flag.
+.SH SEE ALSO
+.BR bunpy-outdated (1),
+.BR bunpy-install (1),
+.BR bunpy-add (1),
+.BR bunpy-pm-lock (1),
+.BR bunpy (1).

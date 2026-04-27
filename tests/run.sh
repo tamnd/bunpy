@@ -294,6 +294,12 @@ run_lock_fixture() {
   work="$(mktemp -d)"
   cache="$(mktemp -d)"
   cp "$input" "$work/pyproject.toml"
+  # Optional seed lockfile: lets fixtures exercise verbs (update,
+  # outdated) that read an existing bunpy.lock instead of writing a
+  # fresh one from scratch.
+  if [ -f "$dir/${name}.seed.lock" ]; then
+    cp "$dir/${name}.seed.lock" "$work/bunpy.lock"
+  fi
 
   if ! ( cd "$work" && BUNPY_PYPI_FIXTURES="$fixroot" BUNPY_CACHE_DIR="$cache" "$bin" $args >/dev/null 2>&1 ); then
     rc=$?

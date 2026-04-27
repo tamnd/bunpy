@@ -2,6 +2,7 @@ package resolver
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 
 	"github.com/tamnd/bunpy/v1/pkg/version"
@@ -14,7 +15,14 @@ type Solver struct {
 	// reporting. v0.1.5 does not learn during search; this is wired
 	// for future CDCL.
 	Incompats []Incompatibility
-	maxSteps  int
+	// Locked maps PEP 503 normalised package names to a preferred
+	// version. When a locked version satisfies every recorded
+	// constraint it is picked over the highest matching candidate.
+	// This is how `bunpy update <pkg>` holds unrelated pins steady
+	// while letting one name drift. v0.1.7 adds this; an empty map
+	// (or nil) preserves v0.1.5 behaviour exactly.
+	Locked   map[string]string
+	maxSteps int
 }
 
 // New returns a solver bound to reg.
@@ -138,7 +146,13 @@ func (s *searchState) decide(pkg string) error {
 	if err != nil {
 		return fmt.Errorf("resolver: %s: %w", pkg, err)
 	}
-	chosen := version.Highest(combined, versions)
+	chosen := ""
+	if locked, ok := s.solver.Locked[pkg]; ok && combined.Match(locked) && slices.Contains(versions, locked) {
+		chosen = locked
+	}
+	if chosen == "" {
+		chosen = version.Highest(combined, versions)
+	}
 	if chosen == "" {
 		return s.noVersion(pkg, combined, versions)
 	}

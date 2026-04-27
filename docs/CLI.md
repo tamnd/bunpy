@@ -1,12 +1,13 @@
 # CLI reference
 
 bunpy ships as one binary. Subcommands land per-version per the
-roadmap. Today (v0.1.6) the wired surface is `--version` (with
+roadmap. Today (v0.1.7) the wired surface is `--version` (with
 `--short` and `--json`), `--help`, positional `bunpy <file.py>`,
 `bunpy run <file.py>`, `bunpy repl`, `bunpy stdlib`,
 `bunpy pm config`, `bunpy pm info`, `bunpy pm install-wheel`,
-`bunpy pm lock`, `bunpy add`, `bunpy install`, `bunpy help`, and
-`bunpy man`. This page is the long-form reference. Running
+`bunpy pm lock`, `bunpy add`, `bunpy install`, `bunpy outdated`,
+`bunpy update`, `bunpy help`, and `bunpy man`. This page is the
+long-form reference. Running
 `bunpy help <cmd>` gives the same body inline; `bunpy man <cmd>`
 prints the bundled roff manpage. Installing the binary itself:
 see `docs/INSTALL.md`.
@@ -125,12 +126,39 @@ flags (Bun parity). Flags: `--target <dir>`, `--cache-dir <path>`,
 `--no-verify`. Run `bunpy pm lock` first when the lockfile is
 missing or stale.
 
+`bunpy outdated [pkg]...` (v0.1.7) walks `bunpy.lock` and, for
+each pin selected by the lane filters, fetches the project's
+PEP 691 page through the same `httpkit` client `pm info` uses.
+The output is a four-column table: `current` (lockfile pin),
+`wanted` (highest version satisfying the manifest spec, the one
+`bunpy update` would pick), `latest` (highest non-yanked,
+wheel-bearing version on the index, the one
+`bunpy update --latest` would pick), and `lanes`. Read-only:
+no manifest, lockfile, or `site-packages` writes. `--json`
+emits `{"outdated":[{name, current, wanted, latest, lanes},
+...]}` for scripts. Lane flags mirror `install`. Exit status
+is 0 even when pins are outdated.
+
+`bunpy update [pkg]...` (v0.1.7) re-runs the resolver against
+`pyproject.toml` with `Solver.Locked` seeded from the existing
+lockfile. A bare `update` clears every lock and lets minor /
+patch upgrades flow in within the manifest spec. Naming
+packages on the command line drops only those entries from the
+lock hint, so peers stay put. `--latest <pkg>...` strips the
+manifest spec for the named packages and picks the highest
+non-prerelease wheel; refused without a positional arg to
+avoid surprise mass upgrades. After resolving, the new lockfile
+is written, each changed pin prints as `name old -> new`, and
+unless `--no-install` is set, `./.bunpy/site-packages` is
+refreshed via the same install path `bunpy install` uses (with
+the same lane filter). Other flags: `--target <dir>`,
+`--cache-dir <path>`, `--index <url>`, `--no-verify`,
+`--production`.
+
 The rest of the package-manager surface is aspirational and
 lands per the v0.1.x ladder in `docs/ROADMAP.md`:
 
 - `bunpy remove <pkg>` removes a dependency.
-- `bunpy update [pkg]` updates one or all packages.
-- `bunpy outdated [pkg]` lists packages with newer versions.
 - `bunpy audit [--fix]` checks for security advisories.
 - `bunpy link [pkg]` and `bunpy unlink [pkg]` do editable
   installs.

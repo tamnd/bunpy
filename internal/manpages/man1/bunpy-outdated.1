@@ -1,0 +1,108 @@
+.TH BUNPY-OUTDATED 1 "2026-04-27" "bunpy" "User Commands"
+.SH NAME
+bunpy-outdated \- list pinned packages with newer versions on the index
+.SH SYNOPSIS
+.B bunpy outdated
+.RI [ pkg ...]
+.RB [ -D | --dev ]
+.RB [ -O | --optional
+.IR group ]
+.RB [ --all-extras ]
+.RB [ -P | --peer ]
+.RB [ --production ]
+.RB [ --json ]
+.RB [ \-\-index
+.IR url ]
+.RB [ \-\-cache-dir
+.IR path ]
+.SH DESCRIPTION
+Walks
+.I ./bunpy.lock
+and, for each pin selected by the lane filters, fetches the project's
+PEP 691 page through the same client
+.BR bunpy-pm-info (1)
+uses. Three columns are produced:
+.B current
+(the lockfile pin),
+.B wanted
+(the highest version satisfying the manifest spec for that package),
+and
+.B latest
+(the highest non-yanked, wheel-bearing version on the index, ignoring
+the spec).
+.PP
+A pin is shown when
+.B wanted
+or
+.B latest
+exceeds
+.BR current .
+The default lane set is
+.B main
+only, mirroring
+.BR bunpy-install (1).
+Pass positional package names to restrict the report to those
+packages; otherwise every selected pin is checked.
+.PP
+This command is read-only: it does not modify the manifest, the
+lockfile, or
+.IR ./.bunpy/site-packages .
+Use
+.BR bunpy-update (1)
+to act on the report.
+.SH OPTIONS
+.TP
+.B -D, --dev
+Include pins tagged with lane
+.B dev
+or
+.BI group: name .
+.TP
+.BR -O ", " --optional " " \fIgroup\fR
+Include pins tagged with lane
+.BI optional: group .
+May be repeated.
+.TP
+.B --all-extras
+Include every
+.BI optional: group
+lane.
+.TP
+.B -P, --peer
+Include pins tagged with lane
+.BR peer .
+.TP
+.B --production
+Alias for the default (main only). Mutually exclusive with the lane
+flags. Provided for Bun parity.
+.TP
+.B --json
+Emit a JSON object
+.RB ( {"outdated":[ ... ]} )
+instead of the human-readable table. Each row carries
+.BR name ,
+.BR current ,
+.BR wanted ,
+.BR latest ,
+and the pin's full
+.B lanes
+list.
+.TP
+.BI \-\-index " url"
+Override the simple index URL.
+.TP
+.BI \-\-cache-dir " path"
+Override the wheel cache root.
+.SH ENVIRONMENT
+.TP
+.B BUNPY_PYPI_FIXTURES
+When set, redirects index fetches to a fixture root. Test-only.
+.SH EXIT STATUS
+Zero whether or not anything is outdated. Non-zero on a manifest
+parse error, missing lockfile, or index fetch failure.
+.SH SEE ALSO
+.BR bunpy-update (1),
+.BR bunpy-install (1),
+.BR bunpy-pm-info (1),
+.BR bunpy-pm-lock (1),
+.BR bunpy (1).

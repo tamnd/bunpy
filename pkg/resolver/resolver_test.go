@@ -155,6 +155,34 @@ func TestSolveCycleSafe(t *testing.T) {
 	}
 }
 
+func TestSolveRespectsLocked(t *testing.T) {
+	reg := newFake()
+	reg.add("widget", []string{"1.0.0", "1.1.0"}, nil)
+	s := New(reg)
+	s.Locked = map[string]string{"widget": "1.0.0"}
+	res, err := s.Solve([]Requirement{mustReq(t, "widget", ">=1.0")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Pins) != 1 || res.Pins[0].Version != "1.0.0" {
+		t.Errorf("locked 1.0.0 should pin: %+v", res.Pins)
+	}
+}
+
+func TestSolveOverridesLockedWhenSpecForbids(t *testing.T) {
+	reg := newFake()
+	reg.add("widget", []string{"1.0.0", "1.1.0", "2.0.0"}, nil)
+	s := New(reg)
+	s.Locked = map[string]string{"widget": "1.0.0"}
+	res, err := s.Solve([]Requirement{mustReq(t, "widget", ">=1.5")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Pins) != 1 || res.Pins[0].Version != "2.0.0" {
+		t.Errorf("locked 1.0.0 forbidden by >=1.5; want 2.0.0: %+v", res.Pins)
+	}
+}
+
 func TestTermStringPositive(t *testing.T) {
 	tt, err := NewPositive("widget", ">=1.0")
 	if err != nil {

@@ -318,6 +318,77 @@ without a ` + "`lanes`" + ` field are treated as ` + "`main`" + `.
 and is provided for Bun parity.
 `,
 	},
+	"outdated": {
+		Name:    "outdated",
+		Summary: "Show pins that have a newer matching release",
+		Body: `bunpy outdated: print one row per lockfile pin with a newer release.
+
+USAGE
+  bunpy outdated                      walk every pin in bunpy.lock
+  bunpy outdated <pkg>...             restrict to the named packages
+  bunpy outdated -D, --dev            include [dependency-groups] pins
+  bunpy outdated -O <group>           include one optional group
+  bunpy outdated --all-extras         include every optional group
+  bunpy outdated -P, --peer           include [tool.bunpy].peer-dependencies
+  bunpy outdated --production         alias for the default (main only)
+  bunpy outdated --json               emit JSON {"outdated":[...]}
+  bunpy outdated --index <url>        override the simple index
+  bunpy outdated --cache-dir <path>   override the cache root
+
+The table has columns ` + "`package`" + `, ` + "`current`" + ` (lockfile
+version), ` + "`wanted`" + ` (highest version that satisfies the
+manifest spec, the version ` + "`bunpy update`" + ` would pick),
+` + "`latest`" + ` (highest non-yanked release on the index, the
+version ` + "`bunpy update --latest`" + ` would pick), and
+` + "`lanes`" + ` (comma-joined lane labels from the lockfile row).
+
+Read-only: this verb never writes ` + "`bunpy.lock`" + ` or installs
+anything. Exit status is 0 even when pins are outdated; use
+` + "`--json`" + ` to scrub the result in scripts. Run
+` + "`bunpy pm lock`" + ` first when ` + "`bunpy.lock`" + ` is missing.
+`,
+	},
+	"update": {
+		Name:    "update",
+		Summary: "Refresh bunpy.lock to the highest matching versions",
+		Body: `bunpy update: re-resolve bunpy.lock and refresh site-packages.
+
+USAGE
+  bunpy update                        upgrade every pin within its manifest spec
+  bunpy update <pkg>...               unlock only the named packages
+  bunpy update --latest <pkg>...      ignore manifest spec for those packages
+  bunpy update --no-install           rewrite bunpy.lock but skip the install
+  bunpy update -D, --dev              include [dependency-groups] in the install
+  bunpy update -O <group>             include one optional group in the install
+  bunpy update --all-extras           include every optional group in the install
+  bunpy update -P, --peer             include peer pins in the install
+  bunpy update --production           alias for default (main only); rejects lane flags
+  bunpy update --target <dir>         site-packages target
+  bunpy update --cache-dir <path>     override the wheel cache root
+  bunpy update --no-verify            skip RECORD hash verification
+  bunpy update --index <url>          override the simple index
+
+` + "`bunpy update`" + ` runs the v0.1.5 resolver with ` + "`Solver.Locked`" + `
+seeded from the existing lockfile. Packages named on the command
+line are dropped from ` + "`Locked`" + ` so the resolver picks afresh
+within their manifest spec; everything else stays at the locked
+version when that version still satisfies any new constraints.
+A bare ` + "`bunpy update`" + ` clears every lock and re-resolves
+the whole graph.
+
+` + "`--latest <pkg>...`" + ` strips the manifest spec for the named
+packages and lets the resolver pick the highest non-yanked,
+non-prerelease version. ` + "`--latest`" + ` requires at least one
+package name to avoid surprise mass upgrades.
+
+After resolving, ` + "`bunpy.lock`" + ` is rewritten with the new
+pins and lane tags. ` + "`stdout`" + ` lists each changed pin as
+` + "`name old -> new`" + `; an unchanged graph prints
+` + "`no changes`" + `. Unless ` + "`--no-install`" + ` is set, the
+selected lanes are then installed via the same wheel installer
+` + "`bunpy install`" + ` uses.
+`,
+	},
 	"man": {
 		Name:    "man",
 		Summary: "Print or install the bundled manpages",

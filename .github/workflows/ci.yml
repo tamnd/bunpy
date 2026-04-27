@@ -115,7 +115,7 @@ jobs:
       - name: bunpy help / --help parity
         shell: bash
         run: |
-          for cmd in run repl stdlib version help man pm add install; do
+          for cmd in run repl stdlib version help man pm add install outdated update; do
             a="$(./bunpy help "$cmd")"
             b="$(./bunpy "$cmd" --help)"
             if [ "$a" != "$b" ]; then
@@ -372,6 +372,96 @@ jobs:
           ( cd "$work" && BUNPY_PYPI_FIXTURES="$GITHUB_WORKSPACE/tests/fixtures/v013/index" \
               BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" install -P )
           test -f "$work/.bunpy/site-packages/widget/__init__.py"
+
+      - name: bunpy outdated smoke (v0.1.7)
+        shell: bash
+        run: |
+          work="$(mktemp -d)"
+          cache="$(mktemp -d)"
+          cat > "$work/pyproject.toml" <<'EOF'
+          [project]
+          name = "smoke"
+          version = "0.0.1"
+          dependencies = ["widget>=1.0"]
+          EOF
+          ( cd "$work" && BUNPY_PYPI_FIXTURES="$GITHUB_WORKSPACE/tests/fixtures/v013/index" \
+              BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" pm lock )
+          # Pin the lockfile back to 1.0.0 so widget is `outdated` (1.1.0 is on the index).
+          sed -i.bak \
+            -e 's/version = "1.1.0"/version = "1.0.0"/' \
+            -e 's/widget-1.1.0-py3-none-any.whl/widget-1.0.0-py3-none-any.whl/' \
+            -e 's|sha256:5b9866d1a5e11d85e37f88de9a941f9349ed18f4cd46508b12b1603d2ad63e2b|sha256:86eaa2517187b884e706a792085ed6dabd2530e6f37d0d9220d08b5448c8a796|' \
+            "$work/bunpy.lock"
+          out="$( cd "$work" && BUNPY_PYPI_FIXTURES="$GITHUB_WORKSPACE/tests/fixtures/v013/index" \
+              BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" outdated )"
+          echo "$out"
+          case "$out" in
+            *widget*1.0.0*1.1.0*) ;;
+            *) echo "want widget 1.0.0 -> 1.1.0 row, got: $out"; exit 1 ;;
+          esac
+          jsonout="$( cd "$work" && BUNPY_PYPI_FIXTURES="$GITHUB_WORKSPACE/tests/fixtures/v013/index" \
+              BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" outdated --json )"
+          echo "$jsonout"
+          python3 -c "import json,sys; d=json.loads(sys.argv[1]); rows=d['outdated']; assert len(rows)==1, rows; r=rows[0]; assert r['name']=='widget' and r['current']=='1.0.0' and r['wanted']=='1.1.0' and r['latest']=='1.1.0', r" "$jsonout"
+
+      - name: bunpy update smoke (v0.1.7)
+        shell: bash
+        run: |
+          work="$(mktemp -d)"
+          cache="$(mktemp -d)"
+          cat > "$work/pyproject.toml" <<'EOF'
+          [project]
+          name = "smoke"
+          version = "0.0.1"
+          dependencies = ["widget>=1.0"]
+          EOF
+          ( cd "$work" && BUNPY_PYPI_FIXTURES="$GITHUB_WORKSPACE/tests/fixtures/v013/index" \
+              BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" pm lock )
+          # Drop widget back to 1.0.0 so update has something to lift.
+          sed -i.bak \
+            -e 's/version = "1.1.0"/version = "1.0.0"/' \
+            -e 's/widget-1.1.0-py3-none-any.whl/widget-1.0.0-py3-none-any.whl/' \
+            -e 's|sha256:5b9866d1a5e11d85e37f88de9a941f9349ed18f4cd46508b12b1603d2ad63e2b|sha256:86eaa2517187b884e706a792085ed6dabd2530e6f37d0d9220d08b5448c8a796|' \
+            "$work/bunpy.lock"
+          out="$( cd "$work" && BUNPY_PYPI_FIXTURES="$GITHUB_WORKSPACE/tests/fixtures/v013/index" \
+              BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" update --no-install )"
+          echo "$out"
+          case "$out" in
+            *"widget 1.0.0 -> 1.1.0"*) ;;
+            *) echo "want widget upgrade line, got: $out"; exit 1 ;;
+          esac
+          grep -q 'version = "1.1.0"' "$work/bunpy.lock"
+
+      - name: bunpy update --latest smoke (v0.1.7)
+        shell: bash
+        run: |
+          work="$(mktemp -d)"
+          cache="$(mktemp -d)"
+          # Pin spec to ==1.0.0; bare update must respect it. --latest widget
+          # strips the spec and lifts the pin to 1.1.0.
+          cat > "$work/pyproject.toml" <<'EOF'
+          [project]
+          name = "smoke"
+          version = "0.0.1"
+          dependencies = ["widget==1.0.0"]
+          EOF
+          ( cd "$work" && BUNPY_PYPI_FIXTURES="$GITHUB_WORKSPACE/tests/fixtures/v013/index" \
+              BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" pm lock )
+          grep -q 'version = "1.0.0"' "$work/bunpy.lock"
+          bare="$( cd "$work" && BUNPY_PYPI_FIXTURES="$GITHUB_WORKSPACE/tests/fixtures/v013/index" \
+              BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" update --no-install )"
+          case "$bare" in
+            *"no changes"*) ;;
+            *) echo "want no-changes line for ==1.0.0 spec, got: $bare"; exit 1 ;;
+          esac
+          ( cd "$work" && BUNPY_PYPI_FIXTURES="$GITHUB_WORKSPACE/tests/fixtures/v013/index" \
+              BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" update --latest widget --no-install )
+          grep -q 'version = "1.1.0"' "$work/bunpy.lock"
+          # --latest with no positional must error out.
+          if ( cd "$work" && BUNPY_PYPI_FIXTURES="$GITHUB_WORKSPACE/tests/fixtures/v013/index" \
+              BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" update --latest --no-install 2>/dev/null ); then
+            echo "want non-zero exit on --latest with no pkg"; exit 1
+          fi
 
       - name: bunpy hello.py
         run: |

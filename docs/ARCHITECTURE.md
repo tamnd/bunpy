@@ -307,6 +307,22 @@ post-processes the registry to compute per-lane closures via BFS
 over Requires-Dist edges; `bunpy install` filters by the per-pin
 `lanes` tag (default keeps `main` only).
 
+v0.1.7 adds `bunpy outdated` and `bunpy update` against the same
+schema. Neither verb bumps the lockfile version. `outdated` is
+read-only: it walks the lockfile, fetches each pin's PEP 691
+page, and prints `current / wanted / latest` per row.
+`update` re-runs the resolver with a new
+`Solver.Locked map[string]string` field that biases the
+candidate-pick step toward the locked version when the manifest
+spec still allows it. A bare `bunpy update` clears the whole map
+so any pin can move within its spec; naming packages on the
+command line drops only those entries. `--latest <pkg>...`
+strips the manifest spec for the named packages before resolving
+(the on-disk manifest is not edited; only the in-memory lane map
+fed to the solver). The new lockfile is written and, unless
+`--no-install` is passed, the install path is the same as
+`bunpy install` with the same lane filter.
+
 ## Module layout
 
 ```
