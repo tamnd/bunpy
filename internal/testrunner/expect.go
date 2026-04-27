@@ -9,19 +9,16 @@ import (
 // to the interpreter so test files can use them without any import.
 func InjectExpect(i *goipyVM.Interp) {
 	mod := bunpyAPI.BuildExpect(i)
-	if fn, ok := mod.Dict.GetStr("expect"); ok {
-		i.Builtins.SetStr("expect", fn)
+	for _, name := range []string{"expect", "describe", "it", "test", "skip"} {
+		if fn, ok := mod.Dict.GetStr(name); ok {
+			i.Builtins.SetStr(name, fn)
+		}
 	}
-	if fn, ok := mod.Dict.GetStr("describe"); ok {
-		i.Builtins.SetStr("describe", fn)
-	}
-	if fn, ok := mod.Dict.GetStr("it"); ok {
-		i.Builtins.SetStr("it", fn)
-	}
-	if fn, ok := mod.Dict.GetStr("test"); ok {
-		i.Builtins.SetStr("test", fn)
-	}
-	if fn, ok := mod.Dict.GetStr("skip"); ok {
-		i.Builtins.SetStr("skip", fn)
+	// Inject mock() and spy_on() as globals too.
+	mockMod := bunpyAPI.BuildMock(i)
+	for _, name := range []string{"mock", "spy_on"} {
+		if fn, ok := mockMod.Dict.GetStr(name); ok {
+			i.Builtins.SetStr(name, fn)
+		}
 	}
 }
