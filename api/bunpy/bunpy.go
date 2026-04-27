@@ -22,7 +22,7 @@ import (
 )
 
 // Version is baked in by the bunpy build pipeline.
-const Version = "0.4.14"
+const Version = "0.4.15"
 
 // Modules returns the NativeModules map for the current v0.3.1 surface.
 // Later rungs extend this map by adding more entries.
@@ -53,6 +53,8 @@ func Modules() map[string]func(*goipyVM.Interp) *goipyObject.Module {
 		"bunpy.deep_equals":   BuildDeepEquals,
 		"bunpy.escape_html":   BuildEscapeHTML,
 		"bunpy.HTMLRewriter":  BuildHTMLRewriter,
+		"bunpy.cookie":        BuildCookie,
+		"bunpy.csrf":          BuildCSRF,
 	}
 }
 
@@ -111,6 +113,8 @@ func BuildBunpy(i *goipyVM.Interp) *goipyObject.Module {
 	m.Dict.SetStr("deep_equals", BuildDeepEquals(i))
 	m.Dict.SetStr("escape_html", BuildEscapeHTML(i))
 	m.Dict.SetStr("HTMLRewriter", BuildHTMLRewriter(i))
+	m.Dict.SetStr("cookie", BuildCookie(i))
+	m.Dict.SetStr("csrf", BuildCSRF(i))
 
 	return m
 }
