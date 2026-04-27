@@ -22,7 +22,7 @@ import (
 )
 
 // Version is baked in by the bunpy build pipeline.
-const Version = "0.4.8"
+const Version = "0.4.9"
 
 // Modules returns the NativeModules map for the current v0.3.1 surface.
 // Later rungs extend this map by adding more entries.
@@ -45,6 +45,7 @@ func Modules() map[string]func(*goipyVM.Interp) *goipyObject.Module {
 		"bunpy.template": BuildTemplate,
 		"bunpy.email":    BuildEmail,
 		"bunpy.cache":    BuildCache,
+		"bunpy.queue":    BuildQueue,
 	}
 }
 
@@ -94,6 +95,7 @@ func BuildBunpy(i *goipyVM.Interp) *goipyObject.Module {
 	m.Dict.SetStr("template", BuildTemplate(i))
 	m.Dict.SetStr("email", BuildEmail(i))
 	m.Dict.SetStr("cache", BuildCache(i))
+	m.Dict.SetStr("queue", BuildQueue(i))
 
 	return m
 }
