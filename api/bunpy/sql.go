@@ -6,11 +6,7 @@ import (
 	"net/url"
 	"strings"
 
-	_ "github.com/go-sql-driver/mysql"
-	_ "github.com/jackc/pgx/v5/stdlib"
-	_ "modernc.org/sqlite"
-
-	goipyObject "github.com/tamnd/goipy/object"
+goipyObject "github.com/tamnd/goipy/object"
 	goipyVM "github.com/tamnd/goipy/vm"
 )
 
