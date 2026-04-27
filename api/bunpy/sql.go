@@ -3,8 +3,11 @@ package bunpy
 import (
 	"database/sql"
 	"fmt"
+	"net/url"
 	"strings"
 
+	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	_ "modernc.org/sqlite"
 
 	goipyObject "github.com/tamnd/goipy/object"
@@ -16,7 +19,7 @@ func BuildSQL(i *goipyVM.Interp) *goipyObject.BuiltinFunc {
 	return &goipyObject.BuiltinFunc{
 		Name: "sql",
 		Call: func(_ any, args []goipyObject.Object, kwargs *goipyObject.Dict) (goipyObject.Object, error) {
-			dsn := "file::memory:?cache=shared"
+			rawURL := ""
 			var urlArg goipyObject.Object
 			if len(args) >= 1 {
 				urlArg = args[0]
@@ -25,21 +28,57 @@ func BuildSQL(i *goipyVM.Interp) *goipyObject.BuiltinFunc {
 			}
 			if urlArg != nil {
 				if s, ok := urlArg.(*goipyObject.Str); ok {
-					dsn = parseSQLiteDSN(s.V)
+					rawURL = s.V
 				}
 			}
 
-			db, err := sql.Open("sqlite", dsn)
+			db, err := openDB(rawURL)
 			if err != nil {
 				return nil, fmt.Errorf("bunpy.sql(): %w", err)
 			}
 			if err2 := db.Ping(); err2 != nil {
 				db.Close()
-				return nil, fmt.Errorf("bunpy.sql(): %w", err2)
+				return nil, fmt.Errorf("bunpy.sql(): cannot connect: %w", err2)
 			}
 			return buildDBInstance(i, db), nil
 		},
 	}
+}
+
+// openDB selects the driver and DSN based on the URL scheme.
+func openDB(rawURL string) (*sql.DB, error) {
+	switch {
+	case rawURL == "" || rawURL == ":memory:":
+		return sql.Open("sqlite", "file::memory:?cache=shared")
+	case strings.HasPrefix(rawURL, "sqlite:"):
+		return sql.Open("sqlite", parseSQLiteDSN(rawURL))
+	case strings.HasPrefix(rawURL, "postgres://"), strings.HasPrefix(rawURL, "postgresql://"):
+		return sql.Open("pgx", rawURL)
+	case strings.HasPrefix(rawURL, "mysql://"):
+		dsn, err := mysqlDSN(rawURL)
+		if err != nil {
+			return nil, fmt.Errorf("invalid mysql URL: %w", err)
+		}
+		return sql.Open("mysql", dsn)
+	default:
+		return nil, fmt.Errorf("unsupported database URL scheme: %q", rawURL)
+	}
+}
+
+// mysqlDSN converts "mysql://user:pass@host:port/db" to the go-sql-driver/mysql DSN format.
+func mysqlDSN(rawURL string) (string, error) {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return "", err
+	}
+	user := u.User.Username()
+	pass, _ := u.User.Password()
+	host := u.Host
+	if !strings.Contains(host, ":") {
+		host += ":3306"
+	}
+	db := strings.TrimPrefix(u.Path, "/")
+	return fmt.Sprintf("%s:%s@tcp(%s)/%s?parseTime=true", user, pass, host, db), nil
 }
 
 func parseSQLiteDSN(raw string) string {
