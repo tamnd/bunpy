@@ -1,0 +1,138 @@
+.TH BUNPY-REMOVE 1 "2026-04-27" "bunpy" "User Commands"
+.SH NAME
+bunpy-remove \- drop packages from pyproject.toml and uninstall them
+.SH SYNOPSIS
+.B bunpy remove
+.IR pkg ...
+.RB [ -D | --dev ]
+.RB [ \-\-group
+.IR name ]
+.RB [ -O | --optional
+.IR group ]
+.RB [ -P | --peer ]
+.RB [ --no-install ]
+.RB [ --no-write ]
+.RB [ \-\-target
+.IR dir ]
+.RB [ \-\-index
+.IR url ]
+.SH DESCRIPTION
+The inverse of
+.BR bunpy-add (1).
+For each named package,
+.B bunpy remove
+deletes its entry from
+.B pyproject.toml
+(every lane unless a lane flag narrows the scope), re-runs the
+resolver against the new lane map with surviving pins held via
+.IR Solver.Locked ,
+rewrites
+.B bunpy.lock
+to drop the named packages and any transitive that no longer has a
+root, and uninstalls the dropped pins from
+.I ./.bunpy/site-packages
+unless
+.B --no-install
+is set.
+.PP
+A bare
+.B bunpy remove <pkg>
+deletes the entry from every lane it appears in:
+.BR [project].dependencies ,
+every PEP 735
+.BR [dependency-groups] ,
+every PEP 621
+.BR [project.optional-dependencies] ,
+and
+.BR [tool.bunpy].peer-dependencies .
+Lane flags
+.BR -D ,
+.BR -O ,
+and
+.B -P
+restrict the delete to one lane. Lane flags are mutually exclusive.
+.PP
+Removing a package that is not listed in the manifest is not an
+error: the verb is idempotent. Removing the last entry in an
+array preserves the array
+.RI ( "dependencies = [" "newline" "]" )
+so the diff stays small.
+.SH OPTIONS
+.TP
+.B -D, --dev
+Drop only from
+.B [dependency-groups].dev
+(or from
+.BI [dependency-groups]. group
+when paired with
+.BR --group ).
+.TP
+.BI \-\-group " name"
+Pick a non-default
+.B [dependency-groups]
+group. Requires
+.BR -D .
+.TP
+.BR -O ", " --optional " " \fIgroup\fR
+Drop only from
+.BI [project.optional-dependencies]. group .
+.TP
+.B -P, --peer
+Drop only from
+.BR [tool.bunpy].peer-dependencies .
+.TP
+.B --no-install
+Edit the manifest and rewrite the lockfile, but do not touch
+.IR ./.bunpy/site-packages .
+.TP
+.B --no-write
+Re-resolve and rewrite
+.B bunpy.lock
+without editing
+.BR pyproject.toml .
+Mostly useful for testing; in normal use the manifest and the
+lockfile drift apart, which is what
+.B --no-write
+is for.
+.TP
+.BI \-\-target " dir"
+Site-packages target directory. Defaults to
+.IR ./.bunpy/site-packages .
+.TP
+.BI \-\-index " url"
+Override the simple index URL.
+.SH OUTPUT
+.B bunpy remove
+prints a one-line summary
+.RI ( "removed N packages" )
+followed by one line per dropped pin
+.RI ( "  - name version" ).
+.SH UNINSTALL
+For each dropped pin,
+.B bunpy remove
+locates the
+.IB name - version .dist-info
+directory under the target. When a
+.B RECORD
+file is present, every listed path is removed (paths that escape
+the target are skipped). The dist-info directory itself is then
+removed. As a best-effort fallback, the top-level package
+directory under the target is removed if it still exists.
+.SH ENVIRONMENT
+.TP
+.B BUNPY_PYPI_FIXTURES
+When set, redirects index and wheel fetches to a fixture root.
+Test-only.
+.SH EXIT STATUS
+Zero on a clean remove. Non-zero on a manifest error, a parse
+error, an unsatisfiable post-remove constraint, more than one
+lane flag, or
+.B --group
+without
+.BR -D .
+.SH SEE ALSO
+.BR bunpy-add (1),
+.BR bunpy-install (1),
+.BR bunpy-update (1),
+.BR bunpy-pm-lock (1),
+.BR bunpy (1).

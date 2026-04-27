@@ -389,6 +389,45 @@ selected lanes are then installed via the same wheel installer
 ` + "`bunpy install`" + ` uses.
 `,
 	},
+	"remove": {
+		Name:    "remove",
+		Summary: "Drop packages from pyproject.toml and uninstall them",
+		Body: `bunpy remove: the inverse of ` + "`bunpy add`" + `.
+
+USAGE
+  bunpy remove <pkg>...               drop from every lane
+  bunpy remove <pkg> -D, --dev        drop from [dependency-groups].dev
+  bunpy remove <pkg> -D --group <n>   drop from [dependency-groups].<n>
+  bunpy remove <pkg> -O <group>       drop from [project.optional-dependencies].<group>
+  bunpy remove <pkg> -P, --peer       drop from [tool.bunpy].peer-dependencies
+  bunpy remove <pkg> --no-install     only edit pyproject.toml and bunpy.lock
+  bunpy remove <pkg> --no-write       skip the manifest edit; only re-resolve
+  bunpy remove <pkg> --target <dir>   site-packages target
+  bunpy remove <pkg> --index <url>    override the simple index
+
+A bare ` + "`bunpy remove <pkg>`" + ` deletes the named package from every
+lane it appears in: ` + "`[project].dependencies`" + `, every PEP 735
+` + "`[dependency-groups]`" + `, every PEP 621
+` + "`[project.optional-dependencies]`" + `, and
+` + "`[tool.bunpy].peer-dependencies`" + `. Lane flags ` + "`-D`" + `, ` + "`-O`" + `, and
+` + "`-P`" + ` restrict the delete to one lane (and are mutually
+exclusive). ` + "`--group <name>`" + ` requires ` + "`-D`" + ` and picks one
+non-default group.
+
+After the manifest edit, ` + "`bunpy remove`" + ` re-runs the v0.1.5
+resolver with ` + "`Solver.Locked`" + ` seeded from the surviving
+lockfile pins (the named packages are dropped from the lock hint).
+Pins that lose every root fall off; ` + "`bunpy.lock`" + ` is rewritten
+to match. Unless ` + "`--no-install`" + ` is set, the dropped pins are
+removed from ` + "`./.bunpy/site-packages`" + ` via a RECORD walk;
+top-level package directories are best-effort cleaned up when no
+RECORD is present.
+
+Removing a name that is not in the manifest is not an error: the
+verb is idempotent. Removing the last entry in an array keeps the
+array (` + "`dependencies = [\n]`" + `) so the diff stays small.
+`,
+	},
 	"man": {
 		Name:    "man",
 		Summary: "Print or install the bundled manpages",

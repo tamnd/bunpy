@@ -1,12 +1,13 @@
 # CLI reference
 
 bunpy ships as one binary. Subcommands land per-version per the
-roadmap. Today (v0.1.7) the wired surface is `--version` (with
+roadmap. Today (v0.1.8) the wired surface is `--version` (with
 `--short` and `--json`), `--help`, positional `bunpy <file.py>`,
 `bunpy run <file.py>`, `bunpy repl`, `bunpy stdlib`,
 `bunpy pm config`, `bunpy pm info`, `bunpy pm install-wheel`,
 `bunpy pm lock`, `bunpy add`, `bunpy install`, `bunpy outdated`,
-`bunpy update`, `bunpy help`, and `bunpy man`. This page is the
+`bunpy update`, `bunpy remove`, `bunpy help`, and `bunpy man`.
+This page is the
 long-form reference. Running
 `bunpy help <cmd>` gives the same body inline; `bunpy man <cmd>`
 prints the bundled roff manpage. Installing the binary itself:
@@ -155,10 +156,28 @@ the same lane filter). Other flags: `--target <dir>`,
 `--cache-dir <path>`, `--index <url>`, `--no-verify`,
 `--production`.
 
+`bunpy remove <pkg>...` (v0.1.8) is the inverse of `bunpy add`.
+A bare `bunpy remove <pkg>` deletes the named package from every
+lane it appears in (`[project].dependencies`, every PEP 735
+`[dependency-groups]`, every PEP 621
+`[project.optional-dependencies]`, and
+`[tool.bunpy].peer-dependencies`). Lane flags `-D`/`--dev`,
+`-O <group>`/`--optional <group>`, and `-P`/`--peer` restrict
+the delete to one lane (mutually exclusive); `--group <name>`
+requires `-D` and picks one non-default group. After the
+manifest edit, `bunpy.lock` is rewritten via the same resolver
+path `bunpy update` uses, with `Solver.Locked` seeded from the
+surviving pins minus the named packages; pins that lose every
+root fall off the lockfile. Unless `--no-install` is set, the
+dropped pins are removed from `./.bunpy/site-packages` via a
+RECORD walk, with a best-effort fallback to `<name>/`
+directory cleanup. `--no-write` skips the manifest edit. The
+verb is idempotent: removing a name that is not listed prints
+`removed 0 packages` and exits 0.
+
 The rest of the package-manager surface is aspirational and
 lands per the v0.1.x ladder in `docs/ROADMAP.md`:
 
-- `bunpy remove <pkg>` removes a dependency.
 - `bunpy audit [--fix]` checks for security advisories.
 - `bunpy link [pkg]` and `bunpy unlink [pkg]` do editable
   installs.

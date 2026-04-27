@@ -323,6 +323,28 @@ fed to the solver). The new lockfile is written and, unless
 `--no-install` is passed, the install path is the same as
 `bunpy install` with the same lane filter.
 
+v0.1.8 lands `bunpy remove` as the symmetric inverse of
+`bunpy add`. The manifest editor (`pkg/manifest`) grows
+`RemoveDependency`, `RemoveOptionalDependency`,
+`RemoveGroupDependency`, `RemovePeerDependency`, and the
+all-lanes umbrella `RemoveDependencyAllLanes`. Each mutator
+returns `(out []byte, n int, err)` so callers can re-Parse only
+when bytes actually moved. PEP 503 normalisation matches `Foo_Bar`
+and `foo-bar` even though only one form appears in the source;
+removing the last entry in a multiline array preserves the array
+shape (`dependencies = [\n]`) so the diff stays small. After the
+manifest edit the verb seeds `Solver.Locked` with every surviving
+lockfile pin minus the names being removed, re-resolves, and
+rewrites `bunpy.lock` so any pin that loses every root falls off.
+The uninstall path walks each dropped pin's
+`<name>-<version>.dist-info/RECORD`, removing every listed path
+(rejecting any that escape the target via a
+`strings.HasPrefix(cleaned, abs+sep)` guard) before unlinking the
+dist-info; a best-effort fallback removes the top-level package
+directory when the wheel was a purelib without a RECORD. The
+verb is idempotent: removing a name that is not listed is a
+no-op (`removed 0 packages`, exit 0).
+
 ## Module layout
 
 ```

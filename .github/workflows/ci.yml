@@ -115,7 +115,7 @@ jobs:
       - name: bunpy help / --help parity
         shell: bash
         run: |
-          for cmd in run repl stdlib version help man pm add install outdated update; do
+          for cmd in run repl stdlib version help man pm add install outdated update remove; do
             a="$(./bunpy help "$cmd")"
             b="$(./bunpy "$cmd" --help)"
             if [ "$a" != "$b" ]; then
@@ -461,6 +461,61 @@ jobs:
           if ( cd "$work" && BUNPY_PYPI_FIXTURES="$GITHUB_WORKSPACE/tests/fixtures/v013/index" \
               BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" update --latest --no-install 2>/dev/null ); then
             echo "want non-zero exit on --latest with no pkg"; exit 1
+          fi
+
+      - name: bunpy remove smoke (v0.1.8)
+        shell: bash
+        run: |
+          work="$(mktemp -d)"
+          cache="$(mktemp -d)"
+          cat > "$work/pyproject.toml" <<'EOF'
+          [project]
+          name = "smoke"
+          version = "0.0.1"
+          dependencies = ["widget>=1.0"]
+
+          [dependency-groups]
+          dev = ["widget>=1.0"]
+          EOF
+          ( cd "$work" && BUNPY_PYPI_FIXTURES="$GITHUB_WORKSPACE/tests/fixtures/v013/index" \
+              BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" pm lock )
+          ( cd "$work" && BUNPY_PYPI_FIXTURES="$GITHUB_WORKSPACE/tests/fixtures/v013/index" \
+              BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" install -D )
+          test -f "$work/.bunpy/site-packages/widget/__init__.py"
+          out="$( cd "$work" && BUNPY_PYPI_FIXTURES="$GITHUB_WORKSPACE/tests/fixtures/v013/index" \
+              BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" remove widget )"
+          echo "$out"
+          case "$out" in
+            *"removed 2 packages"*) ;;
+            *) echo "want removed-2 summary, got: $out"; exit 1 ;;
+          esac
+          if grep -q widget "$work/pyproject.toml"; then
+            echo "widget still in pyproject after bare remove:"; cat "$work/pyproject.toml"; exit 1
+          fi
+          if grep -q 'name = "widget"' "$work/bunpy.lock"; then
+            echo "widget still pinned after remove:"; cat "$work/bunpy.lock"; exit 1
+          fi
+          test ! -e "$work/.bunpy/site-packages/widget"
+          # -D restricts to the dev lane only.
+          work2="$(mktemp -d)"
+          cat > "$work2/pyproject.toml" <<'EOF'
+          [project]
+          name = "smoke"
+          version = "0.0.1"
+          dependencies = ["widget>=1.0"]
+
+          [dependency-groups]
+          dev = ["widget>=1.0"]
+          EOF
+          ( cd "$work2" && BUNPY_PYPI_FIXTURES="$GITHUB_WORKSPACE/tests/fixtures/v013/index" \
+              BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" pm lock )
+          ( cd "$work2" && BUNPY_PYPI_FIXTURES="$GITHUB_WORKSPACE/tests/fixtures/v013/index" \
+              BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" remove -D widget --no-install )
+          grep -q 'dependencies = \["widget>=1.0"\]' "$work2/pyproject.toml"
+          # --latest is owned by update; -D plus -P is rejected.
+          if ( cd "$work2" && BUNPY_PYPI_FIXTURES="$GITHUB_WORKSPACE/tests/fixtures/v013/index" \
+              BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" remove -D -P widget --no-install 2>/dev/null ); then
+            echo "want non-zero exit on -D + -P"; exit 1
           fi
 
       - name: bunpy hello.py
