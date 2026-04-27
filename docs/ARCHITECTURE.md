@@ -99,10 +99,31 @@ program. CI re-runs the generator against a clean checkout and
 diffs against the checked-in file so a goipy bump that adds or
 removes a module fails CI loudly.
 
+## Help and manpages
+
+Subcommand help has one source of truth: the `helpRegistry` map
+in `cmd/bunpy/help.go`. Each entry has a name, a one-line
+summary, and a long-form body. The router uses the body for
+both `bunpy help <cmd>` and `bunpy <cmd> --help`, so the two
+surfaces cannot drift; the CI smoke job asserts byte equality
+across both routes for every wired command.
+
+The roff manpages are a separate artefact, embedded via
+`internal/manpages` (a Go package whose only job is to host
+`//go:embed man1/*.1`). `bunpy man <cmd>` writes the bytes
+straight to stdout; `bunpy man --install <dir>` walks the
+embedded FS and copies each page into `<dir>/man1/`. The
+release workflow builds an ubuntu-host binary on every matrix
+leg and runs `bunpy man --install` against the staged archive
+so the linux and darwin tarballs ship `share/man/man1/*.1`
+alongside the binary; `install.sh` and the Homebrew formula
+both pick those up. Windows archives skip the manpages.
+
 ## Module layout
 
 ```
 cmd/bunpy/         CLI entry: subcommand router + per-command files
+internal/manpages/ embedded roff manpages (man1/*.1) + Go accessors
 runtime/           embeds goipy.VM; module loader; hot reload; env
 api/               bunpy.* Python-side API written in Go
 pkg/               package manager (resolver, wheel install, lock)

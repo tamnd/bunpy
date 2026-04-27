@@ -36,13 +36,17 @@ func run(args []string, stdout, stderr io.Writer) (int, error) {
 	switch args[0] {
 	case "version", "-v", "--version":
 		return versionSubcommand(args[1:], stdout, stderr)
-	case "help", "-h", "--help":
+	case "help":
+		return helpSubcommand(args[1:], stdout, stderr)
+	case "-h", "--help":
 		usage(stdout)
 		return 0, nil
 	case "run":
 		return runSubcommand(args[1:], stdout, stderr)
 	case "stdlib":
 		return stdlibSubcommand(args[1:], stdout, stderr)
+	case "man":
+		return manSubcommand(args[1:], stdout, stderr)
 	}
 
 	if isFilePath(args[0]) {
@@ -50,7 +54,7 @@ func run(args []string, stdout, stderr io.Writer) (int, error) {
 	}
 
 	usage(stderr)
-	return 1, fmt.Errorf("unknown command %q (v0.0.5 wires --version, --help, `bunpy <file.py>`, `bunpy run`, `bunpy stdlib`)", args[0])
+	return 1, fmt.Errorf("unknown command %q (v0.0.7 wires --version, --help, `bunpy <file.py>`, `bunpy run`, `bunpy stdlib`, `bunpy help`, `bunpy man`)", args[0])
 }
 
 func versionSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
@@ -61,6 +65,8 @@ func versionSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 			mode = "short"
 		case "--json":
 			mode = "json"
+		case "-h", "--help":
+			return printHelp("version", stdout, stderr)
 		default:
 			return 1, fmt.Errorf("bunpy version: unknown flag %q (known: --short, --json)", a)
 		}
@@ -98,15 +104,7 @@ func stdlibSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 		fmt.Fprintln(stdout, runtime.StdlibCount())
 		return 0, nil
 	case "-h", "--help", "help":
-		fmt.Fprintln(stdout, "bunpy stdlib: list the Python stdlib modules embedded in this binary.")
-		fmt.Fprintln(stdout, "")
-		fmt.Fprintln(stdout, "USAGE")
-		fmt.Fprintln(stdout, "  bunpy stdlib            list module names, one per line")
-		fmt.Fprintln(stdout, "  bunpy stdlib ls         same as `bunpy stdlib`")
-		fmt.Fprintln(stdout, "  bunpy stdlib count      print the number of embedded modules")
-		fmt.Fprintln(stdout, "")
-		fmt.Fprintln(stdout, "The list is baked at build time from goipy's embedded stdlib.")
-		return 0, nil
+		return printHelp("stdlib", stdout, stderr)
 	default:
 		return 1, fmt.Errorf("bunpy stdlib %q: known modes are ls, count, --help", mode)
 	}
@@ -119,14 +117,7 @@ func runSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 	}
 	switch args[0] {
 	case "-h", "--help":
-		fmt.Fprintln(stdout, "bunpy run: explicit form of `bunpy <file.py>`.")
-		fmt.Fprintln(stdout, "")
-		fmt.Fprintln(stdout, "USAGE")
-		fmt.Fprintln(stdout, "  bunpy run <file.py> [args...]")
-		fmt.Fprintln(stdout, "")
-		fmt.Fprintln(stdout, "Script names defined in pyproject.toml will be supported once")
-		fmt.Fprintln(stdout, "the package manager lands in v0.1.x.")
-		return 0, nil
+		return printHelp("run", stdout, stderr)
 	case "-":
 		return 1, fmt.Errorf("bunpy run -: stdin scripts not yet wired")
 	}
@@ -182,31 +173,15 @@ func usage(w io.Writer) {
 	fmt.Fprintln(w, "  bunpy <command> [args]")
 	fmt.Fprintln(w, "  bunpy --version")
 	fmt.Fprintln(w, "  bunpy --help")
+	fmt.Fprintln(w, "  bunpy help <command>        Long-form help for a subcommand")
 	fmt.Fprintln(w, "")
-	fmt.Fprintln(w, "COMMANDS (planned, see docs/ROADMAP.md for the per-version ladder)")
-	fmt.Fprintln(w, "  run <file.py>     Run a Python script")
-	fmt.Fprintln(w, "  test              Discover and run tests")
-	fmt.Fprintln(w, "  install           Install dependencies from pyproject.toml + bunpy.lock")
-	fmt.Fprintln(w, "  add <pkg>         Add a dependency")
-	fmt.Fprintln(w, "  remove <pkg>      Remove a dependency")
-	fmt.Fprintln(w, "  update [pkg]      Update dependencies")
-	fmt.Fprintln(w, "  outdated          List outdated dependencies")
-	fmt.Fprintln(w, "  audit             Check for security advisories")
-	fmt.Fprintln(w, "  link / unlink     Editable install of cwd")
-	fmt.Fprintln(w, "  patch <pkg>       Persist a local patch against an installed package")
-	fmt.Fprintln(w, "  publish           Build and publish sdist+wheel to PyPI")
-	fmt.Fprintln(w, "  pm                Package-manager utilities (cache, ls, hash, why)")
-	fmt.Fprintln(w, "  why <pkg>         Explain why a package is installed")
-	fmt.Fprintln(w, "  init              Scaffold a new project")
-	fmt.Fprintln(w, "  create <tmpl>     Scaffold from a template")
-	fmt.Fprintln(w, "  build             Bundle a project (.pyz or single binary)")
-	fmt.Fprintln(w, "  repl              Interactive REPL")
-	fmt.Fprintln(w, "  fmt               Format Python source (delegates to gopapy)")
-	fmt.Fprintln(w, "  check             Lint Python source (delegates to gopapy)")
-	fmt.Fprintln(w, "  stdlib            List Python stdlib modules embedded in the binary")
+	fmt.Fprintln(w, "COMMANDS")
+	for _, name := range helpTopics() {
+		fmt.Fprintf(w, "  %-9s %s\n", name, helpRegistry[name].Summary)
+	}
 	fmt.Fprintln(w, "")
-	fmt.Fprintln(w, "v0.0.5 ships --version (with --short and --json), --help,")
-	fmt.Fprintln(w, "`bunpy <file.py>`, `bunpy run`, and `bunpy stdlib`. Each rung")
-	fmt.Fprintln(w, "in docs/ROADMAP.md adds one capability with a green CI matrix")
-	fmt.Fprintln(w, "on linux, macOS, and Windows.")
+	fmt.Fprintln(w, "Run `bunpy help <command>` for the long form, or `bunpy man")
+	fmt.Fprintln(w, "<command>` for the manpage. The aspirational command list")
+	fmt.Fprintln(w, "(install, add, build, test, repl, fmt, check) is documented in")
+	fmt.Fprintln(w, "docs/CLI.md and lands per docs/ROADMAP.md.")
 }

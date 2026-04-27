@@ -1,0 +1,22 @@
+.TH BUNPY-HELP 1 "2026-04-27" "bunpy" "User Commands"
+.SH NAME
+bunpy-help \- print long-form help for a subcommand
+.SH SYNOPSIS
+.B bunpy help
+[\fIcommand\fR]
+.SH DESCRIPTION
+With no argument, prints the top-level usage (same as
+.BR "bunpy --help" ).
+With a subcommand name, prints the long-form help for that
+subcommand. The output is identical to
+.BI "bunpy " command " --help" \fR.
+.PP
+If
+.I command
+is not a known subcommand,
+.B bunpy help
+exits non-zero with a hint to run
+.B bunpy help
+without arguments to see the list.
+.SH SEE ALSO
+.BR bunpy (1).

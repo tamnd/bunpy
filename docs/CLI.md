@@ -1,11 +1,13 @@
 # CLI reference
 
 bunpy ships as one binary. Subcommands land per-version per the
-roadmap. Today (v0.0.6) the wired surface is `--version` (with
+roadmap. Today (v0.0.7) the wired surface is `--version` (with
 `--short` and `--json`), `--help`, positional `bunpy <file.py>`,
-`bunpy run <file.py>`, and `bunpy stdlib`. This page is the
-long-form reference. Running `bunpy help <cmd>` gives the short
-form. Installing the binary itself: see `docs/INSTALL.md`.
+`bunpy run <file.py>`, `bunpy stdlib`, `bunpy help`, and
+`bunpy man`. This page is the long-form reference. Running
+`bunpy help <cmd>` gives the same body inline; `bunpy man <cmd>`
+prints the bundled roff manpage. Installing the binary itself:
+see `docs/INSTALL.md`.
 
 ## Synopsis
 
@@ -111,4 +113,14 @@ thing.
   JSON object. Fields: `version`, `commit`, `build_date`,
   `goipy`, `gocopy`, `gopapy`, `go`, `os`, `arch`. Empty string
   fields are omitted.
-- `bunpy help [cmd]` and `--help` print help.
+- `bunpy help` prints the top-level usage. `bunpy help <cmd>`
+  prints the same long-form body that `bunpy <cmd> --help`
+  prints. The two surfaces share a single source of truth (the
+  `helpRegistry` map in `cmd/bunpy/help.go`) so they cannot
+  drift; CI asserts byte equality on every push.
+- `bunpy man <cmd>` prints the bundled roff manpage to stdout.
+  Pipe to `man -l -` to render: `bunpy man run | man -l -`.
+- `bunpy man --install [dir]` copies the embedded manpages into
+  `<dir>/man1/`. The default `dir` is `$HOME/.bunpy/share/man`,
+  matching where `install.sh` puts them. Add the parent to
+  `MANPATH` to wire `man bunpy` and `man bunpy-run`.

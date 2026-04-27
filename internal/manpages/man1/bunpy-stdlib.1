@@ -1,0 +1,38 @@
+.TH BUNPY-STDLIB 1 "2026-04-27" "bunpy" "User Commands"
+.SH NAME
+bunpy-stdlib \- list Python stdlib modules embedded in the binary
+.SH SYNOPSIS
+.B bunpy stdlib
+[\fImode\fR]
+.SH DESCRIPTION
+Prints the Python stdlib modules embedded in this
+.B bunpy
+binary. The list is generated at build time from the goipy
+toolchain's module switch and pinned in
+.IR runtime/stdlib_index.go .
+CI verifies the file is in sync with the goipy commit on every
+push.
+.SH MODES
+.TP
+.B ls
+(default) print one module name per line, sorted.
+.TP
+.B count
+print the number of embedded modules.
+.TP
+.BR \-h ", " \-\-help
+print this command's help.
+.SH EXAMPLES
+.PP
+.RS 4
+.nf
+$ bunpy stdlib | wc -l
+184
+$ bunpy stdlib | grep '^math$'
+math
+$ bunpy stdlib count
+184
+.fi
+.RE
+.SH SEE ALSO
+.BR bunpy (1).

@@ -96,9 +96,14 @@ fi
 cp "${inner_dir}/bunpy" "${INSTALL_DIR}/bin/bunpy"
 chmod +x "${INSTALL_DIR}/bin/bunpy"
 
+note "installing manpages"
+"${INSTALL_DIR}/bin/bunpy" man --install "${INSTALL_DIR}/share/man" >/dev/null || \
+  note "manpage install failed (non-fatal)"
+
 note "installed bunpy ${version} to ${INSTALL_DIR}/bin/bunpy"
 echo
-echo "Add this to your shell rc if you have not already:"
+echo "Add these to your shell rc if you have not already:"
 echo "  export PATH=\"${INSTALL_DIR}/bin:\$PATH\""
+echo "  export MANPATH=\"${INSTALL_DIR}/share/man:\$MANPATH\""
 echo
 "${INSTALL_DIR}/bin/bunpy" version || true

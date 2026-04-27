@@ -1,0 +1,39 @@
+.TH BUNPY-RUN 1 "2026-04-27" "bunpy" "User Commands"
+.SH NAME
+bunpy-run \- run a Python script
+.SH SYNOPSIS
+.B bunpy run
+.I file.py
+[\fIargs...\fR]
+.br
+.B bunpy
+.I file.py
+[\fIargs...\fR]
+.SH DESCRIPTION
+Runs the named Python script through gocopy (compile) and goipy
+(bytecode VM). The bare positional form
+.B bunpy file.py
+is equivalent to
+.BR "bunpy run file.py" .
+.PP
+The script must end in
+.IR .py .
+Reading from standard input
+.RB ( "bunpy run \-" )
+is reserved for a later release.
+.SH ARGUMENTS
+.TP
+.I file.py
+Path to the script to run. Must end in
+.IR .py .
+.TP
+.I args...
+Forwarded to the script through
+.BR sys.argv .
+.SH EXIT STATUS
+Zero on success. Non-zero if the file cannot be opened, fails to
+compile, or raises an uncaught exception. A
+.B SystemExit
+with an integer code propagates that code.
+.SH SEE ALSO
+.BR bunpy (1).

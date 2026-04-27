@@ -1,0 +1,70 @@
+.TH BUNPY 1 "2026-04-27" "bunpy" "User Commands"
+.SH NAME
+bunpy \- one binary for Python: runtime, packages, bundler, tests
+.SH SYNOPSIS
+.B bunpy
+.I file.py
+[\fIargs...\fR]
+.br
+.B bunpy
+.I command
+[\fIargs\fR]
+.br
+.B bunpy
+\-\-version
+.br
+.B bunpy
+\-\-help
+.SH DESCRIPTION
+.B bunpy
+is one static Go binary that runs Python scripts, lists embedded
+stdlib modules, and prints build metadata. Subcommands land per
+the per-version ladder in
+.IR docs/ROADMAP.md .
+The runtime piece pipes source through gopapy (parser),
+gocopy (compiler), and goipy (bytecode VM); none of those need
+to be installed separately.
+.SH SUBCOMMANDS
+.TP
+.B run
+Run a Python script. See
+.BR bunpy-run (1).
+.TP
+.B stdlib
+List the Python stdlib modules embedded in the binary. See
+.BR bunpy-stdlib (1).
+.TP
+.B version
+Print version, commit, build date, and pinned toolchain commits.
+See
+.BR bunpy-version (1).
+.TP
+.B help
+Print long-form help for a subcommand. See
+.BR bunpy-help (1).
+.TP
+.B man
+Print or install the bundled manpages. See
+.BR bunpy-man (1).
+.SH ENVIRONMENT
+.TP
+.B BUNPY_INSTALL_DIR
+Used by
+.IR install.sh ;
+default
+.IR $HOME/.bunpy .
+.SH FILES
+.TP
+.I $HOME/.bunpy/bin/bunpy
+Default install path.
+.TP
+.I $HOME/.bunpy/share/man
+Default man-install destination.
+.SH SEE ALSO
+.BR bunpy-run (1),
+.BR bunpy-stdlib (1),
+.BR bunpy-version (1),
+.BR bunpy-help (1),
+.BR bunpy-man (1).
+.PP
+Project page: <https://github.com/tamnd/bunpy>.

@@ -112,6 +112,36 @@ jobs:
       - name: bunpy --help
         run: ./bunpy --help
 
+      - name: bunpy help / --help parity
+        shell: bash
+        run: |
+          for cmd in run stdlib version help man; do
+            a="$(./bunpy help "$cmd")"
+            b="$(./bunpy "$cmd" --help)"
+            if [ "$a" != "$b" ]; then
+              echo "help drift for $cmd"
+              diff <(printf '%s' "$a") <(printf '%s' "$b") || true
+              exit 1
+            fi
+          done
+
+      - name: bunpy man render
+        shell: bash
+        run: |
+          out="$(./bunpy man run)"
+          case "$out" in
+            .TH*) ;;
+            *) echo "expected .TH header, got: ${out%%$'\n'*}"; exit 1 ;;
+          esac
+
+      - name: bunpy man --install smoke
+        shell: bash
+        run: |
+          dest="$(mktemp -d)/share/man"
+          ./bunpy man --install "$dest"
+          test -f "$dest/man1/bunpy.1"
+          test -f "$dest/man1/bunpy-run.1"
+
       - name: bunpy hello.py
         run: |
           echo 'x = 1' > hello.py

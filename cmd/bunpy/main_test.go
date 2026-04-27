@@ -345,3 +345,109 @@ func TestRunFileBadSource(t *testing.T) {
 		t.Errorf("error %q does not name the file", err)
 	}
 }
+
+func TestHelpForEachWiredCommand(t *testing.T) {
+	for _, name := range helpTopics() {
+		t.Run(name, func(t *testing.T) {
+			var stdout, stderr bytes.Buffer
+			code, err := run([]string{"help", name}, &stdout, &stderr)
+			if err != nil {
+				t.Fatalf("bunpy help %s: %v", name, err)
+			}
+			if code != 0 {
+				t.Fatalf("code %d, want 0", code)
+			}
+			if stdout.Len() == 0 {
+				t.Errorf("bunpy help %s produced empty stdout", name)
+			}
+		})
+	}
+}
+
+func TestHelpUnknownCommand(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	code, err := run([]string{"help", "frobnicate"}, &stdout, &stderr)
+	if err == nil {
+		t.Fatal("expected error for unknown help topic")
+	}
+	if code == 0 {
+		t.Error("expected non-zero exit code")
+	}
+	if !strings.Contains(stderr.String(), "frobnicate") {
+		t.Errorf("stderr %q does not mention the bad topic", stderr.String())
+	}
+}
+
+func TestHelpFlagAliasesParity(t *testing.T) {
+	cases := []struct {
+		name      string
+		viaSubcmd []string
+	}{
+		{"run", []string{"run", "--help"}},
+		{"run", []string{"run", "-h"}},
+		{"stdlib", []string{"stdlib", "--help"}},
+		{"stdlib", []string{"stdlib", "-h"}},
+		{"version", []string{"version", "--help"}},
+		{"version", []string{"version", "-h"}},
+		{"man", []string{"man", "--help"}},
+		{"man", []string{"man", "-h"}},
+	}
+	for _, tc := range cases {
+		t.Run(strings.Join(tc.viaSubcmd, " "), func(t *testing.T) {
+			var aOut, aErr, bOut, bErr bytes.Buffer
+			if _, err := run([]string{"help", tc.name}, &aOut, &aErr); err != nil {
+				t.Fatalf("bunpy help %s: %v", tc.name, err)
+			}
+			if _, err := run(tc.viaSubcmd, &bOut, &bErr); err != nil {
+				t.Fatalf("bunpy %v: %v", tc.viaSubcmd, err)
+			}
+			if aOut.String() != bOut.String() {
+				t.Errorf("help parity mismatch for %s vs %v\n--- help:\n%s--- subcmd:\n%s",
+					tc.name, tc.viaSubcmd, aOut.String(), bOut.String())
+			}
+		})
+	}
+}
+
+func TestManRender(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	code, err := run([]string{"man", "run"}, &stdout, &stderr)
+	if err != nil {
+		t.Fatalf("bunpy man run: %v", err)
+	}
+	if code != 0 {
+		t.Fatalf("code %d, want 0", code)
+	}
+	if !strings.HasPrefix(stdout.String(), ".TH BUNPY-RUN 1") {
+		t.Errorf("stdout did not start with .TH BUNPY-RUN 1: %q", stdout.String()[:min(stdout.Len(), 64)])
+	}
+}
+
+func TestManUnknown(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	code, err := run([]string{"man", "frobnicate"}, &stdout, &stderr)
+	if err == nil {
+		t.Fatal("expected error for unknown manpage")
+	}
+	if code == 0 {
+		t.Error("expected non-zero exit code")
+	}
+}
+
+func TestManInstall(t *testing.T) {
+	dir := t.TempDir()
+	var stdout, stderr bytes.Buffer
+	code, err := run([]string{"man", "--install", dir}, &stdout, &stderr)
+	if err != nil {
+		t.Fatalf("bunpy man --install: %v\nstderr:%s", err, stderr.String())
+	}
+	if code != 0 {
+		t.Fatalf("code %d, want 0", code)
+	}
+	for _, want := range []string{"bunpy.1", "bunpy-run.1", "bunpy-stdlib.1", "bunpy-version.1", "bunpy-help.1", "bunpy-man.1"} {
+		path := filepath.Join(dir, "man1", want)
+		if _, err := os.Stat(path); err != nil {
+			t.Errorf("missing %s: %v", path, err)
+		}
+	}
+}

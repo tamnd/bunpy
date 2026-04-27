@@ -29,7 +29,11 @@ class Bunpy < Formula
   def install
     arch = Hardware::CPU.arm? ? "arm64" : "amd64"
     os = OS.mac? ? "darwin" : "linux"
-    bin.install "bunpy-v#{version}-#{os}-#{arch}/bunpy"
+    stage = "bunpy-v#{version}-#{os}-#{arch}"
+    bin.install "#{stage}/bunpy"
+    if Dir.exist?("#{stage}/share/man/man1")
+      man1.install Dir["#{stage}/share/man/man1/*.1"]
+    end
   end
 
   test do

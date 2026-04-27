@@ -20,11 +20,21 @@ export PATH="$HOME/.bunpy/bin:$PATH"
 
 Re-running the same one-liner upgrades in place. The previous
 binary is preserved at `$HOME/.bunpy/bin/bunpy.prev` so a
-rollback is one `mv` away.
+rollback is one `mv` away. The script also drops the bundled
+manpages into `$HOME/.bunpy/share/man/man1`. Add that to
+`MANPATH` to get `man bunpy`:
+
+```
+export MANPATH="$HOME/.bunpy/share/man:$MANPATH"
+```
+
+If your `man` is configured to scan `$PATH`-adjacent share dirs
+(the default on Homebrew systems and most Linux distros), this
+may already be wired and the export is a no-op.
 
 ### Env overrides
 
-- `BUNPY_VERSION=v0.0.6` pin to a specific tag instead of latest.
+- `BUNPY_VERSION=v0.0.7` pin to a specific tag instead of latest.
 - `BUNPY_INSTALL_DIR=/opt/bunpy` change install root.
 - `BUNPY_OS=linux`, `BUNPY_ARCH=amd64` override autodetection.
 
@@ -60,7 +70,13 @@ sudo mv bunpy-vX.Y.Z-linux-amd64/bunpy /usr/local/bin/
 ```
 
 Windows users: extract the zip and add the resulting directory
-to `PATH`.
+to `PATH`. Manpages are not produced for Windows archives.
+
+The linux and darwin tarballs include `share/man/man1/*.1`. If
+you install manually, copy them into a `MANPATH` directory
+(e.g., `/usr/local/share/man/man1`) or run
+`bunpy man --install $HOME/.bunpy/share/man` after putting the
+binary on `PATH`.
 
 ## Verifying
 

@@ -1,0 +1,58 @@
+.TH BUNPY-MAN 1 "2026-04-27" "bunpy" "User Commands"
+.SH NAME
+bunpy-man \- read or install bunpy's bundled manpages
+.SH SYNOPSIS
+.B bunpy man
+.I command
+.br
+.B bunpy man
+\-\-install
+[\fIdir\fR]
+.SH DESCRIPTION
+Bunpy ships its own manpages. They live as
+.B embed.FS
+data baked into the binary, so an install of
+.B bunpy
+always knows where to find them.
+.PP
+.B bunpy man
+.I command
+prints the requested page in raw
+.B roff
+to standard output. Pipe to
+.B man -l -
+to render:
+.PP
+.RS 4
+.nf
+$ bunpy man run | man -l -
+.fi
+.RE
+.PP
+.B bunpy man --install
+.RI [ dir ]
+copies all bundled pages into
+.IR dir/man1/ .
+The default
+.I dir
+is
+.IR $HOME/.bunpy/share/man .
+.B install.sh
+runs this on every install so the user does not need to do it
+manually. The Homebrew formula installs the same files via
+.B man1.install
+during
+.BR "brew install" .
+.SH ENVIRONMENT
+.TP
+.B MANPATH
+Add
+.I $HOME/.bunpy/share/man
+to it (or to
+.IR /etc/manpaths.d )
+so
+.B man bunpy
+works after a shell-installer install.
+.SH SEE ALSO
+.BR bunpy (1),
+.BR man (1).

@@ -1,0 +1,37 @@
+.TH BUNPY-VERSION 1 "2026-04-27" "bunpy" "User Commands"
+.SH NAME
+bunpy-version \- print build metadata
+.SH SYNOPSIS
+.B bunpy version
+[\fB\-\-short\fR | \fB\-\-json\fR]
+.SH DESCRIPTION
+Prints the version, build commit, build date, host go/os/arch,
+and the three pinned sibling-toolchain commits (gopapy, gocopy,
+goipy) baked into the binary at build time.
+.PP
+A locally-built binary prints just
+.B bunpy dev
+followed by the go/os/arch line. Release builds add the commit,
+build date, and toolchain pins so a release archive is
+self-describing.
+.SH OPTIONS
+.TP
+.B \-\-short
+Print just the version string. Useful in shell pipelines.
+.TP
+.B \-\-json
+Print the metadata as a one-line JSON object. Empty fields are
+omitted. Keys:
+.IR version ", " commit ", " build_date ", " goipy ", " gocopy ", " gopapy ", " go ", " os ", " arch .
+.SH EXAMPLES
+.PP
+.RS 4
+.nf
+$ bunpy version --short
+0.0.7
+$ bunpy version --json | jq .commit
+"abcdef0"
+.fi
+.RE
+.SH SEE ALSO
+.BR bunpy (1).
