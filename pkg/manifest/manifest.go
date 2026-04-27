@@ -99,7 +99,17 @@ type Tool struct {
 	// compat checks but never installed by default.
 	PeerDependencies []string `json:"peer_dependencies,omitempty"`
 
+	// Workspace is the [tool.bunpy.workspace] table. Non-nil when
+	// this pyproject.toml is a workspace root.
+	Workspace *WorkspaceConfig `json:"workspace,omitempty"`
+
 	Raw map[string]any `json:"raw,omitempty"`
+}
+
+// WorkspaceConfig is the [tool.bunpy.workspace] table.
+type WorkspaceConfig struct {
+	// Members holds the raw member path patterns (may include globs).
+	Members []string `json:"members"`
 }
 
 // nameRE is PEP 503's normalised-name regex.
@@ -160,6 +170,11 @@ func ParseOpts(data []byte, opts LoadOptions) (*Manifest, error) {
 			if bunpy, ok := tt["bunpy"].(map[string]any); ok {
 				m.Tool.Raw = bunpy
 				m.Tool.PeerDependencies = stringSlice(bunpy["peer-dependencies"])
+				if ws, ok := bunpy["workspace"].(map[string]any); ok {
+					m.Tool.Workspace = &WorkspaceConfig{
+						Members: stringSlice(ws["members"]),
+					}
+				}
 			}
 			// Preserve the rest of [tool.*] verbatim under Other.
 			rest := map[string]any{}

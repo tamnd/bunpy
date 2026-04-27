@@ -1,13 +1,14 @@
 # CLI reference
 
 bunpy ships as one binary. Subcommands land per-version per the
-roadmap. Today (v0.1.11) the wired surface is `--version` (with
+roadmap. Today (v0.2.0) the wired surface is `--version` (with
 `--short` and `--json`), `--help`, positional `bunpy <file.py>`,
 `bunpy run <file.py>`, `bunpy repl`, `bunpy stdlib`,
 `bunpy pm config`, `bunpy pm info`, `bunpy pm install-wheel`,
 `bunpy pm lock`, `bunpy add`, `bunpy install`, `bunpy outdated`,
 `bunpy update`, `bunpy remove`, `bunpy link`, `bunpy unlink`,
-`bunpy patch`, `bunpy why`, `bunpy help`, and `bunpy man`.
+`bunpy patch`, `bunpy why`, `bunpy workspace`, `bunpy help`, and
+`bunpy man`.
 This page is the
 long-form reference. Running
 `bunpy help <cmd>` gives the same body inline; `bunpy man <cmd>`
@@ -240,23 +241,39 @@ files. Linked and patched pins surface their state in the
 header (`(linked)`, `(patched)`) and in the JSON `installer`
 field.
 
-The rest of the package-manager surface is aspirational and
-lands per the v0.2.x ladder in `docs/ROADMAP.md`:
+`bunpy workspace` (v0.2.0) manages multi-member repositories. A
+workspace is a root `pyproject.toml` that declares member directories
+in a `[tool.bunpy.workspace]` table:
 
-- `bunpy audit [--fix]` checks for security advisories.
-- `bunpy publish` builds an sdist plus a wheel and uploads them
-  to PyPI.
-- `bunpy pm cache rm` clears on-disk caches.
-- `bunpy pm ls` lists installed packages.
-- `bunpy pm hash` prints the lockfile content hash.
+```toml
+[tool.bunpy.workspace]
+members = ["packages/alpha", "packages/beta", "apps/*"]
+```
+
+All member dependencies are resolved together into a single
+`bunpy.lock` at the workspace root. Members share a lock; there is
+no per-member lock. bunpy auto-detects the workspace root by walking
+up the directory tree from cwd, so all verbs work without any
+explicit path flag when run from inside a member directory.
+
+```
+bunpy workspace --list               list member names and relative paths
+bunpy add --member alpha requests    add a dep to the alpha member
+bunpy install                        install from workspace-root lock
+```
+
+The rest of the package-manager surface lands per the v0.2.x ladder
+in `docs/ROADMAP.md`:
+
+- `bunpy audit` checks for security advisories against OSV.
+- `bunpy publish` builds an sdist plus a wheel and uploads to PyPI.
 
 ### Project scaffolding
 
-- `bunpy init` scaffolds `pyproject.toml`, the src layout, and a
-  README.
-- `bunpy create <template>` scaffolds from a template (fastapi,
-  flask, click, lib, ml).
+- `bunpy create <template>` scaffolds from a template (app, lib,
+  script, workspace). Lands in v0.2.3.
 - `bunpyx <pkg>[@version] [args]` does a one-shot run from PyPI.
+  Lands in v0.2.4.
 
 ### Bundler
 

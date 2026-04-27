@@ -9,6 +9,10 @@ changes.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-04-27
+
+See `changelog/v0.2.0.md` for the full entry.
+
 ## [0.1.3] - 2026-04-27
 
 The package manager grows its first piece of porcelain. `bunpy

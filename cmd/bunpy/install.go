@@ -25,6 +25,7 @@ func installSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 	var (
 		target     = filepath.Join(".bunpy", "site-packages")
 		cacheDir   string
+		wsRoot     string
 		noVerify   bool
 		noPatches  bool
 		dev        bool
@@ -68,6 +69,12 @@ func installSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 			}
 			i++
 			cacheDir = args[i]
+		case "--workspace":
+			if i+1 >= len(args) {
+				return 1, fmt.Errorf("bunpy install: --workspace requires a value")
+			}
+			i++
+			wsRoot = args[i]
 		default:
 			if v, ok := strings.CutPrefix(a, "--target="); ok {
 				target = v
@@ -81,12 +88,32 @@ func installSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 				extras = append(extras, v)
 				continue
 			}
+			if v, ok := strings.CutPrefix(a, "--workspace="); ok {
+				wsRoot = v
+				continue
+			}
 			return 1, fmt.Errorf("bunpy install: unknown flag %q", a)
 		}
 	}
 	if production && (dev || peer || allExtras || len(extras) > 0) {
 		return 1, fmt.Errorf("bunpy install: --production cannot combine with --dev/--optional/--all-extras/--peer")
 	}
+
+	// Auto-detect workspace root when --workspace is not set explicitly.
+	lockPath := "bunpy.lock"
+	manifestPath := "pyproject.toml"
+	if wsRoot == "" {
+		if cwd, err := os.Getwd(); err == nil {
+			if found, err := findWorkspaceRoot(cwd); err == nil {
+				wsRoot = found
+			}
+		}
+	}
+	if wsRoot != "" {
+		lockPath = filepath.Join(wsRoot, "bunpy.lock")
+		manifestPath = filepath.Join(wsRoot, "pyproject.toml")
+	}
+	_ = manifestPath
 
 	var patchEntries []patches.Entry
 	if !noPatches {
@@ -97,7 +124,7 @@ func installSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 		}
 	}
 
-	lock, err := lockfile.Read("bunpy.lock")
+	lock, err := lockfile.Read(lockPath)
 	if err != nil {
 		if errors.Is(err, lockfile.ErrNotFound) {
 			return 1, fmt.Errorf("bunpy install: bunpy.lock missing - run `bunpy pm lock` first")

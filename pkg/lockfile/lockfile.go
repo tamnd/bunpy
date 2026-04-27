@@ -20,10 +20,17 @@ const Version = 1
 
 // Lock is the parsed bunpy.lock.
 type Lock struct {
-	Version     int       `toml:"version"`
-	Generated   time.Time `toml:"generated"`
-	ContentHash string    `toml:"content-hash"`
-	Packages    []Package `toml:"package"`
+	Version     int            `toml:"version"`
+	Generated   time.Time      `toml:"generated"`
+	ContentHash string         `toml:"content-hash"`
+	Packages    []Package      `toml:"package"`
+	Workspace   *WorkspaceMeta `toml:"workspace,omitempty"`
+}
+
+// WorkspaceMeta records the member paths that were present when this
+// lock was produced by a workspace-aware resolver run.
+type WorkspaceMeta struct {
+	Members []string
 }
 
 // Package is one row in the lockfile.
@@ -83,8 +90,9 @@ func Parse(data []byte) (*Lock, error) {
 	text := string(data)
 	lines := strings.Split(text, "\n")
 	var (
-		inPackage bool
-		curr      Package
+		inPackage   bool
+		inWorkspace bool
+		curr        Package
 	)
 	flush := func() {
 		if inPackage {
@@ -101,11 +109,34 @@ func Parse(data []byte) (*Lock, error) {
 		if line == "[[package]]" {
 			flush()
 			inPackage = true
+			inWorkspace = false
+			continue
+		}
+		if line == "[workspace]" {
+			flush()
+			inWorkspace = true
+			inPackage = false
+			if l.Workspace == nil {
+				l.Workspace = &WorkspaceMeta{}
+			}
 			continue
 		}
 		k, v, ok := splitKV(line)
 		if !ok {
 			return nil, fmt.Errorf("lockfile: malformed line %q", raw)
+		}
+		if inWorkspace {
+			switch k {
+			case "members":
+				members, err := parseInlineStringArray(v)
+				if err != nil {
+					return nil, fmt.Errorf("lockfile: workspace members: %w", err)
+				}
+				l.Workspace.Members = members
+			default:
+				return nil, fmt.Errorf("lockfile: unknown workspace key %q", k)
+			}
+			continue
 		}
 		if !inPackage {
 			switch k {
@@ -200,6 +231,18 @@ func (l *Lock) Bytes() []byte {
 	}
 	if l.ContentHash != "" {
 		fmt.Fprintf(&sb, "content-hash = %q\n", l.ContentHash)
+	}
+
+	if l.Workspace != nil && len(l.Workspace.Members) > 0 {
+		sb.WriteString("\n[workspace]\n")
+		sb.WriteString("members = [")
+		for i, m := range l.Workspace.Members {
+			if i > 0 {
+				sb.WriteString(", ")
+			}
+			fmt.Fprintf(&sb, "%q", m)
+		}
+		sb.WriteString("]\n")
 	}
 
 	pkgs := append([]Package(nil), l.Packages...)

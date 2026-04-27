@@ -573,6 +573,30 @@ The result also surfaces overlay state: a linked pin shows
 and uses installer ` + "`bunpy-patch`" + `.
 `,
 	},
+	"workspace": {
+		Name:    "workspace",
+		Summary: "List and navigate workspace members",
+		Body: `bunpy workspace: inspect multi-member workspaces.
+
+USAGE
+  bunpy workspace --list               list member names and paths
+  bunpy workspace --workspace <root>   override workspace root detection
+
+A workspace is a ` + "`pyproject.toml`" + ` at the root that declares:
+
+  [tool.bunpy.workspace]
+  members = ["packages/alpha", "packages/beta", "apps/server"]
+
+Paths may contain glob patterns (e.g. ` + "`\"packages/*\"`" + `).
+bunpy auto-detects the workspace root by walking up the directory
+tree from cwd. A single ` + "`bunpy.lock`" + ` at the workspace root
+covers all member dependencies.
+
+Use ` + "`bunpy add --member <name> <pkg>`" + ` to add a dependency to
+a specific workspace member. ` + "`bunpy install`" + ` inside any
+member directory reads the workspace-root lock automatically.
+`,
+	},
 	"man": {
 		Name:    "man",
 		Summary: "Print or install the bundled manpages",

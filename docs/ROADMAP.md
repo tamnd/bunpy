@@ -39,6 +39,14 @@ harness goes from non-zero to zero in the same PR.
 
 ## v0.2.x: workspaces, audit, publish, create, bunpyx
 
+| Version | Title                                | Status     |
+|---------|--------------------------------------|------------|
+| v0.2.0  | workspaces                           | shipped    |
+| v0.2.1  | audit                                | planned    |
+| v0.2.2  | publish                              | planned    |
+| v0.2.3  | create                               | planned    |
+| v0.2.4  | bunpyx                               | planned    |
+
 ## v0.3.x: built-in API surface, part 1
 
 `bunpy.serve`, `bunpy.file/write/read`, `bunpy.sql` (sqlite,

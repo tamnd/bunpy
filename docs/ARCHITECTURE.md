@@ -396,6 +396,21 @@ state — the user-visible artefact is `./patches/<name>+<version>.patch`,
 which is the input to the resolver-independent reproducible
 install.
 
+v0.2.0 lands workspaces. `pkg/workspace` loads a root
+`pyproject.toml` that has a `[tool.bunpy.workspace]` table, expands
+glob patterns in the `members` list, and returns a `Workspace` struct
+with one `Member` per subdirectory. `FindRoot` walks up the directory
+tree so all verbs find the workspace root automatically from any
+member subdirectory. The lockfile schema gains an optional
+`[workspace]` section (`members = [...]`) that records the member
+paths present when the lock was written. Single-project locks have no
+`[workspace]` section and are fully forward-compatible.
+`manifest.Tool.Workspace` surfaces the `[tool.bunpy.workspace]` table
+to callers without re-parsing TOML. `bunpy install` and `bunpy add`
+both detect the workspace root via `FindRoot` and use the workspace
+root's `bunpy.lock`; `bunpy add --member <name>` targets a specific
+member's `pyproject.toml`.
+
 v0.1.11 lands `bunpy why <pkg>`, the closing rung of the v0.1.x
 package manager. `pkg/why` builds a forward dependency graph
 from `bunpy.lock` plus per-pin Requires-Dist (read out of the

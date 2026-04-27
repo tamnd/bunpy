@@ -1,0 +1,88 @@
+.TH BUNPY-WORKSPACE 1 "2026-04-27" "bunpy" "User Commands"
+.SH NAME
+bunpy-workspace \- list and navigate workspace members
+.SH SYNOPSIS
+.B bunpy workspace
+.RB [ \-\-list ]
+.RB [ \-\-workspace
+.IR root ]
+.SH DESCRIPTION
+.B bunpy workspace
+inspects multi-member workspaces declared with a
+.B [tool.bunpy.workspace]
+table in a root
+.IR pyproject.toml .
+A workspace groups related Python projects under a single lock file at
+the root. All member dependencies are resolved together so version
+conflicts are caught at lock time rather than at install time.
+.PP
+bunpy auto-detects the workspace root by walking up the directory tree
+from the current working directory until it finds a
+.I pyproject.toml
+that contains a
+.B [tool.bunpy.workspace]
+table.
+.PP
+Workspace members are declared with relative paths or glob patterns:
+.PP
+.nf
+[tool.bunpy.workspace]
+members = ["packages/alpha", "packages/beta", "apps/*"]
+.fi
+.PP
+Each member directory must contain its own
+.IR pyproject.toml .
+A single
+.B bunpy.lock
+at the workspace root pins all transitive dependencies across all
+members.
+.SH OPTIONS
+.TP
+.B \-\-list
+Print each member name and its path relative to the workspace root,
+one per line. This is the default action when no other flags are given.
+.TP
+.BI \-\-workspace " root"
+Use
+.I root
+as the workspace root instead of auto-detecting it from the current
+working directory.
+.TP
+.BR \-h ", " \-\-help
+Print a short usage summary and exit.
+.SH EXAMPLES
+List members from inside a workspace member directory:
+.PP
+.nf
+cd my-workspace/packages/alpha
+bunpy workspace --list
+.fi
+.PP
+List members by specifying the workspace root explicitly:
+.PP
+.nf
+bunpy workspace --list --workspace /path/to/my-workspace
+.fi
+.PP
+Add a dependency to a specific member:
+.PP
+.nf
+bunpy add --member alpha requests
+.fi
+.PP
+Install all workspace dependencies (auto-detects workspace root):
+.PP
+.nf
+bunpy install
+.fi
+.SH EXIT STATUS
+.TP
+.B 0
+Success.
+.TP
+.B 1
+An error occurred (workspace root not found, malformed manifest, etc.).
+.SH SEE ALSO
+.BR bunpy-add (1),
+.BR bunpy-install (1),
+.BR bunpy-why (1)

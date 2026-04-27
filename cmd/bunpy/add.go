@@ -31,16 +31,17 @@ import (
 // .bunpy/site-packages.
 func addSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 	var (
-		spec      string
-		noInstall bool
-		noWrite   bool
-		target    = filepath.Join(".bunpy", "site-packages")
-		baseURL   string
-		cacheDir  string
-		dev       bool
-		group     string
-		optional  string
-		peer      bool
+		spec       string
+		noInstall  bool
+		noWrite    bool
+		target     = filepath.Join(".bunpy", "site-packages")
+		baseURL    string
+		cacheDir   string
+		dev        bool
+		group      string
+		optional   string
+		peer       bool
+		memberName string
 	)
 	for i := 0; i < len(args); i++ {
 		a := args[i]
@@ -85,6 +86,12 @@ func addSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 			}
 			i++
 			cacheDir = args[i]
+		case "--member":
+			if i+1 >= len(args) {
+				return 1, fmt.Errorf("bunpy add: --member requires a value")
+			}
+			i++
+			memberName = args[i]
 		default:
 			if strings.HasPrefix(a, "--target=") {
 				target = strings.TrimPrefix(a, "--target=")
@@ -104,6 +111,10 @@ func addSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 			}
 			if strings.HasPrefix(a, "--group=") {
 				group = strings.TrimPrefix(a, "--group=")
+				continue
+			}
+			if strings.HasPrefix(a, "--member=") {
+				memberName = strings.TrimPrefix(a, "--member=")
 				continue
 			}
 			if strings.HasPrefix(a, "-") {
@@ -143,7 +154,29 @@ func addSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 		return 1, fmt.Errorf("bunpy add: parse %q: %w", spec, err)
 	}
 
-	mf, err := manifest.Load("pyproject.toml")
+	// Workspace detection: find the workspace root and, if --member is
+	// given, target that member's manifest. Without --member, target the
+	// manifest in the current directory (single-project default).
+	manifestPath := "pyproject.toml"
+	lockPath := "bunpy.lock"
+	if cwd, err := os.Getwd(); err == nil {
+		if wsRoot, _ := findWorkspaceRoot(cwd); wsRoot != "" {
+			lockPath = filepath.Join(wsRoot, "bunpy.lock")
+			if memberName != "" {
+				ws, err := loadWorkspace(wsRoot)
+				if err != nil {
+					return 1, fmt.Errorf("bunpy add: %w", err)
+				}
+				m, ok := ws.findMember(memberName)
+				if !ok {
+					return 1, fmt.Errorf("bunpy add: workspace member %q not found", memberName)
+				}
+				manifestPath = filepath.Join(m.Path, "pyproject.toml")
+			}
+		}
+	}
+
+	mf, err := manifest.Load(manifestPath)
 	if err != nil {
 		return 1, fmt.Errorf("bunpy add: %w", err)
 	}
@@ -244,10 +277,10 @@ func addSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 		if err != nil {
 			return 1, fmt.Errorf("bunpy add: %w", err)
 		}
-		if err := os.WriteFile("pyproject.toml", out, 0o644); err != nil {
+		if err := os.WriteFile(manifestPath, out, 0o644); err != nil {
 			return 1, fmt.Errorf("bunpy add: %w", err)
 		}
-		if err := updateLockfile("bunpy.lock", out, res, reg, lane, name); err != nil {
+		if err := updateLockfile(lockPath, out, res, reg, lane, name); err != nil {
 			return 1, fmt.Errorf("bunpy add: %w", err)
 		}
 	}
