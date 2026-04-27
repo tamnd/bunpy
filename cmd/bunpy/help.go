@@ -672,6 +672,46 @@ a specific workspace member. ` + "`bunpy install`" + ` inside any
 member directory reads the workspace-root lock automatically.
 `,
 	},
+	"test": {
+		Name:    "test",
+		Summary: "Discover and run Python test files",
+		Body: `bunpy test: discover test_*.py / *_test.py files and run test_* functions.
+
+USAGE
+  bunpy test [options] [path...]
+
+OPTIONS
+  --verbose, -v          Print each test name (default: only failures)
+  --filter <name>        Only run tests whose name contains the string
+  --parallel             Run test files concurrently
+  --isolate              Run each file in a subprocess
+  --shard <n/total>      Run shard n of total (e.g. --shard 1/4)
+  --changed[=<ref>]      Only run test files changed since ref (default: HEAD)
+  --coverage             Write a coverage report to ./coverage/
+  --coverage-dir <dir>   Set the coverage output directory
+  --no-color             Disable ANSI colors in output
+
+DISCOVERY
+  Test files:      test_*.py  or  *_test.py
+  Test functions:  test_* or Test* at module level
+
+MATCHERS (available without import)
+  expect(val).to_equal(expected)
+  expect(val).not_to_equal(expected)
+  expect(val).to_be_true()
+  expect(val).to_be_false()
+  expect(val).to_be_none()
+  expect(val).not_to_be_none()
+  expect(val).to_contain(item)
+  expect(val).to_have_length(n)
+  expect(val).to_be_greater_than(n)
+  expect(val).to_be_less_than(n)
+  expect(val).not_.to_equal(expected)
+
+EXIT CODE
+  0 on all tests passing; 1 if any test fails or errors.
+`,
+	},
 	"man": {
 		Name:    "man",
 		Summary: "Print or install the bundled manpages",
