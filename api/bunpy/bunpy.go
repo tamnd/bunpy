@@ -22,7 +22,7 @@ import (
 )
 
 // Version is baked in by the bunpy build pipeline.
-const Version = "0.3.3"
+const Version = "0.3.4"
 
 // Modules returns the NativeModules map for the current v0.3.1 surface.
 // Later rungs extend this map by adding more entries.
@@ -61,6 +61,9 @@ func BuildBunpy(i *goipyVM.Interp) *goipyObject.Module {
 	m.Dict.SetStr("file", BuildFile(i))
 	m.Dict.SetStr("write", BuildWrite(i))
 	m.Dict.SetStr("read", BuildRead(i))
+	m.Dict.SetStr("shell", BuildShell(i))
+	m.Dict.SetStr("spawn", BuildSpawn(i))
+	m.Dict.SetStr("dollar", BuildDollar(i))
 
 	return m
 }
