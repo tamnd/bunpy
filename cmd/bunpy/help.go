@@ -96,6 +96,10 @@ func helpSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 		usage(stdout)
 		return 0, nil
 	}
+	switch args[0] {
+	case "-h", "--help":
+		return printHelp("help", stdout, stderr)
+	}
 	return printHelp(args[0], stdout, stderr)
 }
 
