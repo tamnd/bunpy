@@ -7,10 +7,12 @@ import (
 	"io"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 
 	"github.com/tamnd/bunpy/v1/internal/bundler"
+	"github.com/tamnd/bunpy/v1/runtime"
 )
 
 func buildSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
@@ -74,6 +76,28 @@ func buildSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 }
 
 func doBuild(entry string, opts bundler.Options, stdout, stderr io.Writer) (int, error) {
+	entryAbs, err := filepath.Abs(entry)
+	if err != nil {
+		return 1, err
+	}
+
+	// Check the incremental build cache before doing any work.
+	hit, cacheErr := bundler.CheckCache(entryAbs, opts, runtime.Version)
+	if cacheErr == nil && hit {
+		// Determine the output path from opts to print the right path.
+		outpath := opts.Outfile
+		if outpath == "" {
+			stem := strings.TrimSuffix(filepath.Base(entry), ".py")
+			dir := opts.Outdir
+			if dir == "" {
+				dir = "dist"
+			}
+			outpath = filepath.Join(dir, stem+".pyz")
+		}
+		fmt.Fprintf(stdout, "cache hit %s\n", outpath)
+		return 0, nil
+	}
+
 	b, err := bundler.Build(entry, opts)
 	if err != nil {
 		return 1, err
@@ -96,6 +120,11 @@ func doBuild(entry string, opts bundler.Options, stdout, stderr io.Writer) (int,
 	}
 
 	fmt.Fprintf(stdout, "built %s (%d file(s))\n", outpath, len(b.Files))
+
+	// Update cache (best-effort; don't fail the build on cache errors).
+	if err := bundler.UpdateCache(entryAbs, opts, b, outpath, runtime.Version); err != nil {
+		fmt.Fprintf(stderr, "warning: build cache: %v\n", err)
+	}
 
 	if opts.Compile {
 		binOut := strings.TrimSuffix(outpath, ".pyz")

@@ -16,7 +16,7 @@ import (
 
 // --- helpers ---
 
-func writeFile(t *testing.T, dir, name, content string) string {
+func writeFile(t testing.TB, dir, name, content string) string {
 	t.Helper()
 	path := filepath.Join(dir, name)
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {

@@ -194,6 +194,83 @@ func BenchmarkTestRunner_100tests(b *testing.B) {
 	}
 }
 
+// BenchmarkBuild_CacheHit measures the wall time of `bunpy build` when the
+// build cache is warm (all inputs unchanged). On a cache hit the binary does
+// nothing except verify file hashes and print "cache hit".
+func BenchmarkBuild_CacheHit(b *testing.B) {
+	// Create a tiny project in a temp directory.
+	projectDir, err := os.MkdirTemp("", "bench-build-*")
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer os.RemoveAll(projectDir)
+
+	entry := filepath.Join(projectDir, "app.py")
+	if err := os.WriteFile(entry, []byte("x = 1\ny = 2\n"), 0o644); err != nil {
+		b.Fatal(err)
+	}
+	outdir := filepath.Join(projectDir, "dist")
+
+	// First build warms the cache (not timed).
+	var warmOut bytes.Buffer
+	warmCmd := exec.Command(bunpyBin, "build", entry, "--outdir="+outdir)
+	warmCmd.Stdout = &warmOut
+	warmCmd.Stderr = &warmOut
+	if err := warmCmd.Run(); err != nil {
+		b.Fatalf("warm build: %v\n%s", err, warmOut.String())
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		var out bytes.Buffer
+		cmd := exec.Command(bunpyBin, "build", entry, "--outdir="+outdir)
+		cmd.Stdout = &out
+		cmd.Stderr = &out
+		if err := cmd.Run(); err != nil {
+			b.Fatalf("cache-hit build: %v\n%s", err, out.String())
+		}
+		if !bytes.Contains(out.Bytes(), []byte("cache hit")) {
+			b.Fatalf("expected cache hit but got: %s", out.String())
+		}
+	}
+}
+
+// BenchmarkBuild_CacheMiss measures the wall time of `bunpy build` on a cold
+// cache (first build). This is the baseline that BenchmarkBuild_CacheHit
+// improves upon.
+func BenchmarkBuild_CacheMiss(b *testing.B) {
+	// Keep the source outside the loop; only blow away the cache each iteration.
+	projectDir, err := os.MkdirTemp("", "bench-build-miss-*")
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer os.RemoveAll(projectDir)
+
+	entry := filepath.Join(projectDir, "app.py")
+	if err := os.WriteFile(entry, []byte("x = 1\ny = 2\n"), 0o644); err != nil {
+		b.Fatal(err)
+	}
+	outdir := filepath.Join(projectDir, "dist")
+	cacheDir := filepath.Join(projectDir, ".bunpy")
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		b.StopTimer()
+		// Delete cache and output to force a full rebuild.
+		os.RemoveAll(cacheDir)
+		os.RemoveAll(outdir)
+		b.StartTimer()
+
+		var out bytes.Buffer
+		cmd := exec.Command(bunpyBin, "build", entry, "--outdir="+outdir)
+		cmd.Stdout = &out
+		cmd.Stderr = &out
+		if err := cmd.Run(); err != nil {
+			b.Fatalf("cold build: %v\n%s", err, out.String())
+		}
+	}
+}
+
 // BenchmarkStartup measures the wall time for running a trivial Python
 // script from fork to process exit — end-to-end cold-start overhead per
 // invocation. Uses an existing fixture file to avoid temp-file overhead.
