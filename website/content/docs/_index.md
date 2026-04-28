@@ -37,7 +37,6 @@ New to bunpy? Start here:
   {{< card link="quickstart" title="Quickstart" icon="play" subtitle="Hello world in under five minutes" >}}
 {{< /cards >}}
 
----
 
 ## What is bunpy?
 
@@ -58,7 +57,6 @@ bunpy repl                # interactive REPL
 
 The `bunpy` binary also includes a package manager, test runner, bundler, and formatter — all significantly faster than the equivalent standalone tools.
 
----
 
 ## What is a Python runtime?
 
@@ -76,7 +74,6 @@ goipy is not a subset. It aims for full CPython 3.14 compatibility. As of v0.10.
 
 bunpy embeds goipy. When you run `bunpy script.py`, goipy executes the file.
 
----
 
 ## Design goals
 
