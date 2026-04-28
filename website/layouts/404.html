@@ -1,0 +1,12 @@
+{{ define "main" }}
+<div class="hx-flex hx-flex-col hx-items-center hx-justify-center hx-min-h-[60vh] hx-text-center hx-px-4">
+  <h1 class="hx-text-6xl hx-font-bold hx-text-gray-200 dark:hx-text-gray-700 hx-mb-4">404</h1>
+  <h2 class="hx-text-2xl hx-font-semibold hx-mb-4">Page not found</h2>
+  <p class="hx-text-gray-600 dark:hx-text-gray-400 hx-mb-8 hx-max-w-md">
+    The page you are looking for does not exist or has been moved.
+  </p>
+  <a href="{{ .Site.BaseURL }}" class="hx-px-6 hx-py-3 hx-bg-blue-600 hx-text-white hx-rounded-lg hx-font-medium hover:hx-bg-blue-700 hx-transition-colors">
+    Go to home
+  </a>
+</div>
+{{ end }}
