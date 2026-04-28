@@ -295,10 +295,10 @@ run_lock_fixture() {
   cache="$(mktemp -d)"
   cp "$input" "$work/pyproject.toml"
   # Optional seed lockfile: lets fixtures exercise verbs (update,
-  # outdated) that read an existing bunpy.lock instead of writing a
+  # outdated) that read an existing uv.lock instead of writing a
   # fresh one from scratch.
   if [ -f "$dir/${name}.seed.lock" ]; then
-    cp "$dir/${name}.seed.lock" "$work/bunpy.lock"
+    cp "$dir/${name}.seed.lock" "$work/uv.lock"
   fi
 
   if ! ( cd "$work" && BUNPY_PYPI_FIXTURES="$fixroot" BUNPY_CACHE_DIR="$cache" "$bin" $args >/dev/null 2>&1 ); then
@@ -309,7 +309,7 @@ run_lock_fixture() {
   fi
 
   local got want
-  got="$(grep -v '^generated = ' "$work/bunpy.lock")"
+  got="$(grep -v '^content-hash = ' "$work/uv.lock")"
   want="$(cat "$expected")"
   if [ "$got" != "$want" ]; then
     echo "FAIL: lock       $in lockfile mismatch"
