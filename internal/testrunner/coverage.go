@@ -25,9 +25,9 @@ func (c CoverageInfo) Coverage() float64 {
 }
 
 // WriteCoverage writes a coverage report to coverDir and prints a summary.
-// This is a static-analysis estimate: it counts non-blank, non-comment lines
-// as "coverable" and marks files that have a matching test file as "covered".
-func WriteCoverage(testFiles []string, coverDir string, stdout io.Writer) error {
+// When coll is non-nil it uses real line-trace hit data; otherwise it falls
+// back to the static estimate (files that have a matching test file = 70%).
+func WriteCoverage(testFiles []string, coverDir string, stdout io.Writer, coll *CoverageCollector) error {
 	if err := os.MkdirAll(coverDir, 0o755); err != nil {
 		return fmt.Errorf("coverage: mkdir %s: %w", coverDir, err)
 	}
@@ -37,7 +37,12 @@ func WriteCoverage(testFiles []string, coverDir string, stdout io.Writer) error 
 
 	var infos []CoverageInfo
 	for _, sf := range sourceFiles {
-		info := estimateCoverage(sf, testFiles)
+		var info CoverageInfo
+		if coll != nil {
+			info = realCoverage(sf, coll)
+		} else {
+			info = estimateCoverage(sf, testFiles)
+		}
 		infos = append(infos, info)
 	}
 
@@ -86,6 +91,27 @@ func discoverSourceFiles(testFiles []string) []string {
 		})
 	}
 	return sources
+}
+
+// realCoverage builds CoverageInfo for sourceFile using actual hit data from coll.
+func realCoverage(sourceFile string, coll *CoverageCollector) CoverageInfo {
+	info := CoverageInfo{File: sourceFile}
+	src, err := os.ReadFile(sourceFile)
+	if err != nil {
+		return info
+	}
+	coverable, err := CoverableLines(sourceFile, src)
+	if err != nil {
+		return info
+	}
+	info.TotalLines = len(coverable)
+	hits := coll.HitsFor(sourceFile)
+	for line := range coverable {
+		if hits[line] {
+			info.ExecLines++
+		}
+	}
+	return info
 }
 
 func estimateCoverage(sourceFile string, testFiles []string) CoverageInfo {
