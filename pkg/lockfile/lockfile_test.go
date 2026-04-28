@@ -1,60 +1,9 @@
 package lockfile
 
 import (
-	"errors"
-	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 )
-
-func TestReadWriteRoundtrip(t *testing.T) {
-	when := time.Date(2026, 4, 27, 7, 5, 16, 0, time.UTC)
-	l := &Lock{
-		Version:     1,
-		Generated:   when,
-		ContentHash: "sha256:deadbeef",
-		Packages: []Package{
-			{Name: "widget", Version: "1.1.0", Filename: "widget-1.1.0-py3-none-any.whl", URL: "https://files.example/widget/widget-1.1.0-py3-none-any.whl", Hash: "sha256:abcd"},
-		},
-	}
-	tmp := t.TempDir()
-	path := filepath.Join(tmp, "bunpy.lock")
-	if err := l.WriteFile(path); err != nil {
-		t.Fatalf("WriteFile: %v", err)
-	}
-	got, err := Read(path)
-	if err != nil {
-		t.Fatalf("Read: %v", err)
-	}
-	if got.Version != 1 || got.ContentHash != "sha256:deadbeef" {
-		t.Errorf("header: %+v", got)
-	}
-	if !got.Generated.Equal(when) {
-		t.Errorf("generated: got %v want %v", got.Generated, when)
-	}
-	if len(got.Packages) != 1 || got.Packages[0].Name != "widget" || got.Packages[0].Version != "1.1.0" {
-		t.Errorf("packages: %+v", got.Packages)
-	}
-}
-
-func TestWriteSortsPackages(t *testing.T) {
-	l := &Lock{
-		Version: 1,
-		Packages: []Package{
-			{Name: "zeta", Version: "1.0"},
-			{Name: "alpha", Version: "1.0"},
-			{Name: "Mid_Pkg", Version: "1.0"},
-		},
-	}
-	out := string(l.Bytes())
-	a := strings.Index(out, "name = \"alpha\"")
-	m := strings.Index(out, "name = \"Mid_Pkg\"")
-	z := strings.Index(out, "name = \"zeta\"")
-	if a < 0 || m < 0 || z < 0 || !(a < m && m < z) {
-		t.Errorf("not sorted: alpha=%d mid=%d zeta=%d\n%s", a, m, z, out)
-	}
-}
 
 func TestUpsertReplaces(t *testing.T) {
 	l := &Lock{Packages: []Package{{Name: "Widget", Version: "1.0.0"}}}
@@ -117,13 +66,6 @@ func TestHashDependenciesIgnoresWhitespace(t *testing.T) {
 	}
 }
 
-func TestReadMissing(t *testing.T) {
-	_, err := Read(filepath.Join(t.TempDir(), "absent.lock"))
-	if !errors.Is(err, ErrNotFound) {
-		t.Errorf("want ErrNotFound, got %v", err)
-	}
-}
-
 func TestNormalize(t *testing.T) {
 	cases := map[string]string{
 		"Foo_Bar":     "foo-bar",
@@ -139,56 +81,6 @@ func TestNormalize(t *testing.T) {
 	}
 }
 
-func TestParseLanes(t *testing.T) {
-	src := `version = 1
-
-[[package]]
-name = "widget"
-version = "1.0.0"
-filename = "widget-1.0.0-py3-none-any.whl"
-url = "https://example/widget-1.0.0-py3-none-any.whl"
-hash = "sha256:abc"
-lanes = ["dev", "main"]
-`
-	l, err := Parse([]byte(src))
-	if err != nil {
-		t.Fatalf("Parse: %v", err)
-	}
-	if len(l.Packages) != 1 {
-		t.Fatalf("packages: got %d", len(l.Packages))
-	}
-	got := l.Packages[0].Lanes
-	if len(got) != 2 || got[0] != "dev" || got[1] != "main" {
-		t.Errorf("lanes: got %v", got)
-	}
-}
-
-func TestBytesOmitsLanesWhenMainOnly(t *testing.T) {
-	l := &Lock{
-		Version: 1,
-		Packages: []Package{
-			{Name: "widget", Version: "1.0.0", Filename: "widget-1.0.0-py3-none-any.whl", URL: "https://x", Hash: "sha256:abc", Lanes: []string{"main"}},
-		},
-	}
-	out := string(l.Bytes())
-	if strings.Contains(out, "lanes") {
-		t.Errorf("expected no lanes line for main-only row, got:\n%s", out)
-	}
-}
-
-func TestBytesEmitsLanesSorted(t *testing.T) {
-	l := &Lock{
-		Version: 1,
-		Packages: []Package{
-			{Name: "widget", Version: "1.0.0", Filename: "w.whl", URL: "u", Hash: "h", Lanes: []string{"optional:web", "main"}},
-		},
-	}
-	out := string(l.Bytes())
-	if !strings.Contains(out, `lanes = ["main", "optional:web"]`) {
-		t.Errorf("expected sorted lanes line, got:\n%s", out)
-	}
-}
-
 func TestHashLanesEqualsHashDependenciesForMainOnly(t *testing.T) {
 	deps := []string{"widget>=1.0", "requests>=2"}
 	a := HashDependencies(deps)
@@ -196,16 +88,16 @@ func TestHashLanesEqualsHashDependenciesForMainOnly(t *testing.T) {
 	if a != b {
 		t.Errorf("hash mismatch: HashDependencies=%s HashLanes=%s", a, b)
 	}
-	c := HashLanes(map[string][]string{"main": deps, "dev": nil, "peer": []string{}})
+	c := HashLanes(map[string][]string{"main": deps, "dev": nil, "peer": {}})
 	if c != a {
 		t.Errorf("empty lanes should not change hash: got %s want %s", c, a)
 	}
 }
 
 func TestHashLanesIncludesEveryLane(t *testing.T) {
-	a := HashLanes(map[string][]string{"main": []string{"widget"}})
-	b := HashLanes(map[string][]string{"main": []string{"widget"}, "dev": []string{"pytest"}})
-	c := HashLanes(map[string][]string{"main": []string{"widget", "pytest"}})
+	a := HashLanes(map[string][]string{"main": {"widget"}})
+	b := HashLanes(map[string][]string{"main": {"widget"}, "dev": {"pytest"}})
+	c := HashLanes(map[string][]string{"main": {"widget", "pytest"}})
 	if a == b {
 		t.Errorf("dev lane should change hash")
 	}
@@ -215,8 +107,8 @@ func TestHashLanesIncludesEveryLane(t *testing.T) {
 }
 
 func TestHashLanesOptionalGroupsOrderStable(t *testing.T) {
-	a := HashLanes(map[string][]string{"main": []string{"x"}, "optional:b": []string{"y"}, "optional:a": []string{"z"}})
-	b := HashLanes(map[string][]string{"optional:a": []string{"z"}, "main": []string{"x"}, "optional:b": []string{"y"}})
+	a := HashLanes(map[string][]string{"main": {"x"}, "optional:b": {"y"}, "optional:a": {"z"}})
+	b := HashLanes(map[string][]string{"optional:a": {"z"}, "main": {"x"}, "optional:b": {"y"}})
 	if a != b {
 		t.Errorf("hash should not depend on map iteration order: a=%s b=%s", a, b)
 	}

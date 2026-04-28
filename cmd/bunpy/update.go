@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/tamnd/bunpy/v1/internal/httpkit"
 	"github.com/tamnd/bunpy/v1/pkg/lockfile"
@@ -120,7 +119,7 @@ func updateSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 		return 1, fmt.Errorf("bunpy update: %w", err)
 	}
 	lock, err := uvlock.ReadLockfile("uv.lock")
-	if err != nil && !errors.Is(err, lockfile.ErrNotFound) {
+	if err != nil && !errors.Is(err, uvlock.ErrNotFound) {
 		return 1, fmt.Errorf("bunpy update: %w", err)
 	}
 
@@ -217,7 +216,6 @@ func updateSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 		})
 	}
 	newLock.ContentHash = wantHash
-	newLock.Generated = time.Now().UTC()
 	if err := uvlock.WriteLockfile("uv.lock", newLock, mf.Project.RequiresPython, uvlock.WriteOptions{}); err != nil {
 		return 1, fmt.Errorf("bunpy update: %w", err)
 	}

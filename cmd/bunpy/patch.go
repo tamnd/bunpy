@@ -207,7 +207,7 @@ func patchList(stdout io.Writer) (int, error) {
 func lookupLockPin(pkg string) (lockfile.Package, error) {
 	lock, err := uvlock.ReadLockfile("uv.lock")
 	if err != nil {
-		if errors.Is(err, lockfile.ErrNotFound) {
+		if errors.Is(err, uvlock.ErrNotFound) {
 			return lockfile.Package{}, fmt.Errorf("uv.lock missing - run `bunpy pm lock` first")
 		}
 		return lockfile.Package{}, err

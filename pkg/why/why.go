@@ -1,5 +1,5 @@
 // Package why answers "what depends on this package?". v0.1.11
-// builds a forward dependency graph from bunpy.lock plus per-pin
+// builds a forward dependency graph from uv.lock plus per-pin
 // Requires-Dist (delivered via a RequiresFunc), inverts it, and
 // walks upward from a queried pin to the project's direct
 // requirements.
@@ -73,7 +73,7 @@ type Result struct {
 	Chains    []Chain
 }
 
-// Graph is the resolved forward + reverse view of bunpy.lock. The
+// Graph is the resolved forward + reverse view of uv.lock. The
 // keys are PEP 503-normalised names.
 type Graph struct {
 	Pins    map[string]Pin

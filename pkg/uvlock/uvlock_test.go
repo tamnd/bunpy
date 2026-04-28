@@ -90,25 +90,18 @@ func TestBestWheel(t *testing.T) {
 	}
 }
 
-func TestDetectFormat(t *testing.T) {
+func TestLockExists(t *testing.T) {
 	dir := t.TempDir()
 
-	if got := uvlock.DetectFormat(dir); got != "none" {
-		t.Errorf("empty dir: DetectFormat = %q, want none", got)
-	}
-
-	if err := os.WriteFile(dir+"/bunpy.lock", []byte("version = 1\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	if got := uvlock.DetectFormat(dir); got != "bunpy" {
-		t.Errorf("with bunpy.lock: DetectFormat = %q, want bunpy", got)
+	if uvlock.LockExists(dir) {
+		t.Error("empty dir: LockExists should be false")
 	}
 
 	if err := os.WriteFile(dir+"/uv.lock", []byte("version = 1\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if got := uvlock.DetectFormat(dir); got != "uv" {
-		t.Errorf("with both: DetectFormat = %q, want uv", got)
+	if !uvlock.LockExists(dir) {
+		t.Error("with uv.lock: LockExists should be true")
 	}
 }
 

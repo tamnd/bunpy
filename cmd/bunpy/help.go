@@ -95,7 +95,7 @@ edge is walked, PEP 508 markers are evaluated against the host
 environment, and platform wheels (manylinux, musllinux, macosx,
 win) are picked through the same compatibility-tag ladder pip
 uses. The chosen pin and every transitive dep land in
-` + "`bunpy.lock`" + `. ` + "`--no-write`" + ` suppresses both the
+` + "`uv.lock`" + `. ` + "`--no-write`" + ` suppresses both the
 manifest edit and the lockfile update; ` + "`--no-install`" + ` still
 writes the lockfile. The install reuses the v0.1.2 wheel installer
 (purelib only, RECORD-verified, atomic stage and rename).
@@ -111,7 +111,7 @@ the spec to PEP 735 ` + "`[dependency-groups].dev`" + ` (or to
 ` + "`-O <group>`/`--optional <group>`" + ` writes to PEP 621
 ` + "`[project.optional-dependencies].<group>`" + `. ` + "`-P`/`--peer`" + `
 writes to ` + "`[tool.bunpy].peer-dependencies`" + `. The flags are
-mutually exclusive. Each pin in ` + "`bunpy.lock`" + ` is tagged with
+mutually exclusive. Each pin in ` + "`uv.lock`" + ` is tagged with
 its lane, so ` + "`bunpy install`" + ` can pick a subset; the
 content-hash covers every lane.
 
@@ -129,7 +129,7 @@ USAGE
   bunpy pm config [path]                  print parsed pyproject.toml as JSON
   bunpy pm info <package>                 print PEP 691 project metadata as JSON
   bunpy pm install-wheel <url|path>       install one wheel into site-packages
-  bunpy pm lock                           regenerate bunpy.lock from pyproject.toml
+  bunpy pm lock                           regenerate uv.lock from pyproject.toml
 
 The ` + "`pm`" + ` tree groups the low-level package-manager verbs.
 Porcelain commands (` + "`add`" + `, ` + "`install`" + `, ` + "`remove`" + `, ` + "`update`" + `,
@@ -148,16 +148,16 @@ markers, and pick platform wheels. v0.1.6 teaches ` + "`add`" + `,
 	},
 	"pm-lock": {
 		Name:    "pm-lock",
-		Summary: "Regenerate bunpy.lock from pyproject.toml",
-		Body: `bunpy pm lock: regenerate bunpy.lock from pyproject.toml without installing.
+		Summary: "Regenerate uv.lock from pyproject.toml",
+		Body: `bunpy pm lock: regenerate uv.lock from pyproject.toml without installing.
 
 USAGE
-  bunpy pm lock                       write bunpy.lock from [project].dependencies
-  bunpy pm lock --check               verify bunpy.lock matches pyproject.toml
+  bunpy pm lock                       write uv.lock from [project].dependencies
+  bunpy pm lock --check               verify uv.lock matches pyproject.toml
   bunpy pm lock --index <url>         override the simple index
   bunpy pm lock --cache-dir <path>    override the cache root
 
-The default lockfile path is ` + "`./bunpy.lock`" + ` next to ` + "`./pyproject.toml`" + `.
+The default lockfile path is ` + "`./uv.lock`" + ` next to ` + "`./pyproject.toml`" + `.
 Every direct dep across ` + "`[project].dependencies`" + `,
 ` + "`[project.optional-dependencies]`" + `, ` + "`[dependency-groups]`" + `,
 and ` + "`[tool.bunpy].peer-dependencies`" + ` becomes one
@@ -289,8 +289,8 @@ Equivalent to ` + "`bunpy <command> --help`" + `.
 	},
 	"install": {
 		Name:    "install",
-		Summary: "Install every pin in bunpy.lock into site-packages",
-		Body: `bunpy install: install every pinned wheel from bunpy.lock.
+		Summary: "Install every pin in uv.lock into site-packages",
+		Body: `bunpy install: install every pinned wheel from uv.lock.
 
 USAGE
   bunpy install                       install main-lane pins into ./.bunpy/site-packages
@@ -303,7 +303,7 @@ USAGE
   bunpy install --cache-dir <dir>     override the wheel cache root
   bunpy install --no-verify           skip RECORD hash verification
 
-v0.1.5 treats ` + "`bunpy.lock`" + ` as the source of truth: the
+v0.1.5 treats ` + "`uv.lock`" + ` as the source of truth: the
 resolver does not run, every wheel is fetched through the same
 httpkit + cache path ` + "`bunpy add`" + ` uses, and each pin is
 installed via the v0.1.2 wheel installer. Run
@@ -324,7 +324,7 @@ and is provided for Bun parity.
 		Body: `bunpy outdated: print one row per lockfile pin with a newer release.
 
 USAGE
-  bunpy outdated                      walk every pin in bunpy.lock
+  bunpy outdated                      walk every pin in uv.lock
   bunpy outdated <pkg>...             restrict to the named packages
   bunpy outdated -D, --dev            include [dependency-groups] pins
   bunpy outdated -O <group>           include one optional group
@@ -342,22 +342,22 @@ manifest spec, the version ` + "`bunpy update`" + ` would pick),
 version ` + "`bunpy update --latest`" + ` would pick), and
 ` + "`lanes`" + ` (comma-joined lane labels from the lockfile row).
 
-Read-only: this verb never writes ` + "`bunpy.lock`" + ` or installs
+Read-only: this verb never writes ` + "`uv.lock`" + ` or installs
 anything. Exit status is 0 even when pins are outdated; use
 ` + "`--json`" + ` to scrub the result in scripts. Run
-` + "`bunpy pm lock`" + ` first when ` + "`bunpy.lock`" + ` is missing.
+` + "`bunpy pm lock`" + ` first when ` + "`uv.lock`" + ` is missing.
 `,
 	},
 	"update": {
 		Name:    "update",
-		Summary: "Refresh bunpy.lock to the highest matching versions",
-		Body: `bunpy update: re-resolve bunpy.lock and refresh site-packages.
+		Summary: "Refresh uv.lock to the highest matching versions",
+		Body: `bunpy update: re-resolve uv.lock and refresh site-packages.
 
 USAGE
   bunpy update                        upgrade every pin within its manifest spec
   bunpy update <pkg>...               unlock only the named packages
   bunpy update --latest <pkg>...      ignore manifest spec for those packages
-  bunpy update --no-install           rewrite bunpy.lock but skip the install
+  bunpy update --no-install           rewrite uv.lock but skip the install
   bunpy update -D, --dev              include [dependency-groups] in the install
   bunpy update -O <group>             include one optional group in the install
   bunpy update --all-extras           include every optional group in the install
@@ -381,7 +381,7 @@ packages and lets the resolver pick the highest non-yanked,
 non-prerelease version. ` + "`--latest`" + ` requires at least one
 package name to avoid surprise mass upgrades.
 
-After resolving, ` + "`bunpy.lock`" + ` is rewritten with the new
+After resolving, ` + "`uv.lock`" + ` is rewritten with the new
 pins and lane tags. ` + "`stdout`" + ` lists each changed pin as
 ` + "`name old -> new`" + `; an unchanged graph prints
 ` + "`no changes`" + `. Unless ` + "`--no-install`" + ` is set, the
@@ -400,7 +400,7 @@ USAGE
   bunpy remove <pkg> -D --group <n>   drop from [dependency-groups].<n>
   bunpy remove <pkg> -O <group>       drop from [project.optional-dependencies].<group>
   bunpy remove <pkg> -P, --peer       drop from [tool.bunpy].peer-dependencies
-  bunpy remove <pkg> --no-install     only edit pyproject.toml and bunpy.lock
+  bunpy remove <pkg> --no-install     only edit pyproject.toml and uv.lock
   bunpy remove <pkg> --no-write       skip the manifest edit; only re-resolve
   bunpy remove <pkg> --target <dir>   site-packages target
   bunpy remove <pkg> --index <url>    override the simple index
@@ -417,7 +417,7 @@ non-default group.
 After the manifest edit, ` + "`bunpy remove`" + ` re-runs the v0.1.5
 resolver with ` + "`Solver.Locked`" + ` seeded from the surviving
 lockfile pins (the named packages are dropped from the lock hint).
-Pins that lose every root fall off; ` + "`bunpy.lock`" + ` is rewritten
+Pins that lose every root fall off; ` + "`uv.lock`" + ` is rewritten
 to match. Unless ` + "`--no-install`" + ` is set, the dropped pins are
 removed from ` + "`./.bunpy/site-packages`" + ` via a RECORD walk;
 top-level package directories are best-effort cleaned up when no
@@ -461,7 +461,7 @@ linked package back to the pinned wheel, run
 ` + "`bunpy unlink <pkg>`" + ` followed by ` + "`bunpy install`" + `.
 
 The verb is read-only with respect to ` + "`pyproject.toml`" + ` and
-` + "`bunpy.lock`" + `: links are tooling state and never appear in
+` + "`uv.lock`" + `: links are tooling state and never appear in
 either file.
 `,
 	},
@@ -507,7 +507,7 @@ USAGE
   bunpy patch --cache-dir <p>        wheel cache root
 
 ` + "`bunpy patch <pkg>`" + ` reads the pin for ` + "`<pkg>`" + ` from
-` + "`bunpy.lock`" + `, extracts the cached wheel into
+` + "`uv.lock`" + `, extracts the cached wheel into
 ` + "`./.bunpy/patches/.pristine/<name>-<version>/`" + ` (creating
 the pristine baseline), then copies it to
 ` + "`./.bunpy/patches/.scratch/<name>-<version>/`" + ` and prints
@@ -538,7 +538,7 @@ error.
 	},
 	"why": {
 		Name:    "why",
-		Summary: "Print the reverse-deps tree for a pin in bunpy.lock",
+		Summary: "Print the reverse-deps tree for a pin in uv.lock",
 		Body: `bunpy why: print the reverse-deps tree for a pinned package.
 
 USAGE
@@ -550,9 +550,9 @@ USAGE
   bunpy why <pkg> --lane <name>    restrict to chains in one lane
   bunpy why <pkg> --cache-dir <p>  wheel cache root (for Requires-Dist lookup)
   bunpy why <pkg> --manifest <p>   pyproject.toml path (default ./pyproject.toml)
-  bunpy why <pkg> --lockfile <p>   bunpy.lock path (default ./bunpy.lock)
+  bunpy why <pkg> --lockfile <p>   uv.lock path (default ./uv.lock)
 
-` + "`bunpy why`" + ` reads ` + "`bunpy.lock`" + ` and the cached
+` + "`bunpy why`" + ` reads ` + "`uv.lock`" + ` and the cached
 wheels' Requires-Dist metadata to build a forward dependency
 graph, then walks upward from the queried pin to every direct
 project requirement that transitively reaches it. Each chain
@@ -628,19 +628,19 @@ environment variable. Both are required unless ` + "`--dry-run`" + ` is set.
 	"audit": {
 		Name:    "audit",
 		Summary: "Scan pinned packages against the OSV vulnerability database",
-		Body: `bunpy audit: check bunpy.lock against OSV for known vulnerabilities.
+		Body: `bunpy audit: check uv.lock against OSV for known vulnerabilities.
 
 USAGE
   bunpy audit                      table output; exit 1 if any vuln found
   bunpy audit --json               JSON array of findings
   bunpy audit --quiet              print count only
   bunpy audit --ignore <id>        suppress one advisory (repeatable)
-  bunpy audit --lockfile <path>    path to bunpy.lock (default ./bunpy.lock)
+  bunpy audit --lockfile <path>    path to uv.lock (default ./uv.lock)
   bunpy audit --workspace <root>   audit via workspace-root lock
 
 Queries the OSV (Open Source Vulnerabilities) database at
 https://api.osv.dev/v1/querybatch for every pinned package in
-` + "`bunpy.lock`" + `. No API key is required for PyPI ecosystem queries.
+` + "`uv.lock`" + `. No API key is required for PyPI ecosystem queries.
 
 Exit codes: 0 (no vulns, or all suppressed), 1 (vulns found), 2 (usage error).
 
@@ -664,7 +664,7 @@ A workspace is a ` + "`pyproject.toml`" + ` at the root that declares:
 
 Paths may contain glob patterns (e.g. ` + "`\"packages/*\"`" + `).
 bunpy auto-detects the workspace root by walking up the directory
-tree from cwd. A single ` + "`bunpy.lock`" + ` at the workspace root
+tree from cwd. A single ` + "`uv.lock`" + ` at the workspace root
 covers all member dependencies.
 
 Use ` + "`bunpy add --member <name> <pkg>`" + ` to add a dependency to

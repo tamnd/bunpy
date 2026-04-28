@@ -196,40 +196,20 @@ func isLinkedPackage(target, name, version string) bool {
 	return strings.TrimSpace(string(body)) == editable.InstallerTag
 }
 
-// loadLockForInstall detects which lockfile is present in dir and returns the
-// flat install list. If only bunpy.lock exists it auto-migrates to uv.lock.
-func loadLockForInstall(dir string, stderr io.Writer) (*lockfile.Lock, error) {
-	switch uvlock.DetectFormat(dir) {
-	case "uv":
-		data, err := os.ReadFile(filepath.Join(dir, "uv.lock"))
-		if err != nil {
-			return nil, fmt.Errorf("bunpy install: read uv.lock: %w", err)
-		}
-		uv, err := uvlock.Parse(data)
-		if err != nil {
-			return nil, fmt.Errorf("bunpy install: %w", err)
-		}
-		return uvlock.ToBunpyLock(uv), nil
-
-	case "bunpy":
-		// Migrate bunpy.lock → uv.lock (one-time, automatic).
-		// Return the original lock (which carries lane info) so that
-		// install lane filtering still works after migration.
-		bl, err := lockfile.Read(filepath.Join(dir, "bunpy.lock"))
-		if err != nil {
-			return nil, fmt.Errorf("bunpy install: read bunpy.lock: %w", err)
-		}
-		uv := uvlock.FromBunpyLock(bl, ">=3.12", nil, nil, nil)
-		if err := os.WriteFile(filepath.Join(dir, "uv.lock"), uv.Bytes(), 0o644); err != nil {
-			return nil, fmt.Errorf("bunpy install: write uv.lock: %w", err)
-		}
-		_ = os.Remove(filepath.Join(dir, "bunpy.lock"))
-		fmt.Fprintln(stderr, "Migrated bunpy.lock → uv.lock")
-		return bl, nil
-
-	default:
-		return nil, fmt.Errorf("bunpy install: uv.lock missing - run `bunpy pm lock` first")
+// loadLockForInstall reads uv.lock from dir and returns the flat install list.
+func loadLockForInstall(dir string, _ io.Writer) (*lockfile.Lock, error) {
+	if !uvlock.LockExists(dir) {
+		return nil, fmt.Errorf("bunpy install: uv.lock not found — run `bunpy pm lock` first")
 	}
+	data, err := os.ReadFile(filepath.Join(dir, "uv.lock"))
+	if err != nil {
+		return nil, fmt.Errorf("bunpy install: read uv.lock: %w", err)
+	}
+	uv, err := uvlock.Parse(data)
+	if err != nil {
+		return nil, fmt.Errorf("bunpy install: %w", err)
+	}
+	return uvlock.ToBunpyLock(uv), nil
 }
 
 // installLaneFilter returns a predicate that decides whether a

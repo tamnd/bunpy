@@ -109,7 +109,7 @@ func outdatedSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 	}
 	lock, err := uvlock.ReadLockfile("uv.lock")
 	if err != nil {
-		if errors.Is(err, lockfile.ErrNotFound) {
+		if errors.Is(err, uvlock.ErrNotFound) {
 			return 1, fmt.Errorf("bunpy outdated: uv.lock missing - run `bunpy pm lock` first")
 		}
 		return 1, fmt.Errorf("bunpy outdated: %w", err)

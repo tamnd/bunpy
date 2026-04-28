@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"time"
 
 	"github.com/tamnd/bunpy/v1/internal/httpkit"
 	"github.com/tamnd/bunpy/v1/pkg/cache"
@@ -28,7 +27,7 @@ import (
 // requirement to the PubGrub-inspired resolver, which walks
 // transitive Requires-Dist edges, evaluates PEP 508 markers, and
 // picks platform-aware wheels via wheel.Pick. Every pin lands in
-// bunpy.lock; the install layer materialises each wheel under
+// uv.lock; the install layer materialises each wheel under
 // .bunpy/site-packages.
 func addSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 	var (
@@ -308,7 +307,7 @@ func updateLockfile(path string, manifestBytes []byte, res *resolver.Resolution,
 		return fmt.Errorf("re-parse manifest: %w", err)
 	}
 	lock, err := uvlock.ReadLockfile(path)
-	if err != nil && !errors.Is(err, lockfile.ErrNotFound) {
+	if err != nil && !errors.Is(err, uvlock.ErrNotFound) {
 		return err
 	}
 	if lock == nil {
@@ -331,7 +330,6 @@ func updateLockfile(path string, manifestBytes []byte, res *resolver.Resolution,
 		})
 	}
 	lock.ContentHash = lockfile.HashLanes(manifestLaneMap(mf))
-	lock.Generated = time.Now().UTC()
 	return uvlock.WriteLockfile(path, lock, mf.Project.RequiresPython, uvlock.WriteOptions{})
 }
 
