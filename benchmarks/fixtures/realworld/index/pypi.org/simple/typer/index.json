@@ -1,0 +1,11 @@
+{
+  "name": "typer",
+  "files": [
+    {
+      "filename": "typer-1.0.0-py3-none-any.whl",
+      "url": "https://files.example/typer/typer-1.0.0-py3-none-any.whl",
+      "hashes": {"sha256": "005774d39cd7b244c6fe9e49c177bec8ae1b69a46f6db837ab24dc5511fbeaf1"}
+    }
+  ],
+  "meta": {"api-version": "1.1", "_last-serial": 1}
+}

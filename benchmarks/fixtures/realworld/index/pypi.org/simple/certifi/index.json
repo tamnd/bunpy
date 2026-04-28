@@ -1,0 +1,11 @@
+{
+  "name": "certifi",
+  "files": [
+    {
+      "filename": "certifi-1.0.0-py3-none-any.whl",
+      "url": "https://files.example/certifi/certifi-1.0.0-py3-none-any.whl",
+      "hashes": {"sha256": "4fa6c5f8f6132b4a43e86ee2501da3b3bef0b4fa5724c25a17a1e71cec04caa4"}
+    }
+  ],
+  "meta": {"api-version": "1.1", "_last-serial": 1}
+}

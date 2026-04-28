@@ -1,0 +1,11 @@
+{
+  "name": "scikit-learn",
+  "files": [
+    {
+      "filename": "scikit_learn-1.0.0-py3-none-any.whl",
+      "url": "https://files.example/scikit-learn/scikit_learn-1.0.0-py3-none-any.whl",
+      "hashes": {"sha256": "3b02df8bd9bc55d9dfa838d45ed9b71f6e0c44033fd31bd53a9d9b9845471751"}
+    }
+  ],
+  "meta": {"api-version": "1.1", "_last-serial": 1}
+}

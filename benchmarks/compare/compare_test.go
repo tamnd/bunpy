@@ -29,6 +29,10 @@ var (
 	fixtureIndex string
 	serverURL    string
 	serverStop   func()
+
+	// realworld fixture server (started only when fixtures/realworld/index exists)
+	rwServerURL  string
+	rwServerStop func()
 )
 
 func TestMain(m *testing.M) {
@@ -45,6 +49,17 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 	defer serverStop()
+
+	// Start realworld fixture server if the fixtures have been generated.
+	rwIndex := filepath.Join(repoRoot, "benchmarks", "fixtures", "realworld", "index")
+	if _, statErr := os.Stat(rwIndex); statErr == nil {
+		rwServerURL, rwServerStop, err = compare.StartServer(rwIndex)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "compare: start realworld server:", err)
+			os.Exit(1)
+		}
+		defer rwServerStop()
+	}
 
 	// Build bunpy binary once.
 	tmp, err := os.MkdirTemp("", "bunpy-compare-*")

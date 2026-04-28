@@ -1,0 +1,11 @@
+{
+  "name": "python-dateutil",
+  "files": [
+    {
+      "filename": "python_dateutil-1.0.0-py3-none-any.whl",
+      "url": "https://files.example/python-dateutil/python_dateutil-1.0.0-py3-none-any.whl",
+      "hashes": {"sha256": "5b90f5aa537612237370702d710fd5cc49036ef40a591d5f8083badc946acdae"}
+    }
+  ],
+  "meta": {"api-version": "1.1", "_last-serial": 1}
+}

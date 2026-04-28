@@ -1,0 +1,11 @@
+{
+  "name": "asgiref",
+  "files": [
+    {
+      "filename": "asgiref-1.0.0-py3-none-any.whl",
+      "url": "https://files.example/asgiref/asgiref-1.0.0-py3-none-any.whl",
+      "hashes": {"sha256": "b4261e19163aaafbd07237a3354fa171eed17564477f159086cb85d99b16689c"}
+    }
+  ],
+  "meta": {"api-version": "1.1", "_last-serial": 1}
+}

@@ -1,0 +1,11 @@
+{
+  "name": "djangorestframework",
+  "files": [
+    {
+      "filename": "djangorestframework-1.0.0-py3-none-any.whl",
+      "url": "https://files.example/djangorestframework/djangorestframework-1.0.0-py3-none-any.whl",
+      "hashes": {"sha256": "a5ec0953e7ae4162701d353913d8998335cb17e9f9cdeac216a419a44343c923"}
+    }
+  ],
+  "meta": {"api-version": "1.1", "_last-serial": 1}
+}

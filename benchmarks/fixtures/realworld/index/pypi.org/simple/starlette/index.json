@@ -1,0 +1,11 @@
+{
+  "name": "starlette",
+  "files": [
+    {
+      "filename": "starlette-1.0.0-py3-none-any.whl",
+      "url": "https://files.example/starlette/starlette-1.0.0-py3-none-any.whl",
+      "hashes": {"sha256": "d84261ab9d62e63afe65bc8763f74c6cf577213caf66f46609e6eb686b4ce930"}
+    }
+  ],
+  "meta": {"api-version": "1.1", "_last-serial": 1}
+}

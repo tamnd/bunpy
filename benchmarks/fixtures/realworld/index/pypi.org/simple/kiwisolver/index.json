@@ -1,0 +1,11 @@
+{
+  "name": "kiwisolver",
+  "files": [
+    {
+      "filename": "kiwisolver-1.0.0-py3-none-any.whl",
+      "url": "https://files.example/kiwisolver/kiwisolver-1.0.0-py3-none-any.whl",
+      "hashes": {"sha256": "05786523623db81b0373fe6b911daec1f4168f9c84150672e3fdd11eb1bfbb1e"}
+    }
+  ],
+  "meta": {"api-version": "1.1", "_last-serial": 1}
+}

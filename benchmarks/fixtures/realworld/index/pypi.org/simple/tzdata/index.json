@@ -1,0 +1,11 @@
+{
+  "name": "tzdata",
+  "files": [
+    {
+      "filename": "tzdata-1.0.0-py3-none-any.whl",
+      "url": "https://files.example/tzdata/tzdata-1.0.0-py3-none-any.whl",
+      "hashes": {"sha256": "57c62376a618022ff47bbe0230ee934f5fa25eadf6209fd1b4bdb8c7467a777d"}
+    }
+  ],
+  "meta": {"api-version": "1.1", "_last-serial": 1}
+}

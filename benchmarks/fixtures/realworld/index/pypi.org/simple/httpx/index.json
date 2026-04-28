@@ -1,0 +1,11 @@
+{
+  "name": "httpx",
+  "files": [
+    {
+      "filename": "httpx-1.0.0-py3-none-any.whl",
+      "url": "https://files.example/httpx/httpx-1.0.0-py3-none-any.whl",
+      "hashes": {"sha256": "69b3aabe82fe09531ffd8f2407dbfac1e2f1dbd480ae1271af259236473e90f4"}
+    }
+  ],
+  "meta": {"api-version": "1.1", "_last-serial": 1}
+}

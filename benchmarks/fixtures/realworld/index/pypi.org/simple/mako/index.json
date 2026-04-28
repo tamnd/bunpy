@@ -1,0 +1,11 @@
+{
+  "name": "mako",
+  "files": [
+    {
+      "filename": "mako-1.0.0-py3-none-any.whl",
+      "url": "https://files.example/mako/mako-1.0.0-py3-none-any.whl",
+      "hashes": {"sha256": "a731897499f63498e44cf76918f72e99cd5fe4a5fc83f7f6e9631333d6cf77bc"}
+    }
+  ],
+  "meta": {"api-version": "1.1", "_last-serial": 1}
+}

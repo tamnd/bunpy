@@ -1,0 +1,11 @@
+{
+  "name": "gunicorn",
+  "files": [
+    {
+      "filename": "gunicorn-1.0.0-py3-none-any.whl",
+      "url": "https://files.example/gunicorn/gunicorn-1.0.0-py3-none-any.whl",
+      "hashes": {"sha256": "c5e6b7612647372ddce2552ca17b73a63364f1d23e794a68c52b1863b8b4e485"}
+    }
+  ],
+  "meta": {"api-version": "1.1", "_last-serial": 1}
+}

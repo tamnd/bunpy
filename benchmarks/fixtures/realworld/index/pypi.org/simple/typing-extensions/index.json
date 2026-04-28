@@ -1,0 +1,11 @@
+{
+  "name": "typing-extensions",
+  "files": [
+    {
+      "filename": "typing_extensions-1.0.0-py3-none-any.whl",
+      "url": "https://files.example/typing-extensions/typing_extensions-1.0.0-py3-none-any.whl",
+      "hashes": {"sha256": "785e126482174f49ffb65d16d5891fe076f65f4e106ccb01530b89f046c54cf9"}
+    }
+  ],
+  "meta": {"api-version": "1.1", "_last-serial": 1}
+}

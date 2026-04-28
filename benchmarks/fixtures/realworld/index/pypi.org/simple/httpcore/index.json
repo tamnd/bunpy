@@ -1,0 +1,11 @@
+{
+  "name": "httpcore",
+  "files": [
+    {
+      "filename": "httpcore-1.0.0-py3-none-any.whl",
+      "url": "https://files.example/httpcore/httpcore-1.0.0-py3-none-any.whl",
+      "hashes": {"sha256": "ad37e29e5960422043819d27646f87ebd446c919f4ae4468f736a88506f0ef42"}
+    }
+  ],
+  "meta": {"api-version": "1.1", "_last-serial": 1}
+}

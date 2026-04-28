@@ -1,0 +1,11 @@
+{
+  "name": "rich",
+  "files": [
+    {
+      "filename": "rich-1.0.0-py3-none-any.whl",
+      "url": "https://files.example/rich/rich-1.0.0-py3-none-any.whl",
+      "hashes": {"sha256": "109621db2c951cfe4153d61e3449c795827e618eb0e45e7348b1591eea59c72a"}
+    }
+  ],
+  "meta": {"api-version": "1.1", "_last-serial": 1}
+}

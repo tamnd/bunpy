@@ -1,0 +1,11 @@
+{
+  "name": "vine",
+  "files": [
+    {
+      "filename": "vine-1.0.0-py3-none-any.whl",
+      "url": "https://files.example/vine/vine-1.0.0-py3-none-any.whl",
+      "hashes": {"sha256": "8aa3b9db8ab195feaeb0f94b7e6d79c969fa9ecce4492bac913e4abec0c9c979"}
+    }
+  ],
+  "meta": {"api-version": "1.1", "_last-serial": 1}
+}

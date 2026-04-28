@@ -1,0 +1,11 @@
+{
+  "name": "pydantic",
+  "files": [
+    {
+      "filename": "pydantic-1.0.0-py3-none-any.whl",
+      "url": "https://files.example/pydantic/pydantic-1.0.0-py3-none-any.whl",
+      "hashes": {"sha256": "7ed2a9ec9415996019380765f46ca1669d63d009d27ac6116817ea960dca75dd"}
+    }
+  ],
+  "meta": {"api-version": "1.1", "_last-serial": 1}
+}

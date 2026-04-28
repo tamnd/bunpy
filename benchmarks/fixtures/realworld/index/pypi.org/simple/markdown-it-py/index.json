@@ -1,0 +1,11 @@
+{
+  "name": "markdown-it-py",
+  "files": [
+    {
+      "filename": "markdown_it_py-1.0.0-py3-none-any.whl",
+      "url": "https://files.example/markdown-it-py/markdown_it_py-1.0.0-py3-none-any.whl",
+      "hashes": {"sha256": "a9d9408885dcbc63ad53cee2ebf787067228f0deb72639188cb74acfcd0d27b3"}
+    }
+  ],
+  "meta": {"api-version": "1.1", "_last-serial": 1}
+}

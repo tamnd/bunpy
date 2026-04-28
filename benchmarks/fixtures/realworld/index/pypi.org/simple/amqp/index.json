@@ -1,0 +1,11 @@
+{
+  "name": "amqp",
+  "files": [
+    {
+      "filename": "amqp-1.0.0-py3-none-any.whl",
+      "url": "https://files.example/amqp/amqp-1.0.0-py3-none-any.whl",
+      "hashes": {"sha256": "219c1f01903871a3c4086d283be421472dbb28719c0e4b5472e5e720511e4097"}
+    }
+  ],
+  "meta": {"api-version": "1.1", "_last-serial": 1}
+}

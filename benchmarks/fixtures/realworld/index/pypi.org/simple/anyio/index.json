@@ -1,0 +1,11 @@
+{
+  "name": "anyio",
+  "files": [
+    {
+      "filename": "anyio-1.0.0-py3-none-any.whl",
+      "url": "https://files.example/anyio/anyio-1.0.0-py3-none-any.whl",
+      "hashes": {"sha256": "ed9a160a042601cd9b7005d24bed80f52bdcf2151a8656f91c6428bafc2fdf4e"}
+    }
+  ],
+  "meta": {"api-version": "1.1", "_last-serial": 1}
+}

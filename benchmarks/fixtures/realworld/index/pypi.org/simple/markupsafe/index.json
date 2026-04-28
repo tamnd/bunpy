@@ -1,0 +1,11 @@
+{
+  "name": "markupsafe",
+  "files": [
+    {
+      "filename": "markupsafe-1.0.0-py3-none-any.whl",
+      "url": "https://files.example/markupsafe/markupsafe-1.0.0-py3-none-any.whl",
+      "hashes": {"sha256": "64bf8288bc3812601d09efa04f84cebbd1bacd43b2ffcb04c9ed3a1342f78aee"}
+    }
+  ],
+  "meta": {"api-version": "1.1", "_last-serial": 1}
+}

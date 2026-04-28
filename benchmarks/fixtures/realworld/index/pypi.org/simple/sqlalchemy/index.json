@@ -1,0 +1,11 @@
+{
+  "name": "sqlalchemy",
+  "files": [
+    {
+      "filename": "sqlalchemy-1.0.0-py3-none-any.whl",
+      "url": "https://files.example/sqlalchemy/sqlalchemy-1.0.0-py3-none-any.whl",
+      "hashes": {"sha256": "4ef24d2b1d0c13de2948d35ba375991892a895282606c44ec23c34bbea39de68"}
+    }
+  ],
+  "meta": {"api-version": "1.1", "_last-serial": 1}
+}

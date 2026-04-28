@@ -1,0 +1,11 @@
+{
+  "name": "mdurl",
+  "files": [
+    {
+      "filename": "mdurl-1.0.0-py3-none-any.whl",
+      "url": "https://files.example/mdurl/mdurl-1.0.0-py3-none-any.whl",
+      "hashes": {"sha256": "3bb92e92bc8aca3330c1116584a9bf8123819463576ea66aaf502b6279aa73ae"}
+    }
+  ],
+  "meta": {"api-version": "1.1", "_last-serial": 1}
+}

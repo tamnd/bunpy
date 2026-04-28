@@ -1,0 +1,11 @@
+{
+  "name": "shellingham",
+  "files": [
+    {
+      "filename": "shellingham-1.0.0-py3-none-any.whl",
+      "url": "https://files.example/shellingham/shellingham-1.0.0-py3-none-any.whl",
+      "hashes": {"sha256": "6d55b30ea201812d3364969a7893bae22878197400dc20cdc0f0e05df28b8ba6"}
+    }
+  ],
+  "meta": {"api-version": "1.1", "_last-serial": 1}
+}

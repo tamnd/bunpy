@@ -1,0 +1,12 @@
+[project]
+name = "django-app"
+version = "0.0.1"
+requires-python = ">=3.10"
+dependencies = [
+    "django>=1.0",
+    "djangorestframework>=1.0",
+    "celery>=1.0",
+    "redis>=1.0",
+    "gunicorn>=1.0",
+    "whitenoise>=1.0",
+]

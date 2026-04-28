@@ -1,0 +1,11 @@
+{
+  "name": "pyparsing",
+  "files": [
+    {
+      "filename": "pyparsing-1.0.0-py3-none-any.whl",
+      "url": "https://files.example/pyparsing/pyparsing-1.0.0-py3-none-any.whl",
+      "hashes": {"sha256": "5c107c6a7623c6b73d9d3a01047110ab8984983e6bca5ef84df84575c40c7e9f"}
+    }
+  ],
+  "meta": {"api-version": "1.1", "_last-serial": 1}
+}

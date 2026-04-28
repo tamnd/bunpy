@@ -1,0 +1,11 @@
+{
+  "name": "click",
+  "files": [
+    {
+      "filename": "click-1.0.0-py3-none-any.whl",
+      "url": "https://files.example/click/click-1.0.0-py3-none-any.whl",
+      "hashes": {"sha256": "a463fc044acd848e6a9b7bf62c84e65ee6c8287a51af9e95944d440f513efda6"}
+    }
+  ],
+  "meta": {"api-version": "1.1", "_last-serial": 1}
+}

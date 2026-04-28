@@ -1,0 +1,11 @@
+{
+  "name": "whitenoise",
+  "files": [
+    {
+      "filename": "whitenoise-1.0.0-py3-none-any.whl",
+      "url": "https://files.example/whitenoise/whitenoise-1.0.0-py3-none-any.whl",
+      "hashes": {"sha256": "440448bcbc3a227d9aeb773b894fd7b703c2ea7842f1a86d5fd22e3c3199dbf3"}
+    }
+  ],
+  "meta": {"api-version": "1.1", "_last-serial": 1}
+}

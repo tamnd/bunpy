@@ -1,0 +1,11 @@
+{
+  "name": "pandas",
+  "files": [
+    {
+      "filename": "pandas-1.0.0-py3-none-any.whl",
+      "url": "https://files.example/pandas/pandas-1.0.0-py3-none-any.whl",
+      "hashes": {"sha256": "1dd55100afa6e714ee861a369221ad7c23ec15b553f952ec5c21de7d74ba5730"}
+    }
+  ],
+  "meta": {"api-version": "1.1", "_last-serial": 1}
+}

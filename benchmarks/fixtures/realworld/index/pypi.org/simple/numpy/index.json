@@ -1,0 +1,11 @@
+{
+  "name": "numpy",
+  "files": [
+    {
+      "filename": "numpy-1.0.0-py3-none-any.whl",
+      "url": "https://files.example/numpy/numpy-1.0.0-py3-none-any.whl",
+      "hashes": {"sha256": "0b9abad51e9d72de740bd5b058ed261d14cff2ef95c8c8d889d087f58a6918a7"}
+    }
+  ],
+  "meta": {"api-version": "1.1", "_last-serial": 1}
+}

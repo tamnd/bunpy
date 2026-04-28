@@ -1,0 +1,11 @@
+{
+  "name": "threadpoolctl",
+  "files": [
+    {
+      "filename": "threadpoolctl-1.0.0-py3-none-any.whl",
+      "url": "https://files.example/threadpoolctl/threadpoolctl-1.0.0-py3-none-any.whl",
+      "hashes": {"sha256": "c65262a0f0b05c5e409e43eb0d956f60be3812065fa0c07cd8254062a6383b06"}
+    }
+  ],
+  "meta": {"api-version": "1.1", "_last-serial": 1}
+}

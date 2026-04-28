@@ -1,0 +1,11 @@
+{
+  "name": "h11",
+  "files": [
+    {
+      "filename": "h11-1.0.0-py3-none-any.whl",
+      "url": "https://files.example/h11/h11-1.0.0-py3-none-any.whl",
+      "hashes": {"sha256": "5fd95e0cd386b3aba619f9c65e534d0c6aa5b5744ecec62bbfd42162c2c664ec"}
+    }
+  ],
+  "meta": {"api-version": "1.1", "_last-serial": 1}
+}

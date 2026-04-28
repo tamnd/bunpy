@@ -1,0 +1,11 @@
+{
+  "name": "matplotlib",
+  "files": [
+    {
+      "filename": "matplotlib-1.0.0-py3-none-any.whl",
+      "url": "https://files.example/matplotlib/matplotlib-1.0.0-py3-none-any.whl",
+      "hashes": {"sha256": "bb392915b1360d036fb02dd625cb07ac4e7e5c36e9ea187c4ef2ac1d0b486e83"}
+    }
+  ],
+  "meta": {"api-version": "1.1", "_last-serial": 1}
+}

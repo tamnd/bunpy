@@ -1,0 +1,11 @@
+{
+  "name": "sqlparse",
+  "files": [
+    {
+      "filename": "sqlparse-1.0.0-py3-none-any.whl",
+      "url": "https://files.example/sqlparse/sqlparse-1.0.0-py3-none-any.whl",
+      "hashes": {"sha256": "ca6e82a1752e4dd0f36e520fe887a7ecd43ca16c169cb111a86535e6ec7414e3"}
+    }
+  ],
+  "meta": {"api-version": "1.1", "_last-serial": 1}
+}
