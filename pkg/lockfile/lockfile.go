@@ -1,71 +1,51 @@
-// Package lockfile reads and writes bunpy.lock. The lockfile
-// freezes one entry per direct dependency captured by bunpy add.
-// Schema version 1 is what v0.1.4 introduced; v0.1.5 fills in transitive
-// entries against the same shape.
+// Package lockfile defines the in-memory lock representation shared
+// across all pm sub-commands. Disk I/O is handled by pkg/uvlock
+// (uv.lock format). This package holds no file readers or writers.
 package lockfile
 
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"errors"
-	"fmt"
-	"os"
 	"sort"
 	"strings"
-	"time"
 )
 
-// Schema version. Bump when the on-disk shape changes.
+// Schema version. Carried on Lock.Version to distinguish resolver outputs.
 const Version = 1
 
-// Lock is the parsed bunpy.lock.
+// Lock is the in-memory lock: a flat list of resolved packages.
 type Lock struct {
-	Version     int            `toml:"version"`
-	Generated   time.Time      `toml:"generated"`
-	ContentHash string         `toml:"content-hash"`
-	Packages    []Package      `toml:"package"`
-	Workspace   *WorkspaceMeta `toml:"workspace,omitempty"`
+	Version     int
+	ContentHash string
+	Packages    []Package
 }
 
-// WorkspaceMeta records the member paths that were present when this
-// lock was produced by a workspace-aware resolver run.
-type WorkspaceMeta struct {
-	Members []string
-}
-
-// Package is one row in the lockfile.
+// Package is one resolved pin.
 type Package struct {
-	Name     string   `toml:"name"`
-	Version  string   `toml:"version"`
-	Filename string   `toml:"filename"`
-	URL      string   `toml:"url"`
-	Hash     string   `toml:"hash"`
-	Size     int64    `toml:"size,omitempty"`
-	Lanes    []string `toml:"lanes,omitempty"`
+	Name     string
+	Version  string
+	Filename string
+	URL      string
+	Hash     string
+	Size     int64
+	Lanes    []string
 	// Sdist fields carry the source distribution for uv.lock compatibility.
-	SdistURL  string `toml:"sdist_url,omitempty"`
-	SdistHash string `toml:"sdist_hash,omitempty"`
-	SdistSize int64  `toml:"sdist_size,omitempty"`
+	SdistURL  string
+	SdistHash string
+	SdistSize int64
 }
 
-// Lane labels carried on Package.Lanes. Order in serialised
-// rows is sorted alphabetically; on the wire the empty/unset
-// field is implicitly LaneMain so v0.1.5 lockfiles continue to
-// read as all-main.
+// Lane labels carried on Package.Lanes.
 const (
 	LaneMain = "main"
 	LaneDev  = "dev"
 	LanePeer = "peer"
 )
 
-// OptionalLane returns the canonical lane label for an optional
-// group: "optional:<group>".
+// OptionalLane returns the canonical lane label for an optional group.
 func OptionalLane(group string) string { return "optional:" + group }
 
-// GroupLane returns the canonical lane label for a non-dev
-// [dependency-groups].<name> entry: "group:<name>". The reserved
-// "dev" name uses LaneDev so the on-disk shape stays compact for
-// the common case.
+// GroupLane returns the canonical lane label for a [dependency-groups] entry.
 func GroupLane(name string) string {
 	if name == LaneDev {
 		return LaneDev
@@ -73,253 +53,7 @@ func GroupLane(name string) string {
 	return "group:" + name
 }
 
-// ErrNotFound is returned by Read when bunpy.lock does not exist.
-var ErrNotFound = errors.New("lockfile: not found")
-
-// Read parses bunpy.lock at path. A missing file returns
-// ErrNotFound (wrapped with the path).
-func Read(path string) (*Lock, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, fmt.Errorf("%w: %s", ErrNotFound, path)
-		}
-		return nil, err
-	}
-	return Parse(data)
-}
-
-// Parse reads bunpy.lock bytes.
-func Parse(data []byte) (*Lock, error) {
-	l := &Lock{}
-	text := string(data)
-	lines := strings.Split(text, "\n")
-	var (
-		inPackage   bool
-		inWorkspace bool
-		curr        Package
-	)
-	flush := func() {
-		if inPackage {
-			l.Packages = append(l.Packages, curr)
-		}
-		curr = Package{}
-		inPackage = false
-	}
-	for _, raw := range lines {
-		line := strings.TrimSpace(raw)
-		if line == "" || strings.HasPrefix(line, "#") {
-			continue
-		}
-		if line == "[[package]]" {
-			flush()
-			inPackage = true
-			inWorkspace = false
-			continue
-		}
-		if line == "[workspace]" {
-			flush()
-			inWorkspace = true
-			inPackage = false
-			if l.Workspace == nil {
-				l.Workspace = &WorkspaceMeta{}
-			}
-			continue
-		}
-		k, v, ok := splitKV(line)
-		if !ok {
-			return nil, fmt.Errorf("lockfile: malformed line %q", raw)
-		}
-		if inWorkspace {
-			switch k {
-			case "members":
-				members, err := parseInlineStringArray(v)
-				if err != nil {
-					return nil, fmt.Errorf("lockfile: workspace members: %w", err)
-				}
-				l.Workspace.Members = members
-			default:
-				return nil, fmt.Errorf("lockfile: unknown workspace key %q", k)
-			}
-			continue
-		}
-		if !inPackage {
-			switch k {
-			case "version":
-				n, err := parseInt(v)
-				if err != nil {
-					return nil, fmt.Errorf("lockfile: version: %w", err)
-				}
-				l.Version = n
-			case "generated":
-				t, err := time.Parse(time.RFC3339, unquote(v))
-				if err != nil {
-					return nil, fmt.Errorf("lockfile: generated: %w", err)
-				}
-				l.Generated = t
-			case "content-hash":
-				l.ContentHash = unquote(v)
-			default:
-				return nil, fmt.Errorf("lockfile: unknown header key %q", k)
-			}
-			continue
-		}
-		switch k {
-		case "name":
-			curr.Name = unquote(v)
-		case "version":
-			curr.Version = unquote(v)
-		case "filename":
-			curr.Filename = unquote(v)
-		case "url":
-			curr.URL = unquote(v)
-		case "hash":
-			curr.Hash = unquote(v)
-		case "lanes":
-			lanes, err := parseInlineStringArray(v)
-			if err != nil {
-				return nil, fmt.Errorf("lockfile: lanes: %w", err)
-			}
-			curr.Lanes = lanes
-		default:
-			return nil, fmt.Errorf("lockfile: unknown package key %q", k)
-		}
-	}
-	flush()
-	if l.Version == 0 {
-		l.Version = Version
-	}
-	return l, nil
-}
-
-func splitKV(s string) (string, string, bool) {
-	eq := strings.IndexByte(s, '=')
-	if eq < 0 {
-		return "", "", false
-	}
-	return strings.TrimSpace(s[:eq]), strings.TrimSpace(s[eq+1:]), true
-}
-
-func unquote(s string) string {
-	if len(s) >= 2 && s[0] == '"' && s[len(s)-1] == '"' {
-		return s[1 : len(s)-1]
-	}
-	return s
-}
-
-func parseInt(s string) (int, error) {
-	n := 0
-	if s == "" {
-		return 0, errors.New("empty integer")
-	}
-	for i := 0; i < len(s); i++ {
-		c := s[i]
-		if c < '0' || c > '9' {
-			return 0, fmt.Errorf("non-digit %q", c)
-		}
-		n = n*10 + int(c-'0')
-	}
-	return n, nil
-}
-
-// Bytes serialises the lock to canonical TOML. Packages are
-// sorted by PEP 503-normalised name. Line endings are LF.
-func (l *Lock) Bytes() []byte {
-	var sb strings.Builder
-	sb.WriteString("# bunpy.lock - generated by bunpy. Do not edit by hand.\n")
-	if l.Version == 0 {
-		l.Version = Version
-	}
-	fmt.Fprintf(&sb, "version = %d\n", l.Version)
-	if !l.Generated.IsZero() {
-		fmt.Fprintf(&sb, "generated = %q\n", l.Generated.UTC().Format(time.RFC3339))
-	}
-	if l.ContentHash != "" {
-		fmt.Fprintf(&sb, "content-hash = %q\n", l.ContentHash)
-	}
-
-	if l.Workspace != nil && len(l.Workspace.Members) > 0 {
-		sb.WriteString("\n[workspace]\n")
-		sb.WriteString("members = [")
-		for i, m := range l.Workspace.Members {
-			if i > 0 {
-				sb.WriteString(", ")
-			}
-			fmt.Fprintf(&sb, "%q", m)
-		}
-		sb.WriteString("]\n")
-	}
-
-	pkgs := append([]Package(nil), l.Packages...)
-	sort.SliceStable(pkgs, func(i, j int) bool {
-		return Normalize(pkgs[i].Name) < Normalize(pkgs[j].Name)
-	})
-	for _, p := range pkgs {
-		sb.WriteString("\n[[package]]\n")
-		fmt.Fprintf(&sb, "name = %q\n", p.Name)
-		fmt.Fprintf(&sb, "version = %q\n", p.Version)
-		fmt.Fprintf(&sb, "filename = %q\n", p.Filename)
-		fmt.Fprintf(&sb, "url = %q\n", p.URL)
-		fmt.Fprintf(&sb, "hash = %q\n", p.Hash)
-		if writeLanes(p.Lanes) {
-			lanes := append([]string(nil), p.Lanes...)
-			sort.Strings(lanes)
-			sb.WriteString("lanes = [")
-			for i, lane := range lanes {
-				if i > 0 {
-					sb.WriteString(", ")
-				}
-				fmt.Fprintf(&sb, "%q", lane)
-			}
-			sb.WriteString("]\n")
-		}
-	}
-	return []byte(sb.String())
-}
-
-// writeLanes returns true when lanes should be written to the
-// row. The empty set and the bare ["main"] both imply main and
-// stay implicit so v0.1.5 fixtures remain byte-identical.
-func writeLanes(lanes []string) bool {
-	if len(lanes) == 0 {
-		return false
-	}
-	if len(lanes) == 1 && lanes[0] == LaneMain {
-		return false
-	}
-	return true
-}
-
-// parseInlineStringArray parses `["a", "b"]` style TOML inline
-// arrays into a Go slice.
-func parseInlineStringArray(s string) ([]string, error) {
-	s = strings.TrimSpace(s)
-	if !strings.HasPrefix(s, "[") || !strings.HasSuffix(s, "]") {
-		return nil, fmt.Errorf("expected [...] array, got %q", s)
-	}
-	body := strings.TrimSpace(s[1 : len(s)-1])
-	if body == "" {
-		return []string{}, nil
-	}
-	parts := strings.Split(body, ",")
-	out := make([]string, 0, len(parts))
-	for _, p := range parts {
-		t := strings.TrimSpace(p)
-		if len(t) < 2 || t[0] != '"' || t[len(t)-1] != '"' {
-			return nil, fmt.Errorf("expected quoted string, got %q", t)
-		}
-		out = append(out, t[1:len(t)-1])
-	}
-	return out, nil
-}
-
-// WriteFile writes the lockfile to path with 0o644.
-func (l *Lock) WriteFile(path string) error {
-	return os.WriteFile(path, l.Bytes(), 0o644)
-}
-
-// Upsert inserts a package by PEP 503-normalised name, replacing
-// any existing entry with the same normalised name.
+// Upsert inserts p by PEP 503-normalised name, replacing any existing entry.
 func (l *Lock) Upsert(p Package) {
 	want := Normalize(p.Name)
 	for i := range l.Packages {
@@ -331,8 +65,7 @@ func (l *Lock) Upsert(p Package) {
 	l.Packages = append(l.Packages, p)
 }
 
-// Remove drops the package with the given name (PEP 503
-// normalised). Returns true when a row was removed.
+// Remove drops the package with the given name. Returns true when removed.
 func (l *Lock) Remove(name string) bool {
 	want := Normalize(name)
 	for i := range l.Packages {
@@ -344,8 +77,7 @@ func (l *Lock) Remove(name string) bool {
 	return false
 }
 
-// Find returns the package row for name (PEP 503 normalised) or
-// (Package{}, false).
+// Find returns the package row for name or (Package{}, false).
 func (l *Lock) Find(name string) (Package, bool) {
 	want := Normalize(name)
 	for _, p := range l.Packages {
@@ -356,8 +88,7 @@ func (l *Lock) Find(name string) (Package, bool) {
 	return Package{}, false
 }
 
-// Normalize is PEP 503: lower-case and collapse runs of -_. into
-// a single -.
+// Normalize applies PEP 503: lower-case and collapse runs of -_. to -.
 func Normalize(s string) string {
 	s = strings.ToLower(s)
 	var sb strings.Builder
@@ -378,13 +109,7 @@ func Normalize(s string) string {
 	return sb.String()
 }
 
-// HashDependencies returns sha256:<hex> over the sorted, trimmed
-// dependency specs. Used as the lockfile's content-hash so a
-// drift check can detect pyproject mutations without re-resolving.
-//
-// Equivalent to HashLanes(map{"main": deps}) without the lane
-// label header so v0.1.4/v0.1.5 lockfiles continue to verify
-// byte-identically when no non-main lanes exist.
+// HashDependencies returns sha256:<hex> over sorted, trimmed dependency specs.
 func HashDependencies(deps []string) string {
 	cleaned := make([]string, 0, len(deps))
 	for _, d := range deps {
@@ -403,14 +128,8 @@ func HashDependencies(deps []string) string {
 	return "sha256:" + hex.EncodeToString(h.Sum(nil))
 }
 
-// HashLanes returns sha256:<hex> over every populated dep lane,
-// emitted in fixed order: main, dev, optional:<sorted>, peer.
-// Empty lanes are skipped so a project that uses only main keeps
-// the v0.1.4 hash exactly.
-//
-// The lane label and a newline precede the lane's sorted, trimmed
-// specs. A spec moving lanes counts as drift even though the
-// total spec set is unchanged.
+// HashLanes returns sha256:<hex> over every populated dep lane in fixed order.
+// Projects with only main deps produce the same hash as HashDependencies.
 func HashLanes(lanes map[string][]string) string {
 	if len(lanes) == 0 {
 		return HashDependencies(nil)

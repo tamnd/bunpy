@@ -351,7 +351,7 @@ func pmLock(args []string, stdout, stderr io.Writer) (int, error) {
 	if check {
 		existing, err := uvlock.ReadLockfile("uv.lock")
 		if err != nil {
-			if errors.Is(err, lockfile.ErrNotFound) {
+			if errors.Is(err, uvlock.ErrNotFound) {
 				fmt.Fprintln(stderr, "bunpy pm lock --check: uv.lock missing")
 				return 1, fmt.Errorf("uv.lock missing")
 			}
@@ -532,7 +532,6 @@ func pmLock(args []string, stdout, stderr io.Writer) (int, error) {
 		lock.Upsert(lp)
 	}
 	lock.ContentHash = wantHash
-	lock.Generated = time.Now().UTC()
 	root := &uvlock.RootInfo{
 		Name:    mf.Project.Name,
 		Version: mf.Project.Version,

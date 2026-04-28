@@ -10,6 +10,11 @@ import (
 	"github.com/tamnd/bunpy/v1/pkg/lockfile"
 )
 
+// LockExists reports whether uv.lock exists in dir.
+func LockExists(dir string) bool {
+	return fileExists(filepath.Join(dir, "uv.lock"))
+}
+
 // ToBunpyLock converts a UVLock into a bunpy lockfile.Lock.
 // Only registry-sourced packages with at least one wheel are included.
 // Groups (bunpy extension) are mapped back to Lanes.
@@ -76,7 +81,7 @@ func ReadLockfile(path string) (*lockfile.Lock, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil, lockfile.ErrNotFound
+			return nil, ErrNotFound
 		}
 		return nil, fmt.Errorf("uvlock: read %s: %w", path, err)
 	}
@@ -279,18 +284,6 @@ func FromBunpyLock(l *lockfile.Lock, requiresPython string, graph map[string][]s
 	// Append non-registry packages (git/path/editable) preserved from prior lock.
 	uv.Packages = append(uv.Packages, extraPkgs...)
 	return uv
-}
-
-// DetectFormat returns "uv", "bunpy", or "none" depending on which lockfile
-// exists in dir. uv.lock takes precedence if both exist.
-func DetectFormat(dir string) string {
-	if fileExists(filepath.Join(dir, "uv.lock")) {
-		return "uv"
-	}
-	if fileExists(filepath.Join(dir, "bunpy.lock")) {
-		return "bunpy"
-	}
-	return "none"
 }
 
 func fileExists(p string) bool {

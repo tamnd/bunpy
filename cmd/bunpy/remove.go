@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/tamnd/bunpy/v1/internal/httpkit"
 	"github.com/tamnd/bunpy/v1/pkg/lockfile"
@@ -25,7 +24,7 @@ import (
 // inverse of `bunpy add`: it deletes the named packages from
 // pyproject.toml (every lane unless a lane flag narrows it),
 // re-runs the resolver against the new lane map with surviving
-// pins held via Solver.Locked, rewrites bunpy.lock, and uninstalls
+// pins held via Solver.Locked, rewrites uv.lock, and uninstalls
 // the dropped pins from ./.bunpy/site-packages unless --no-install.
 func removeSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 	var (
@@ -171,7 +170,7 @@ func removeSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 	// to match the manifest content-hash; this matches `bunpy update`'s
 	// idempotent shape.
 	lock, err := uvlock.ReadLockfile("uv.lock")
-	if err != nil && !errors.Is(err, lockfile.ErrNotFound) {
+	if err != nil && !errors.Is(err, uvlock.ErrNotFound) {
 		return 1, fmt.Errorf("bunpy remove: %w", err)
 	}
 
@@ -257,7 +256,6 @@ func removeSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 		stillPinned[pypi.Normalize(pin.Name)] = true
 	}
 	newLock.ContentHash = wantHash
-	newLock.Generated = time.Now().UTC()
 	if err := uvlock.WriteLockfile("uv.lock", newLock, mf.Project.RequiresPython, uvlock.WriteOptions{}); err != nil {
 		return 1, fmt.Errorf("bunpy remove: %w", err)
 	}

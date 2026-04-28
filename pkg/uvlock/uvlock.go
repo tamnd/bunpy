@@ -3,12 +3,12 @@
 //
 // The format is TOML. Each resolved package appears as a [[package]] block
 // with optional sub-tables [[package.wheels]] and [package.metadata].
-// bunpy reads uv.lock when a project ships it instead of (or alongside)
-// bunpy.lock, and can write uv.lock via `bunpy pm lock --format uv`.
+// uv.lock is the sole lockfile format written by bunpy.
 package uvlock
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"path"
 	"sort"
@@ -20,6 +20,9 @@ import (
 
 // Version is the only uv.lock schema version bunpy understands.
 const Version = 1
+
+// ErrNotFound is returned by ReadLockfile when uv.lock does not exist.
+var ErrNotFound = errors.New("uvlock: uv.lock not found")
 
 // UVLock is a parsed uv.lock.
 type UVLock struct {
