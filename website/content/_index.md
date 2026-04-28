@@ -5,20 +5,19 @@ toc: false
 ---
 
 {{< hextra/hero-badge >}}
-  <span>v0.8.9 — now available</span>
+  <span>v0.11.15 out now</span>
 {{< /hextra/hero-badge >}}
 
 <div class="hx-mt-6 hx-mb-6">
 {{< hextra/hero-headline >}}
-  The Python runtime,&nbsp;package manager, and bundler&nbsp;—&nbsp;all&nbsp;in&nbsp;one
+  Python at Go speed
 {{< /hextra/hero-headline >}}
 </div>
 
 <div class="hx-mb-12">
 {{< hextra/hero-subtitle >}}
-  bunpy runs Python at Go speed. One binary. Zero config.
-  Comes with a package manager, bundler, test runner, linter,
-  and a Node.js-compatible stdlib — out of the box.
+  Run, install, bundle, and test Python with one binary.
+  No CPython. No pip. No config.
 {{< /hextra/hero-subtitle >}}
 </div>
 
@@ -28,106 +27,119 @@ toc: false
 </div>
 
 ```bash
-# macOS / Linux
 curl -fsSL https://tamnd.github.io/bunpy/install.sh | bash
-
-bunpy --version  # → bunpy 0.8.9
+bunpy --version  # bunpy 0.11.15
 ```
 
 <p class="hx-text-sm hx-text-gray-500 hx-mt-2">
-Works on macOS (arm64, x64) · Linux (arm64, x64) · Windows (x64)
+macOS (arm64, x64) · Linux (arm64, x64) · Windows (x64)
 </p>
 
 
-## Why bunpy?
+## Numbers
 
 <div class="hx-grid hx-grid-cols-1 md:hx-grid-cols-3 hx-gap-6 hx-mt-6 hx-mb-8">
 <div>
 
-**Fast**
+**16x faster**
 
-Pure Go interpreter — no CPython, no GIL, no subprocess overhead.
-Goroutine-backed async. Near-Go throughput for I/O-heavy workloads.
-
-</div>
-<div>
-
-**Complete**
-
-Everything Bun has for JavaScript, but for Python: package manager,
-bundler, test runner, formatter, linter, REPL, and a full Node.js
-API compatibility shim.
+`bunpy pm lock` resolves and pins packages 16 times faster than uv on the same dependency graph. Written in Go, no Python subprocess.
 
 </div>
 <div>
 
-**Portable**
+**One binary**
 
-Bundle to `.pyz` — one file that runs anywhere bunpy is installed —
-or compile to a native binary with `bunpy build --compile`.
+A single ~4 MB static executable replaces pip, uv, pytest, ruff, and black. Copy it anywhere and it works.
+
+</div>
+<div>
+
+**Zero config**
+
+Drop a `pyproject.toml` and run `bunpy install`. No virtualenv, no `requirements.txt`, no activation step.
 
 </div>
 </div>
 
 
-## Features
+## Tools
 
 {{< hextra/feature-grid >}}
   {{< hextra/feature-card
-    title="One binary"
-    subtitle="Runtime + package manager + bundler + test runner + linter + formatter, shipped as a single static Go binary. Nothing to install beyond bunpy itself."
+    title="Package manager"
+    subtitle="Add, remove, lock, and install packages. Compatible with uv.lock. 16x faster resolution than uv."
     class="hx-aspect-auto md:hx-aspect-[1.1/1] max-md:hx-min-h-[340px]"
   >}}
   {{< hextra/feature-card
-    title="Node.js-compatible APIs"
-    subtitle="Import bunpy.node.fs, bunpy.node.http, bunpy.node.crypto, bunpy.node.stream and more — same API shapes as the Node.js standard library."
+    title="HTTP server"
+    subtitle="Built-in bunpy.serve handles routing, parsing, and response serialisation in Go. No framework required."
     class="hx-aspect-auto md:hx-aspect-[1.1/1] max-md:hx-min-h-[340px]"
   >}}
   {{< hextra/feature-card
-    title="Bundle to .pyz"
-    subtitle="Ship your app as a portable self-contained .pyz archive with a shebang. Runs anywhere bunpy is installed, or compile to a native binary."
+    title="Bundler"
+    subtitle="Bundle to a portable .pyz archive or compile to a self-contained native binary with bunpy build --compile."
     class="hx-aspect-auto md:hx-aspect-[1.1/1] max-md:hx-min-h-[340px]"
   >}}
   {{< hextra/feature-card
-    title="Async without boilerplate"
-    subtitle="bunpy.asyncio.run(), gather(), create_task() — goroutine-backed concurrency with no event loop ceremony or import overhead."
+    title="Test runner"
+    subtitle="Run tests with bunpy test. Built-in coverage, reporters, filtering, and lifecycle hooks."
     class="hx-aspect-auto md:hx-aspect-[1.1/1] max-md:hx-min-h-[340px]"
   >}}
   {{< hextra/feature-card
-    title="Web-first globals"
-    subtitle="fetch, URL, Request, Response, WebSocket injected as globals — no import statement needed. Write HTTP clients exactly like in a browser."
+    title="Web globals"
+    subtitle="fetch, URL, Request, Response, and WebSocket are injected into every script. No import needed."
     class="hx-aspect-auto md:hx-aspect-[1.1/1] max-md:hx-min-h-[340px]"
   >}}
   {{< hextra/feature-card
-    title="Batteries included"
-    subtitle="SQL, Redis, S3, JWT, crypto, YAML, CSV, templates, email, cron, password hashing — all native modules, all zero additional dependencies."
+    title="Native modules"
+    subtitle="SQL, Redis, S3, JWT, crypto, YAML, CSV, cron, and password hashing ship with the binary."
     class="hx-aspect-auto md:hx-aspect-[1.1/1] max-md:hx-min-h-[340px]"
   >}}
 {{< /hextra/feature-grid >}}
 
 
-## Node.js compatibility shim
+## Quick look
 
-{{< callout type="info" >}}
-**bunpy 0.8+** ships `bunpy.node.*` — a full Node.js standard library shim
-backed by Go stdlib. Import `bunpy.node.fs`, `bunpy.node.path`,
-`bunpy.node.crypto`, `bunpy.node.http`, `bunpy.node.stream`,
-`bunpy.node.zlib`, and `bunpy.node.worker_threads` with the same API shapes
-as Node.js.
+```python
+# server.py
+from bunpy.serve import serve
 
-[Read the Node.js compatibility docs →](/bunpy/docs/node/)
-{{< /callout >}}
+def handler(req):
+    name = req.query.get("name", "world")
+    return f"Hello, {name}!"
+
+serve(handler, port=3000)
+```
+
+```bash
+bunpy server.py
+# Listening on http://localhost:3000
+```
+
+```python
+# fetch is a global, no import needed
+resp = fetch("https://api.github.com/repos/tamnd/bunpy")
+print(resp.json()["stargazers_count"])
+```
+
+```bash
+# Package manager
+bunpy add requests fastapi
+bunpy install --frozen   # CI-safe, fails if uv.lock is stale
+bunpy pm lock            # 16x faster than uv
+```
 
 
-## What's in the box
+## Commands
 
 | Command | What it does |
 |---------|-------------|
-| `bunpy run script.py` | Run a Python script |
-| `bunpy install` | Install dependencies from pyproject.toml |
-| `bunpy add requests` | Add a package |
+| `bunpy script.py` | Run a Python script |
+| `bunpy add requests` | Add a dependency |
+| `bunpy install` | Install from pyproject.toml |
+| `bunpy pm lock` | Resolve and pin all dependencies |
 | `bunpy build app.py` | Bundle to app.pyz |
-| `bunpy test` | Run all tests |
-| `bunpy fmt src/` | Format Python source |
-| `bunpy check src/` | Static lint check |
+| `bunpy test` | Run tests |
+| `bunpy fmt src/` | Format source |
 | `bunpy repl` | Interactive REPL |

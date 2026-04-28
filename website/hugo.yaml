@@ -21,7 +21,7 @@ params:
     displayPoweredBy: false
     copyright: "© 2024 bunpy contributors"
   theme:
-    default: system
+    default: light
     displayToggle: true
   editURL:
     enable: false
