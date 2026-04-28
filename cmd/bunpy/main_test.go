@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	goruntime "runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -482,7 +483,11 @@ func TestInlineFlagMissingArg(t *testing.T) {
 
 func TestStartupProfileFlag(t *testing.T) {
 	tmp := t.TempDir()
-	bin := filepath.Join(tmp, "bunpy")
+	binName := "bunpy"
+	if goruntime.GOOS == "windows" {
+		binName = "bunpy.exe"
+	}
+	bin := filepath.Join(tmp, binName)
 	out, err := exec.Command("go", "build", "-o", bin, "github.com/tamnd/bunpy/v1/cmd/bunpy").CombinedOutput()
 	if err != nil {
 		t.Skipf("could not build bunpy binary: %v\n%s", err, out)
