@@ -45,17 +45,14 @@ macOS (arm64, x64) · Linux (arm64, x64) · Windows (x64)
   {{< hextra/feature-card
     title="Designed for speed"
     subtitle="Written in Go. Cold starts in milliseconds, package resolution in seconds, no Python subprocess fan-out."
-    class="hx-aspect-auto md:hx-aspect-[1.1/1] max-md:hx-min-h-[200px]"
   >}}
   {{< hextra/feature-card
     title="All in one"
     subtitle="Replaces pip, pytest, ruff, and black. A single ~4 MB static binary. Copy it anywhere and it works."
-    class="hx-aspect-auto md:hx-aspect-[1.1/1] max-md:hx-min-h-[200px]"
   >}}
   {{< hextra/feature-card
     title="Zero config"
     subtitle="Drop a pyproject.toml and run bunpy install. No virtualenv, no requirements.txt, no activation step."
-    class="hx-aspect-auto md:hx-aspect-[1.1/1] max-md:hx-min-h-[200px]"
   >}}
 {{< /hextra/feature-grid >}}
 
@@ -69,32 +66,26 @@ macOS (arm64, x64) · Linux (arm64, x64) · Windows (x64)
   {{< hextra/feature-card
     title="Package manager"
     subtitle="Install, lock, and update PyPI packages. Reads `pyproject.toml`. Workspaces, overrides, audits, patches."
-    class="hx-aspect-auto md:hx-aspect-[1.1/1] max-md:hx-min-h-[340px]"
   >}}
   {{< hextra/feature-card
     title="HTTP server"
     subtitle="`bunpy.serve` handles routing, parsing, and response serialisation in Go. No framework required."
-    class="hx-aspect-auto md:hx-aspect-[1.1/1] max-md:hx-min-h-[340px]"
   >}}
   {{< hextra/feature-card
     title="Bundler"
     subtitle="Bundle to a portable `.pyz` archive or compile to a self-contained native binary."
-    class="hx-aspect-auto md:hx-aspect-[1.1/1] max-md:hx-min-h-[340px]"
   >}}
   {{< hextra/feature-card
     title="Test runner"
     subtitle="Run tests with `bunpy test`. Built-in coverage, reporters, filtering, and lifecycle hooks."
-    class="hx-aspect-auto md:hx-aspect-[1.1/1] max-md:hx-min-h-[340px]"
   >}}
   {{< hextra/feature-card
     title="Web globals"
     subtitle="`fetch`, `URL`, `Request`, `Response`, and `WebSocket` are available in every script. No import needed."
-    class="hx-aspect-auto md:hx-aspect-[1.1/1] max-md:hx-min-h-[340px]"
   >}}
   {{< hextra/feature-card
     title="Native modules"
     subtitle="SQL, Redis, S3, JWT, crypto, YAML, CSV, cron, and password hashing ship with the binary."
-    class="hx-aspect-auto md:hx-aspect-[1.1/1] max-md:hx-min-h-[340px]"
   >}}
 {{< /hextra/feature-grid >}}
 
