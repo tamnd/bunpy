@@ -1,6 +1,6 @@
 ---
 title: Data processing with pandas
-description: Read, filter, group, merge, and export tabular data with pandas. Real-world example: compute monthly sales totals and export a report.
+description: "Read, filter, group, merge, and export tabular data with pandas. Real-world example: compute monthly sales totals and export a report."
 ---
 
 ## Install
