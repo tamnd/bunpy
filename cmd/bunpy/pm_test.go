@@ -364,6 +364,9 @@ func setupPmLockFixture(t *testing.T, manifest string) string {
 	t.Helper()
 	tmp := t.TempDir()
 	cache := t.TempDir()
+	// On Windows, t.TempDir's RemoveAll can fail with "directory not empty"
+	// once the wheel subdirs are populated. Pre-nuke runs first (LIFO).
+	t.Cleanup(func() { _ = os.RemoveAll(cache) })
 	if err := os.WriteFile(filepath.Join(tmp, "pyproject.toml"), []byte(manifest), 0o644); err != nil {
 		t.Fatalf("write manifest: %v", err)
 	}

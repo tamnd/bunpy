@@ -1,14 +1,24 @@
 #!/usr/bin/env bash
-# Generates runtime/stdlib_index.go from goipy's switch in
-# vm/asyncio.go. Run after bumping the goipy pin in
-# scripts/sync-deps.sh. CI runs this into a tempdir and diffs
-# against the checked-in file to catch drift.
+# Generates runtime/stdlib_index.go from goipy's vm/asyncio.go.
+# Reads goipy version from go.mod and resolves the source via the
+# Go module cache (go env GOMODCACHE). Run after bumping goipy in
+# go.mod. CI runs this into a tempdir and diffs against the
+# checked-in file to catch drift.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-GOIPY_VM="$ROOT/.deps/goipy/vm/asyncio.go"
+
+# Resolve goipy version from go.mod.
+GOIPY_VERSION="$(awk '/github\.com\/tamnd\/goipy / { print $2 }' "$ROOT/go.mod")"
+if [ -z "$GOIPY_VERSION" ]; then
+  echo "sync-stdlib-index: could not find github.com/tamnd/goipy in go.mod" >&2
+  exit 1
+fi
+
+GOMODCACHE="$(go env GOMODCACHE)"
+GOIPY_VM="$GOMODCACHE/github.com/tamnd/goipy@${GOIPY_VERSION}/vm/asyncio.go"
 if [ ! -f "$GOIPY_VM" ]; then
-  echo "sync-stdlib-index: $GOIPY_VM missing; run scripts/sync-deps.sh first" >&2
+  echo "sync-stdlib-index: $GOIPY_VM missing; run: go mod download github.com/tamnd/goipy@${GOIPY_VERSION}" >&2
   exit 1
 fi
 
