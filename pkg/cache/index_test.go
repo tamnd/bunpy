@@ -15,7 +15,7 @@ func TestIndexRoundtrip(t *testing.T) {
 	if err := idx.Put("Demo_Pkg", body, "\"abc\""); err != nil {
 		t.Fatal(err)
 	}
-	got, etag, ok := idx.Get("demo-pkg")
+	got, etag, ok, _ := idx.Get("demo-pkg")
 	if !ok {
 		t.Fatal("Get: not found after Put")
 	}
@@ -36,7 +36,7 @@ func TestIndexNormalizes(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, alias := range []string{"foo-bar", "Foo_Bar", "FOO_BAR", "foo.bar", "foo--bar", "Foo-Bar"} {
-		if _, _, ok := idx.Get(alias); !ok {
+		if _, _, ok, _ := idx.Get(alias); !ok {
 			t.Errorf("Get %q: not found", alias)
 		}
 	}
@@ -68,7 +68,7 @@ func TestIndexMissing(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, _, ok := idx.Get("nope"); ok {
+	if _, _, ok, _ := idx.Get("nope"); ok {
 		t.Error("Get: want false on empty cache")
 	}
 }

@@ -395,14 +395,13 @@ dependencies = ["widget>=1.0"]
 	if err != nil || code != 0 {
 		t.Fatalf("pm lock: code=%d err=%v stderr=%s", code, err, stderr.String())
 	}
-	body, err := os.ReadFile(filepath.Join(tmp, "bunpy.lock"))
+	body, err := os.ReadFile(filepath.Join(tmp, "uv.lock"))
 	if err != nil {
 		t.Fatalf("read lock: %v", err)
 	}
 	got := string(body)
 	for _, want := range []string{
 		"version = 1",
-		"content-hash = \"sha256:",
 		"name = \"widget\"",
 		"version = \"1.1.0\"",
 		"hash = \"sha256:5b9866d1a5e11d85e37f88de9a941f9349ed18f4cd46508b12b1603d2ad63e2b\"",
@@ -497,14 +496,16 @@ peer-dependencies = ["widget>=1.0"]
 	if code, err := run([]string{"pm", "lock"}, &stdout, &stderr); err != nil || code != 0 {
 		t.Fatalf("pm lock: code=%d err=%v stderr=%s", code, err, stderr.String())
 	}
-	body, err := os.ReadFile(filepath.Join(tmp, "bunpy.lock"))
+	body, err := os.ReadFile(filepath.Join(tmp, "uv.lock"))
 	if err != nil {
 		t.Fatalf("read lock: %v", err)
 	}
 	got := string(body)
-	want := `lanes = ["dev", "main", "optional:web", "peer"]`
-	if !strings.Contains(got, want) {
-		t.Errorf("lock missing %q\n%s", want, got)
+	// widget is in all lanes; groups stores all lane labels including main
+	for _, g := range []string{`"main"`, `"dev"`, `"optional:web"`, `"peer"`} {
+		if !strings.Contains(got, g) {
+			t.Errorf("lock missing group %s\n%s", g, got)
+		}
 	}
 }
 
@@ -518,9 +519,9 @@ dependencies = ["widget>=1.0"]
 	if code, err := run([]string{"pm", "lock"}, &stdout, &stderr); err != nil || code != 0 {
 		t.Fatalf("pm lock: code=%d err=%v", code, err)
 	}
-	body, _ := os.ReadFile(filepath.Join(tmp, "bunpy.lock"))
-	if strings.Contains(string(body), "lanes =") {
-		t.Errorf("main-only pin should omit lanes field:\n%s", body)
+	body, _ := os.ReadFile(filepath.Join(tmp, "uv.lock"))
+	if strings.Contains(string(body), "groups =") {
+		t.Errorf("main-only pin should omit groups field:\n%s", body)
 	}
 }
 

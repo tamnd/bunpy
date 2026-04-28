@@ -1,0 +1,5 @@
+[project]
+name = "bench-flask"
+version = "0.0.1"
+requires-python = ">=3.12"
+dependencies = ["flask>=3.0"]

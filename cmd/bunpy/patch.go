@@ -13,6 +13,7 @@ import (
 	"github.com/tamnd/bunpy/v1/pkg/manifest"
 	"github.com/tamnd/bunpy/v1/pkg/patches"
 	"github.com/tamnd/bunpy/v1/pkg/pypi"
+	"github.com/tamnd/bunpy/v1/pkg/uvlock"
 )
 
 // patchSubcommand wires `bunpy patch <pkg>` (open scratch),
@@ -200,14 +201,14 @@ func patchList(stdout io.Writer) (int, error) {
 	return 0, nil
 }
 
-// lookupLockPin reads bunpy.lock and returns the row for pkg
+// lookupLockPin reads uv.lock and returns the row for pkg
 // (PEP 503 normalised). Errors out on missing lockfile or
 // missing pin.
 func lookupLockPin(pkg string) (lockfile.Package, error) {
-	lock, err := lockfile.Read("bunpy.lock")
+	lock, err := uvlock.ReadLockfile("uv.lock")
 	if err != nil {
 		if errors.Is(err, lockfile.ErrNotFound) {
-			return lockfile.Package{}, fmt.Errorf("bunpy.lock missing - run `bunpy pm lock` first")
+			return lockfile.Package{}, fmt.Errorf("uv.lock missing - run `bunpy pm lock` first")
 		}
 		return lockfile.Package{}, err
 	}

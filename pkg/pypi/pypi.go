@@ -21,6 +21,7 @@ import (
 	"sort"
 	"strings"
 
+	jsonv2 "github.com/go-json-experiment/json"
 	"github.com/tamnd/bunpy/v1/internal/httpkit"
 	"github.com/tamnd/bunpy/v1/pkg/cache"
 )
@@ -67,6 +68,7 @@ type File struct {
 	YankedReason   string            `json:"yanked_reason,omitempty"`
 	Version        string            `json:"version,omitempty"`
 	Kind           string            `json:"kind"`
+	Size           int64             `json:"size,omitempty"`
 	// CoreMetadataAvailable mirrors PEP 658: the wheel's METADATA
 	// is served at <url>.metadata. Both legacy
 	// data-dist-info-metadata and current core-metadata spellings
@@ -92,9 +94,13 @@ func (c *Client) Get(ctx context.Context, name string) (*Project, error) {
 	var cachedBody []byte
 	var cachedETag string
 	if c.Cache != nil {
-		if body, etag, ok := c.Cache.Get(norm); ok {
+		if body, etag, ok, fresh := c.Cache.Get(norm); ok {
 			cachedBody = body
 			cachedETag = etag
+			if fresh {
+				// RC-7: within freshness window — skip the HTTP round-trip entirely.
+				return parseProject(norm, body, etag)
+			}
 		}
 	}
 
@@ -150,6 +156,13 @@ func (c *Client) Get(ctx context.Context, name string) (*Project, error) {
 // archive. Hash verification is best-effort: when the index supplied
 // a sha256, a mismatch returns an error.
 func (c *Client) FetchMetadata(ctx context.Context, f File, fetchWheel func() ([]byte, error), extract func([]byte) ([]byte, error)) ([]byte, error) {
+	// RC-7: check disk metadata cache before any HTTP fetch.
+	if c.Cache != nil && f.Filename != "" {
+		if cached, ok := c.Cache.GetMetadata(f.Filename); ok {
+			return cached, nil
+		}
+	}
+	var body []byte
 	if f.CoreMetadataAvailable {
 		req, err := http.NewRequestWithContext(ctx, "GET", f.URL+".metadata", nil)
 		if err != nil {
@@ -166,22 +179,31 @@ func (c *Client) FetchMetadata(ctx context.Context, f File, fetchWheel func() ([
 		if resp.StatusCode/100 != 2 {
 			return nil, fmt.Errorf("pypi: %s.metadata: %s", f.URL, resp.Status)
 		}
-		body, err := io.ReadAll(resp.Body)
+		b, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return nil, fmt.Errorf("pypi: read %s.metadata: %w", f.URL, err)
 		}
 		if want := f.CoreMetadataHashes["sha256"]; want != "" {
-			if got := sha256Hex(body); got != want {
+			if got := sha256Hex(b); got != want {
 				return nil, fmt.Errorf("pypi: metadata hash mismatch for %s: got %s want %s", f.Filename, got, want)
 			}
 		}
-		return body, nil
+		body = b
+	} else {
+		wb, err := fetchWheel()
+		if err != nil {
+			return nil, err
+		}
+		b, err := extract(wb)
+		if err != nil {
+			return nil, err
+		}
+		body = b
 	}
-	body, err := fetchWheel()
-	if err != nil {
-		return nil, err
+	if c.Cache != nil && f.Filename != "" {
+		_ = c.Cache.PutMetadata(f.Filename, body)
 	}
-	return extract(body)
+	return body, nil
 }
 
 // NotFoundError is returned when the index serves a 404 for the
@@ -207,6 +229,7 @@ type rawPage struct {
 		URL                  string            `json:"url"`
 		Hashes               map[string]string `json:"hashes,omitempty"`
 		RequiresPython       string            `json:"requires-python,omitempty"`
+		Size                 int64             `json:"size,omitempty"`
 		Yanked               json.RawMessage   `json:"yanked,omitempty"`
 		CoreMetadata         json.RawMessage   `json:"core-metadata,omitempty"`
 		DataDistInfoMetadata json.RawMessage   `json:"data-dist-info-metadata,omitempty"`
@@ -219,7 +242,9 @@ type rawPage struct {
 
 func parseProject(name string, body []byte, etag string) (*Project, error) {
 	var raw rawPage
-	if err := json.Unmarshal(body, &raw); err != nil {
+	// Use jsonv2 for significantly faster parsing of large project pages
+	// (pydantic-core is 9MB; jsonv2 is ~2× faster than encoding/json).
+	if err := jsonv2.Unmarshal(body, &raw); err != nil {
 		return nil, fmt.Errorf("pypi: parse %s: %w", name, err)
 	}
 	canonical := raw.Name
@@ -242,6 +267,7 @@ func parseProject(name string, body []byte, etag string) (*Project, error) {
 			URL:            rf.URL,
 			Hashes:         rf.Hashes,
 			RequiresPython: rf.RequiresPython,
+			Size:           rf.Size,
 		}
 		f.Yanked, f.YankedReason = parseYanked(rf.Yanked)
 		raw := rf.CoreMetadata

@@ -26,7 +26,7 @@ dependencies = ["widget>=1.0"]
 	if err != nil || code != 0 {
 		t.Fatalf("bunpy update: code=%d err=%v stderr=%s", code, err, stderr.String())
 	}
-	body, err := os.ReadFile(filepath.Join(tmp, "bunpy.lock"))
+	body, err := os.ReadFile(filepath.Join(tmp, "uv.lock"))
 	if err != nil {
 		t.Fatalf("read lock: %v", err)
 	}
@@ -55,7 +55,7 @@ dependencies = ["widget>=1.0"]
 }
 
 func TestUpdateLatestIgnoresSpec(t *testing.T) {
-	// Manifest pins widget to ==1.0.0; bunpy.lock matches. A bare update
+	// Manifest pins widget to ==1.0.0; uv.lock matches. A bare update
 	// must respect the spec (no change), but `--latest widget` strips it
 	// and lets the resolver pick the highest non-prerelease (1.1.0).
 	tmp := setupUpdateFixture(t, `[project]
@@ -78,7 +78,7 @@ dependencies = ["widget==1.0.0"]
 	if err != nil || code != 0 {
 		t.Fatalf("bunpy update --latest: code=%d err=%v stderr=%s", code, err, stderr.String())
 	}
-	body, err := os.ReadFile(filepath.Join(tmp, "bunpy.lock"))
+	body, err := os.ReadFile(filepath.Join(tmp, "uv.lock"))
 	if err != nil {
 		t.Fatalf("read lock: %v", err)
 	}

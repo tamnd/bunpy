@@ -16,6 +16,7 @@ import (
 	"github.com/tamnd/bunpy/v1/pkg/marker"
 	"github.com/tamnd/bunpy/v1/pkg/pypi"
 	"github.com/tamnd/bunpy/v1/pkg/resolver"
+	"github.com/tamnd/bunpy/v1/pkg/uvlock"
 	"github.com/tamnd/bunpy/v1/pkg/version"
 	"github.com/tamnd/bunpy/v1/pkg/wheel"
 )
@@ -118,7 +119,7 @@ func updateSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 	if err != nil {
 		return 1, fmt.Errorf("bunpy update: %w", err)
 	}
-	lock, err := lockfile.Read("bunpy.lock")
+	lock, err := uvlock.ReadLockfile("uv.lock")
 	if err != nil && !errors.Is(err, lockfile.ErrNotFound) {
 		return 1, fmt.Errorf("bunpy update: %w", err)
 	}
@@ -217,7 +218,7 @@ func updateSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 	}
 	newLock.ContentHash = wantHash
 	newLock.Generated = time.Now().UTC()
-	if err := newLock.WriteFile("bunpy.lock"); err != nil {
+	if err := uvlock.WriteLockfile("uv.lock", newLock, mf.Project.RequiresPython, uvlock.WriteOptions{}); err != nil {
 		return 1, fmt.Errorf("bunpy update: %w", err)
 	}
 

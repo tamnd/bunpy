@@ -19,7 +19,7 @@ names="$(awk '
     s = substr($0, RSTART + 6, RLENGTH - 8)
     print s
   }
-' "$GOIPY_VM" | sort -u)"
+' "$GOIPY_VM" | LC_ALL=C sort -u)"
 
 mkdir -p "$(dirname "$OUT")"
 

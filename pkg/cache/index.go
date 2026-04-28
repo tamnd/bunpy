@@ -18,11 +18,22 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
+
+	jsonv2 "github.com/go-json-experiment/json"
 )
+
+var jsonMarshal = jsonv2.Marshal
+var jsonUnmarshal = jsonv2.Unmarshal
 
 // Index is the PEP 691 simple-index cache.
 type Index struct {
 	Dir string
+	// Freshness is how long a cached page is considered fresh. When
+	// positive, Get returns the cache body without any HTTP request if
+	// the page was stored within this duration. Zero means always
+	// revalidate (default; existing behaviour).
+	Freshness time.Duration
 }
 
 // NewIndex creates the directory if it does not exist and returns
@@ -38,17 +49,25 @@ func NewIndex(dir string) (*Index, error) {
 }
 
 // Get returns the cached body and ETag for a project. ok is false
-// when no cached body is present.
-func (i *Index) Get(name string) (body []byte, etag string, ok bool) {
+// when no cached body is present. When the Index has a positive Freshness
+// and the cached page is newer than that duration, fresh is true: the
+// caller should skip the HTTP round-trip entirely and use body directly.
+func (i *Index) Get(name string) (body []byte, etag string, ok bool, fresh bool) {
 	dir := filepath.Join(i.Dir, normalize(name))
-	b, err := os.ReadFile(filepath.Join(dir, "page.json"))
+	path := filepath.Join(dir, "page.json")
+	b, err := os.ReadFile(path)
 	if err != nil {
-		return nil, "", false
+		return nil, "", false, false
 	}
 	if e, err := os.ReadFile(filepath.Join(dir, "etag")); err == nil {
 		etag = strings.TrimSpace(string(e))
 	}
-	return b, etag, true
+	if i.Freshness > 0 {
+		if info, err := os.Stat(path); err == nil && time.Since(info.ModTime()) < i.Freshness {
+			fresh = true
+		}
+	}
+	return b, etag, true, fresh
 }
 
 // Put writes body and etag atomically.
@@ -89,6 +108,77 @@ func atomicWrite(path string, body []byte) error {
 		return err
 	}
 	return nil
+}
+
+// ETag returns just the cached ETag for a project without loading the
+// (potentially multi-megabyte) page body. Returns "" on any error.
+func (i *Index) ETag(name string) string {
+	p := filepath.Join(i.Dir, normalize(name), "etag")
+	b, err := os.ReadFile(p)
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(b))
+}
+
+// GetPicks returns the cached (version → wheel filename) map for the
+// given project, tags key, and ETag. ok is false when no entry exists
+// or when the stored ETag doesn't match (meaning the index page is stale).
+func (i *Index) GetPicks(name, tagsKey, etag string) (picks map[string]string, ok bool) {
+	dir := filepath.Join(i.Dir, normalize(name))
+	raw, err := os.ReadFile(filepath.Join(dir, "picks-"+tagsKey+".json"))
+	if err != nil {
+		return nil, false
+	}
+	var stored struct {
+		ETag  string            `json:"etag"`
+		Picks map[string]string `json:"picks"`
+	}
+	if err := jsonUnmarshal(raw, &stored); err != nil {
+		return nil, false
+	}
+	if stored.ETag != etag {
+		return nil, false
+	}
+	return stored.Picks, true
+}
+
+// PutPicks stores the (version → wheel filename) map for (name, tagsKey)
+// associated with the given ETag so it can be validated on future reads.
+func (i *Index) PutPicks(name, tagsKey string, picks map[string]string, etag string) error {
+	dir := filepath.Join(i.Dir, normalize(name))
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
+	stored := struct {
+		ETag  string            `json:"etag"`
+		Picks map[string]string `json:"picks"`
+	}{ETag: etag, Picks: picks}
+	body, err := jsonMarshal(stored)
+	if err != nil {
+		return err
+	}
+	return atomicWrite(filepath.Join(dir, "picks-"+tagsKey+".json"), body)
+}
+
+// GetMetadata returns the cached METADATA bytes for a wheel filename.
+// ok is false when no entry is present.
+func (i *Index) GetMetadata(filename string) (body []byte, ok bool) {
+	p := filepath.Join(i.Dir, "metadata", filename+".metadata")
+	b, err := os.ReadFile(p)
+	if err != nil {
+		return nil, false
+	}
+	return b, true
+}
+
+// PutMetadata caches METADATA bytes for a wheel filename atomically.
+func (i *Index) PutMetadata(filename string, body []byte) error {
+	dir := filepath.Join(i.Dir, "metadata")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
+	return atomicWrite(filepath.Join(dir, filename+".metadata"), body)
 }
 
 // DefaultDir returns the default cache root. Honours

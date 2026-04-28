@@ -164,18 +164,17 @@ version = "0.0.1"
 	if err != nil || code != 0 {
 		t.Fatalf("bunpy add widget: code=%d err=%v stderr=%s", code, err, stderr.String())
 	}
-	body, err := os.ReadFile(filepath.Join(tmp, "bunpy.lock"))
+	body, err := os.ReadFile(filepath.Join(tmp, "uv.lock"))
 	if err != nil {
 		t.Fatalf("read lockfile: %v", err)
 	}
 	got := string(body)
 	for _, want := range []string{
 		"version = 1",
-		"content-hash = \"sha256:",
 		"[[package]]",
 		"name = \"widget\"",
 		"version = \"1.1.0\"",
-		"filename = \"widget-1.1.0-py3-none-any.whl\"",
+		"widget-1.1.0-py3-none-any.whl",
 		"hash = \"sha256:5b9866d1a5e11d85e37f88de9a941f9349ed18f4cd46508b12b1603d2ad63e2b\"",
 	} {
 		if !strings.Contains(got, want) {
@@ -194,8 +193,8 @@ version = "0.0.1"
 	if err != nil || code != 0 {
 		t.Fatalf("bunpy add --no-write: code=%d err=%v", code, err)
 	}
-	if _, err := os.Stat(filepath.Join(tmp, "bunpy.lock")); !os.IsNotExist(err) {
-		t.Errorf("bunpy.lock must not exist with --no-write: err=%v", err)
+	if _, err := os.Stat(filepath.Join(tmp, "uv.lock")); !os.IsNotExist(err) {
+		t.Errorf("uv.lock must not exist with --no-write: err=%v", err)
 	}
 }
 
@@ -208,7 +207,7 @@ version = "0.0.1"
 	if code, err := run([]string{"add", "widget==1.0.0"}, &stdout, &stderr); err != nil || code != 0 {
 		t.Fatalf("first add: code=%d err=%v stderr=%s", code, err, stderr.String())
 	}
-	first, err := os.ReadFile(filepath.Join(tmp, "bunpy.lock"))
+	first, err := os.ReadFile(filepath.Join(tmp, "uv.lock"))
 	if err != nil {
 		t.Fatalf("read lock: %v", err)
 	}
@@ -220,7 +219,7 @@ version = "0.0.1"
 	if code, err := run([]string{"add", "widget==1.1.0"}, &stdout, &stderr); err != nil || code != 0 {
 		t.Fatalf("second add: code=%d err=%v stderr=%s", code, err, stderr.String())
 	}
-	second, err := os.ReadFile(filepath.Join(tmp, "bunpy.lock"))
+	second, err := os.ReadFile(filepath.Join(tmp, "uv.lock"))
 	if err != nil {
 		t.Fatalf("read lock 2: %v", err)
 	}
@@ -254,9 +253,9 @@ version = "0.0.1"
 	if !strings.Contains(got, `dev = [`) || !strings.Contains(got, `"widget>=1.1.0"`) {
 		t.Errorf("manifest missing dev dep:\n%s", got)
 	}
-	lock, _ := os.ReadFile(filepath.Join(tmp, "bunpy.lock"))
-	if !strings.Contains(string(lock), `lanes = ["dev"]`) {
-		t.Errorf("lockfile missing dev lane tag:\n%s", lock)
+	lock, _ := os.ReadFile(filepath.Join(tmp, "uv.lock"))
+	if !strings.Contains(string(lock), `groups = ["dev"]`) {
+		t.Errorf("lockfile missing dev group tag:\n%s", lock)
 	}
 }
 
@@ -274,9 +273,9 @@ version = "0.0.1"
 	if !strings.Contains(string(body), `test = [`) {
 		t.Errorf("manifest missing test group:\n%s", body)
 	}
-	lock, _ := os.ReadFile(filepath.Join(tmp, "bunpy.lock"))
-	if !strings.Contains(string(lock), `lanes = ["group:test"]`) {
-		t.Errorf("lockfile missing group:test lane tag:\n%s", lock)
+	lock, _ := os.ReadFile(filepath.Join(tmp, "uv.lock"))
+	if !strings.Contains(string(lock), `groups = ["group:test"]`) {
+		t.Errorf("lockfile missing group:test group tag:\n%s", lock)
 	}
 }
 
@@ -298,9 +297,9 @@ version = "0.0.1"
 	if !strings.Contains(got, `web = [`) {
 		t.Errorf("manifest missing web group:\n%s", got)
 	}
-	lock, _ := os.ReadFile(filepath.Join(tmp, "bunpy.lock"))
-	if !strings.Contains(string(lock), `lanes = ["optional:web"]`) {
-		t.Errorf("lockfile missing optional:web lane tag:\n%s", lock)
+	lock, _ := os.ReadFile(filepath.Join(tmp, "uv.lock"))
+	if !strings.Contains(string(lock), `groups = ["optional:web"]`) {
+		t.Errorf("lockfile missing optional:web group tag:\n%s", lock)
 	}
 }
 
@@ -322,9 +321,9 @@ version = "0.0.1"
 	if !strings.Contains(got, `peer-dependencies = [`) {
 		t.Errorf("manifest missing peer-dependencies:\n%s", got)
 	}
-	lock, _ := os.ReadFile(filepath.Join(tmp, "bunpy.lock"))
-	if !strings.Contains(string(lock), `lanes = ["peer"]`) {
-		t.Errorf("lockfile missing peer lane tag:\n%s", lock)
+	lock, _ := os.ReadFile(filepath.Join(tmp, "uv.lock"))
+	if !strings.Contains(string(lock), `groups = ["peer"]`) {
+		t.Errorf("lockfile missing peer group tag:\n%s", lock)
 	}
 }
 

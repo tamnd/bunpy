@@ -36,8 +36,12 @@ func Default(perHost int) RoundTripper {
 		TLSHandshakeTimeout:   15 * time.Second,
 		ResponseHeaderTimeout: 30 * time.Second,
 		IdleConnTimeout:       90 * time.Second,
-		MaxIdleConns:          32,
-		MaxIdleConnsPerHost:   8,
+		MaxIdleConns:          64,
+		MaxIdleConnsPerHost:   16,
+		// RC-6: HTTP/2 multiplexing — pypi.org and
+		// files.pythonhosted.org both support it, so multiple metadata
+		// requests share one TCP+TLS handshake instead of one each.
+		ForceAttemptHTTP2: true,
 	}
 	c := &http.Client{
 		Transport: tr,

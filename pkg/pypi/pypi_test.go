@@ -148,7 +148,7 @@ func TestGetWithCacheETag(t *testing.T) {
 	if _, err := c.Get(context.Background(), "widget"); err != nil {
 		t.Fatal(err)
 	}
-	body, etag, ok := idx.Get("widget")
+	body, etag, ok, _ := idx.Get("widget")
 	if !ok || len(body) == 0 {
 		t.Fatal("cache empty after first Get")
 	}

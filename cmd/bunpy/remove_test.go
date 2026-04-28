@@ -36,7 +36,7 @@ dev = ["widget>=1.0"]
 	if strings.Contains(string(mf), "widget") {
 		t.Errorf("widget still in manifest:\n%s", string(mf))
 	}
-	lock, err := os.ReadFile(filepath.Join(tmp, "bunpy.lock"))
+	lock, err := os.ReadFile(filepath.Join(tmp, "uv.lock"))
 	if err != nil {
 		t.Fatalf("read lock: %v", err)
 	}

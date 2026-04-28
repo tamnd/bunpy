@@ -1,0 +1,5 @@
+[project]
+name = "bench-pydantic"
+version = "0.0.1"
+requires-python = ">=3.12"
+dependencies = ["pydantic>=2.0"]
