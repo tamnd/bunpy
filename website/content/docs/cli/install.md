@@ -1,6 +1,6 @@
 ---
 title: bunpy install
-description: Install project dependencies from pyproject.toml and bunpy.lock.
+description: Install project dependencies from pyproject.toml, pinned by uv.lock.
 weight: 2
 ---
 
@@ -8,86 +8,140 @@ weight: 2
 bunpy install [flags]
 ```
 
-## Description
-
-Reads `pyproject.toml`, resolves the dependency graph (using `bunpy.lock` if
-present), downloads missing wheels, extracts them into `.bunpy/site-packages/`,
-and writes or verifies `bunpy.lock`.
-
-Running `bunpy install` is idempotent — already-installed packages are skipped.
+Reads `pyproject.toml`, resolves the dependency graph against `uv.lock` (if present), downloads missing wheels into the cache, and extracts them into `.bunpy/site-packages/`. Running `bunpy install` is idempotent -- already-installed packages are not re-downloaded.
 
 ## Flags
 
 | Flag | Description |
 |------|-------------|
-| `-D`, `--dev` | Include `[dependency-groups]` dev packages |
+| `-D`, `--dev` | Include `[dependency-groups] dev` packages |
 | `--all-extras` | Include all `[project.optional-dependencies]` extras |
+| `-E`, `--extra <name>` | Include a specific extras group by name |
 | `-P`, `--peer` | Include `[tool.bunpy] peer-dependencies` |
-| `--frozen` | Refuse to modify `bunpy.lock`; fail if lock is out of date |
+| `--frozen` | Refuse to update `uv.lock`; exit non-zero if the lockfile is stale |
 | `--no-verify` | Skip checksum verification of downloaded wheels |
-| `--target <dir>` | Install into `<dir>` instead of `.bunpy/site-packages` |
-| `--cache-dir <dir>` | Override the wheel cache directory |
+| `--target <dir>` | Install into `<dir>` instead of `.bunpy/site-packages/` |
+| `--cache-dir <dir>` | Override the wheel cache directory (default: `~/.cache/bunpy/wheels/`) |
+| `--backend=uv` | Delegate resolution to the real `uv` binary |
 | `--help`, `-h` | Print help |
 
 ## Examples
 
-Install production dependencies:
+### Install production dependencies
 
 ```bash
 bunpy install
 ```
 
-Install including dev dependencies:
+Reads `[project] dependencies` from `pyproject.toml`. If `uv.lock` exists, pinned versions from the lockfile are used and no new resolution occurs. If it doesn't exist, bunpy resolves from PyPI and writes a fresh `uv.lock`.
+
+### Include dev dependencies
 
 ```bash
 bunpy install -D
 ```
 
-Install all extras:
+Also installs packages listed under `[dependency-groups] dev` in `pyproject.toml`:
+
+```toml
+[dependency-groups]
+dev = ["pytest>=8.0", "black>=24.0", "mypy>=1.9"]
+```
+
+### Include optional extras
 
 ```bash
 bunpy install --all-extras
 ```
 
-Install into a custom target (useful in Docker builds):
+Or a specific extras group:
+
+```bash
+bunpy install -E postgres
+```
+
+This covers `[project.optional-dependencies]`:
+
+```toml
+[project.optional-dependencies]
+postgres = ["psycopg2>=2.9"]
+redis = ["redis>=5.0"]
+```
+
+### Install to a custom target (Docker builds)
 
 ```bash
 bunpy install --target /app/site-packages
 ```
 
-CI: fail if the lockfile is stale instead of updating it:
+Useful in multi-stage Docker builds:
+
+```dockerfile
+FROM tamnd/bunpy:0.10.29 AS deps
+WORKDIR /app
+COPY pyproject.toml uv.lock ./
+RUN bunpy install --frozen --target /app/site-packages
+
+FROM python:3.14-slim
+COPY --from=deps /app/site-packages /app/site-packages
+COPY . .
+ENV PYTHONPATH=/app/site-packages
+CMD ["python", "src/main.py"]
+```
+
+### CI: fail if lockfile is stale
 
 ```bash
 bunpy install --frozen
 ```
 
+With `--frozen`, bunpy reads `uv.lock` as authoritative and refuses to write changes. If `pyproject.toml` has changed since the lockfile was generated, the command exits with a non-zero code. Use this in CI pipelines to enforce that developers commit lockfile updates:
+
+```yaml
+# .github/workflows/ci.yml
+- name: Install dependencies
+  run: bunpy install --frozen
+```
+
 ## How it works
 
-1. Parse `pyproject.toml` — collect `dependencies`, selected dependency-groups,
-   optional-dependencies, and peer-dependencies.
-2. Read `bunpy.lock` (if present) and check content-hash against pyproject.
-3. Resolve: for any unpinned package, call the PyPI Simple API and pick the
-   highest version satisfying the constraint.
-4. Download missing wheels into the wheel cache (`~/.cache/bunpy/wheels/`).
-5. Apply patches from `[tool.bunpy.patches]` on top of the extracted wheel.
-6. Write `.bunpy/site-packages/` with the installed packages.
-7. Update `bunpy.lock` with the resolved pins.
+1. **Parse `pyproject.toml`** -- collect `dependencies`, any selected extras, dev groups, and peer dependencies.
+2. **Read `uv.lock`** -- if present, load pinned versions and verify the content hash against the current `pyproject.toml`.
+3. **Resolve** -- for any package not pinned in the lockfile, call the PyPI Simple API and select the highest version satisfying all constraints.
+4. **Download** -- fetch missing wheels into `~/.cache/bunpy/wheels/`. Wheels already in the cache are not re-downloaded.
+5. **Verify** -- check each wheel's `sha256` hash against the value recorded in `uv.lock`.
+6. **Extract** -- unpack wheels into `.bunpy/site-packages/` (or `--target` if specified).
+7. **Apply patches** -- run any patches listed under `[tool.bunpy.patches]` on the extracted source.
+8. **Update `uv.lock`** -- write resolved pins back to `uv.lock` (skipped with `--frozen`).
 
-## bunpy.lock
+## The lockfile
 
-After install, `bunpy.lock` contains one `[[package]]` block per resolved
-dependency:
+After a successful install, `uv.lock` records the exact wheel URL and hash for every resolved package:
 
 ```toml
-# bunpy.lock
 version = 1
-generated = "2026-04-28T10:00:00Z"
-content-hash = "sha256:..."
+requires-python = ">=3.14"
+content-hash = "sha256:abc123..."
 
 [[package]]
 name = "requests"
 version = "2.31.0"
-filename = "requests-2.31.0-py3-none-any.whl"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+  { name = "certifi" },
+  { name = "charset-normalizer", specifier = ">=2,<4" },
+  { name = "idna", specifier = ">=2.5,<4" },
+  { name = "urllib3", specifier = ">=1.21.1,<3" },
+]
+
+[[package.wheels]]
 url = "https://files.pythonhosted.org/packages/.../requests-2.31.0-py3-none-any.whl"
-hash = "sha256:..."
+hash = "sha256:58cd2187423d..."
+size = 62574
 ```
+
+Commit `uv.lock` to version control. It is human-readable, diff-friendly, and compatible with the real `uv` tool.
+
+## Relationship with bunpy add
+
+`bunpy add <pkg>` calls `bunpy install` internally after updating `pyproject.toml`. You rarely need to run `bunpy install` by hand during development -- it is mainly used in CI and Docker builds where you check out an existing project and want to restore the exact environment recorded in `uv.lock`.

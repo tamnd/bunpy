@@ -1,6 +1,7 @@
 package bunpy_test
 
 import (
+	"runtime"
 	"strings"
 	"testing"
 
@@ -39,6 +40,9 @@ func TestShellExitCode(t *testing.T) {
 }
 
 func TestShellCwd(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("pwd with /tmp cwd is Unix-only")
+	}
 	i := serveInterp(t)
 	shellFn := bunpyAPI.BuildShell(i)
 	kw := goipyObject.NewDict()
@@ -78,6 +82,9 @@ func TestSpawnEcho(t *testing.T) {
 }
 
 func TestDollarTemplate(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("shell quoting behavior differs on Windows cmd.exe")
+	}
 	i := serveInterp(t)
 	dollarFn := bunpyAPI.BuildDollar(i)
 	kw := goipyObject.NewDict()
@@ -95,6 +102,9 @@ func TestDollarTemplate(t *testing.T) {
 }
 
 func TestDollarQuotesSpecialChars(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("shell quoting behavior differs on Windows cmd.exe")
+	}
 	i := serveInterp(t)
 	dollarFn := bunpyAPI.BuildDollar(i)
 	kw := goipyObject.NewDict()

@@ -38,7 +38,6 @@ bunpy --version  # → bunpy 0.8.9
 Works on macOS (arm64, x64) · Linux (arm64, x64) · Windows (x64)
 </p>
 
----
 
 ## Why bunpy?
 
@@ -70,7 +69,6 @@ or compile to a native binary with `bunpy build --compile`.
 </div>
 </div>
 
----
 
 ## Features
 
@@ -107,7 +105,6 @@ or compile to a native binary with `bunpy build --compile`.
   >}}
 {{< /hextra/feature-grid >}}
 
----
 
 ## Node.js compatibility shim
 
@@ -121,7 +118,6 @@ as Node.js.
 [Read the Node.js compatibility docs →](/bunpy/docs/node/)
 {{< /callout >}}
 
----
 
 ## What's in the box
 

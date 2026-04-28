@@ -61,6 +61,9 @@ func TestNodePathExtname(t *testing.T) {
 }
 
 func TestNodePathIsAbsolute(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Unix-style absolute paths (no drive letter) not absolute on Windows")
+	}
 	mod := BuildNodePath(nil)
 	fn := mustGetBuiltin(t, mod.Dict, "isAbsolute")
 	res, _ := fn.Call(nil, []goipyObject.Object{&goipyObject.Str{V: "/absolute"}}, nil)

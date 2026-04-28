@@ -12,6 +12,7 @@ import (
 )
 
 var globalLogger atomic.Pointer[slog.Logger]
+var globalLogFile atomic.Pointer[os.File]
 
 func init() {
 	l := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo}))
@@ -57,6 +58,15 @@ func BuildLog(_ *goipyVM.Interp) *goipyObject.Module {
 							return nil, fmt.Errorf("bunpy.log.configure(): %w", err)
 						}
 						out = f
+						// Close previous file-backed writer before replacing.
+						if old := globalLogFile.Swap(f); old != nil {
+							old.Close()
+						}
+					}
+				} else {
+					// No file specified: reset to stderr and close any open log file.
+					if old := globalLogFile.Swap(nil); old != nil {
+						old.Close()
 					}
 				}
 			}

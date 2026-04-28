@@ -261,10 +261,10 @@ jobs:
           EOF
           ( cd "$work" && BUNPY_PYPI_FIXTURES="$GITHUB_WORKSPACE/tests/fixtures/v013/index" \
               BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" pm lock )
-          test -f "$work/bunpy.lock"
-          grep -q 'name = "widget"' "$work/bunpy.lock"
-          grep -q 'version = "1.1.0"' "$work/bunpy.lock"
-          grep -q 'content-hash = "sha256:' "$work/bunpy.lock"
+          test -f "$work/uv.lock"
+          grep -q 'name = "widget"' "$work/uv.lock"
+          grep -q 'version = "1.1.0"' "$work/uv.lock"
+          grep -q 'content-hash = "sha256:' "$work/uv.lock"
           # --check on a clean state passes.
           ( cd "$work" && BUNPY_PYPI_FIXTURES="$GITHUB_WORKSPACE/tests/fixtures/v013/index" \
               BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" pm lock --check )
@@ -288,11 +288,11 @@ jobs:
           EOF
           ( cd "$work" && BUNPY_PYPI_FIXTURES="$GITHUB_WORKSPACE/tests/fixtures/v015/index" \
               BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" pm lock )
-          test -f "$work/bunpy.lock"
-          grep -q 'name = "widget"' "$work/bunpy.lock" || { echo "missing widget pin in:"; cat "$work/bunpy.lock"; exit 1; }
-          grep -q 'name = "gizmo"' "$work/bunpy.lock" || { echo "missing transitive gizmo pin in:"; cat "$work/bunpy.lock"; exit 1; }
-          grep -q 'version = "1.0.0"' "$work/bunpy.lock"
-          grep -q 'version = "2.0.0"' "$work/bunpy.lock"
+          test -f "$work/uv.lock"
+          grep -q 'name = "widget"' "$work/uv.lock" || { echo "missing widget pin in:"; cat "$work/uv.lock"; exit 1; }
+          grep -q 'name = "gizmo"' "$work/uv.lock" || { echo "missing transitive gizmo pin in:"; cat "$work/uv.lock"; exit 1; }
+          grep -q 'version = "1.0.0"' "$work/uv.lock"
+          grep -q 'version = "2.0.0"' "$work/uv.lock"
           # --check on the freshly resolved tree passes.
           ( cd "$work" && BUNPY_PYPI_FIXTURES="$GITHUB_WORKSPACE/tests/fixtures/v015/index" \
               BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" pm lock --check )
@@ -330,7 +330,7 @@ jobs:
           EOF
           ( cd "$work" && BUNPY_PYPI_FIXTURES="$GITHUB_WORKSPACE/tests/fixtures/v013/index" \
               BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" pm lock )
-          grep -q 'lanes = \["dev"\]' "$work/bunpy.lock"
+          grep -q 'groups = \["dev"\]' "$work/uv.lock"
           ( cd "$work" && BUNPY_PYPI_FIXTURES="$GITHUB_WORKSPACE/tests/fixtures/v013/index" \
               BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" install )
           test ! -e "$work/.bunpy/site-packages/widget"
@@ -353,7 +353,7 @@ jobs:
           EOF
           ( cd "$work" && BUNPY_PYPI_FIXTURES="$GITHUB_WORKSPACE/tests/fixtures/v013/index" \
               BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" pm lock )
-          grep -q 'lanes = \["optional:web"\]' "$work/bunpy.lock"
+          grep -q 'groups = \["optional:web"\]' "$work/uv.lock"
           ( cd "$work" && BUNPY_PYPI_FIXTURES="$GITHUB_WORKSPACE/tests/fixtures/v013/index" \
               BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" install --all-extras )
           test -f "$work/.bunpy/site-packages/widget/__init__.py"
@@ -373,7 +373,7 @@ jobs:
           EOF
           ( cd "$work" && BUNPY_PYPI_FIXTURES="$GITHUB_WORKSPACE/tests/fixtures/v013/index" \
               BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" pm lock )
-          grep -q 'lanes = \["peer"\]' "$work/bunpy.lock"
+          grep -q 'groups = \["peer"\]' "$work/uv.lock"
           ( cd "$work" && BUNPY_PYPI_FIXTURES="$GITHUB_WORKSPACE/tests/fixtures/v013/index" \
               BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" install -P )
           test -f "$work/.bunpy/site-packages/widget/__init__.py"
@@ -396,7 +396,7 @@ jobs:
             -e 's/version = "1.1.0"/version = "1.0.0"/' \
             -e 's/widget-1.1.0-py3-none-any.whl/widget-1.0.0-py3-none-any.whl/' \
             -e 's|sha256:5b9866d1a5e11d85e37f88de9a941f9349ed18f4cd46508b12b1603d2ad63e2b|sha256:86eaa2517187b884e706a792085ed6dabd2530e6f37d0d9220d08b5448c8a796|' \
-            "$work/bunpy.lock"
+            "$work/uv.lock"
           out="$( cd "$work" && BUNPY_PYPI_FIXTURES="$GITHUB_WORKSPACE/tests/fixtures/v013/index" \
               BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" outdated )"
           echo "$out"
@@ -427,7 +427,7 @@ jobs:
             -e 's/version = "1.1.0"/version = "1.0.0"/' \
             -e 's/widget-1.1.0-py3-none-any.whl/widget-1.0.0-py3-none-any.whl/' \
             -e 's|sha256:5b9866d1a5e11d85e37f88de9a941f9349ed18f4cd46508b12b1603d2ad63e2b|sha256:86eaa2517187b884e706a792085ed6dabd2530e6f37d0d9220d08b5448c8a796|' \
-            "$work/bunpy.lock"
+            "$work/uv.lock"
           out="$( cd "$work" && BUNPY_PYPI_FIXTURES="$GITHUB_WORKSPACE/tests/fixtures/v013/index" \
               BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" update --no-install )"
           echo "$out"
@@ -435,7 +435,7 @@ jobs:
             *"widget 1.0.0 -> 1.1.0"*) ;;
             *) echo "want widget upgrade line, got: $out"; exit 1 ;;
           esac
-          grep -q 'version = "1.1.0"' "$work/bunpy.lock"
+          grep -q 'version = "1.1.0"' "$work/uv.lock"
 
       - name: bunpy update --latest smoke (v0.1.7)
         shell: bash
@@ -452,7 +452,7 @@ jobs:
           EOF
           ( cd "$work" && BUNPY_PYPI_FIXTURES="$GITHUB_WORKSPACE/tests/fixtures/v013/index" \
               BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" pm lock )
-          grep -q 'version = "1.0.0"' "$work/bunpy.lock"
+          grep -q 'version = "1.0.0"' "$work/uv.lock"
           bare="$( cd "$work" && BUNPY_PYPI_FIXTURES="$GITHUB_WORKSPACE/tests/fixtures/v013/index" \
               BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" update --no-install )"
           case "$bare" in
@@ -461,7 +461,7 @@ jobs:
           esac
           ( cd "$work" && BUNPY_PYPI_FIXTURES="$GITHUB_WORKSPACE/tests/fixtures/v013/index" \
               BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" update --latest widget --no-install )
-          grep -q 'version = "1.1.0"' "$work/bunpy.lock"
+          grep -q 'version = "1.1.0"' "$work/uv.lock"
           # --latest with no positional must error out.
           if ( cd "$work" && BUNPY_PYPI_FIXTURES="$GITHUB_WORKSPACE/tests/fixtures/v013/index" \
               BUNPY_CACHE_DIR="$cache" "$GITHUB_WORKSPACE/bunpy" update --latest --no-install 2>/dev/null ); then
@@ -497,8 +497,8 @@ jobs:
           if grep -q widget "$work/pyproject.toml"; then
             echo "widget still in pyproject after bare remove:"; cat "$work/pyproject.toml"; exit 1
           fi
-          if grep -q 'name = "widget"' "$work/bunpy.lock"; then
-            echo "widget still pinned after remove:"; cat "$work/bunpy.lock"; exit 1
+          if grep -q 'name = "widget"' "$work/uv.lock"; then
+            echo "widget still pinned after remove:"; cat "$work/uv.lock"; exit 1
           fi
           test ! -e "$work/.bunpy/site-packages/widget"
           # -D restricts to the dev lane only.
@@ -579,18 +579,20 @@ jobs:
           version = "0.1.0"
           dependencies = ["widget>=1.0"]
           EOF
-          cat > "$work/bunpy.lock" <<'EOF'
-          # bunpy.lock
+          cat > "$work/uv.lock" <<'EOF'
           version = 1
-          generated = "2026-04-27T10:00:00Z"
+          requires-python = ">=3.12"
           content-hash = "sha256:0000"
 
           [[package]]
           name = "widget"
           version = "1.0.0"
-          filename = "widget-1.0.0-py3-none-any.whl"
+          source = { registry = "https://pypi.org/simple" }
+
+          [[package.wheels]]
           url = "https://files.example.com/widget-1.0.0-py3-none-any.whl"
           hash = "sha256:abcd"
+          size = 0
           EOF
           ( cd "$work" && "$GITHUB_WORKSPACE/bunpy" patch widget --cache-dir "$cache" )
           test -d "$work/.bunpy/patches/.scratch/widget-1.0.0"
@@ -641,33 +643,41 @@ jobs:
           [project.optional-dependencies]
           tracing = ["beta>=1.0"]
           EOF
-          cat > "$work/bunpy.lock" <<'EOF'
-          # bunpy.lock
+          cat > "$work/uv.lock" <<'EOF'
           version = 1
-          generated = "2026-04-27T10:00:00Z"
+          requires-python = ">=3.12"
           content-hash = "sha256:0000"
 
           [[package]]
           name = "alpha"
           version = "1.0.0"
-          filename = "alpha-1.0.0-py3-none-any.whl"
+          source = { registry = "https://pypi.org/simple" }
+
+          [[package.wheels]]
           url = "https://files.example.com/alpha-1.0.0-py3-none-any.whl"
           hash = "sha256:aaaa"
+          size = 0
 
           [[package]]
           name = "beta"
           version = "1.0.0"
-          filename = "beta-1.0.0-py3-none-any.whl"
+          source = { registry = "https://pypi.org/simple" }
+          groups = ["optional:tracing"]
+
+          [[package.wheels]]
           url = "https://files.example.com/beta-1.0.0-py3-none-any.whl"
           hash = "sha256:bbbb"
-          lanes = ["optional:tracing"]
+          size = 0
 
           [[package]]
           name = "gamma"
           version = "2.2.3"
-          filename = "gamma-2.2.3-py3-none-any.whl"
+          source = { registry = "https://pypi.org/simple" }
+
+          [[package.wheels]]
           url = "https://files.example.com/gamma-2.2.3-py3-none-any.whl"
           hash = "sha256:cccc"
+          size = 0
           EOF
           out="$( cd "$work" && "$GITHUB_WORKSPACE/bunpy" why gamma --cache-dir "$cache" )"
           echo "$out" | grep -q 'gamma 2.2.3'
@@ -700,23 +710,25 @@ jobs:
         shell: bash
         run: |
           work="$(mktemp -d)"
-          cat > "$work/bunpy.lock" <<'EOF'
-          # bunpy.lock
+          cat > "$work/uv.lock" <<'EOF'
           version = 1
-          generated = "2026-04-27T10:00:00Z"
+          requires-python = ">=3.12"
           content-hash = "sha256:0000"
 
           [[package]]
           name = "requests"
           version = "2.31.0"
-          filename = "requests-2.31.0-py3-none-any.whl"
+          source = { registry = "https://pypi.org/simple" }
+
+          [[package.wheels]]
           url = "https://files.example.com/requests-2.31.0-py3-none-any.whl"
           hash = "sha256:aaaa"
+          size = 0
           EOF
           # --json on a minimal lock should exit 0 and output valid JSON.
           # (No real OSV call: the integration is covered by pkg/audit tests.)
           # We only smoke-test flag parsing and JSON shape here.
-          out="$( cd "$work" && "$GITHUB_WORKSPACE/bunpy" audit --json --lockfile bunpy.lock 2>&1 || true )"
+          out="$( cd "$work" && "$GITHUB_WORKSPACE/bunpy" audit --json --lockfile uv.lock 2>&1 || true )"
           # Either [] (no vulns) or a JSON array are both valid; just check it starts with [ or is an error.
           echo "$out" | grep -qE '^\[|\{|No vulnerabilities' || { echo "unexpected audit output: $out"; exit 1; }
           # --help should exit 0
@@ -822,7 +834,7 @@ jobs:
           whl="$cache_dir/mygreet-1.0.0-py3-none-any.whl"
           ( cd "$wheel_dir" && zip -r "$whl" . -x "*.DS_Store" )
           # run via bunpyx using the pre-seeded cache
-          out="$( "$GITHUB_WORKSPACE/bunpyx" --cache-dir "$cache_dir" --no-cache mygreet@1.0.0 world 2>&1 || true )"
+          out="$( "$GITHUB_WORKSPACE/bunpyx" --cache-dir "$cache_dir" mygreet@1.0.0 world 2>&1 || true )"
           echo "$out" | grep -q "hello bunpyx" || { echo "unexpected output: $out"; exit 1; }
           # --help exits 0
           "$GITHUB_WORKSPACE/bunpyx" --help > /dev/null

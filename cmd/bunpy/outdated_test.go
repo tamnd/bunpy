@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -18,6 +19,17 @@ func setupOutdatedFixture(t *testing.T, manifest string, lockVersion string) str
 	t.Helper()
 	tmp := t.TempDir()
 	cache := t.TempDir()
+	// On Windows, cached wheel files may be written without execute bits,
+	// preventing TempDir cleanup from removing them. Make everything writable
+	// before the TempDir cleanup runs (Cleanup callbacks run LIFO).
+	t.Cleanup(func() {
+		_ = filepath.WalkDir(cache, func(path string, _ fs.DirEntry, err error) error {
+			if err == nil {
+				_ = os.Chmod(path, 0o755)
+			}
+			return nil
+		})
+	})
 	if err := os.WriteFile(filepath.Join(tmp, "pyproject.toml"), []byte(manifest), 0o644); err != nil {
 		t.Fatalf("write manifest: %v", err)
 	}

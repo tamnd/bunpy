@@ -31,6 +31,10 @@ func TestLogJSONFormat(t *testing.T) {
 	mod := bunpyAPI.BuildLog(i)
 
 	tmp := filepath.Join(t.TempDir(), "test.log")
+	t.Cleanup(func() {
+		configureFn, _ := mod.Dict.GetStr("configure")
+		configureFn.(*goipyObject.BuiltinFunc).Call(nil, nil, goipyObject.NewDict())
+	})
 
 	configureFn, _ := mod.Dict.GetStr("configure")
 	kwargs := goipyObject.NewDict()
@@ -67,6 +71,10 @@ func TestLogLevelFiltering(t *testing.T) {
 	mod := bunpyAPI.BuildLog(i)
 
 	tmp := filepath.Join(t.TempDir(), "level.log")
+	t.Cleanup(func() {
+		configureFn, _ := mod.Dict.GetStr("configure")
+		configureFn.(*goipyObject.BuiltinFunc).Call(nil, nil, goipyObject.NewDict())
+	})
 
 	configureFn, _ := mod.Dict.GetStr("configure")
 	kwargs := goipyObject.NewDict()
@@ -91,6 +99,10 @@ func TestLogWithFields(t *testing.T) {
 	mod := bunpyAPI.BuildLog(i)
 
 	tmp := filepath.Join(t.TempDir(), "fields.log")
+	t.Cleanup(func() {
+		configureFn, _ := mod.Dict.GetStr("configure")
+		configureFn.(*goipyObject.BuiltinFunc).Call(nil, nil, goipyObject.NewDict())
+	})
 
 	configureFn, _ := mod.Dict.GetStr("configure")
 	kw := goipyObject.NewDict()
@@ -130,6 +142,10 @@ func TestLogConfigureFile(t *testing.T) {
 	mod := bunpyAPI.BuildLog(i)
 
 	tmp := filepath.Join(t.TempDir(), "out.log")
+	t.Cleanup(func() {
+		configureFn, _ := mod.Dict.GetStr("configure")
+		configureFn.(*goipyObject.BuiltinFunc).Call(nil, nil, goipyObject.NewDict())
+	})
 	configureFn, _ := mod.Dict.GetStr("configure")
 	kw := goipyObject.NewDict()
 	kw.SetStr("file", &goipyObject.Str{V: tmp})
