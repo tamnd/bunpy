@@ -33,32 +33,39 @@ tracing = ["beta>=1.0"]
 peer-dependencies = []
 `))
 
-	mustWrite(t, filepath.Join(proj, "bunpy.lock"), []byte(`# bunpy.lock
-version = 1
-generated = "2026-04-27T10:00:00Z"
-content-hash = "sha256:0000"
+	mustWrite(t, filepath.Join(proj, "uv.lock"), []byte(`version = 1
+requires-python = ">=3.12"
 
 [[package]]
 name = "alpha"
 version = "1.0.0"
-filename = "alpha-1.0.0-py3-none-any.whl"
+source = { registry = "https://pypi.org/simple" }
+
+[[package.wheels]]
 url = "https://files.example.com/alpha-1.0.0-py3-none-any.whl"
 hash = "sha256:aaaa"
+size = 0
 
 [[package]]
 name = "beta"
 version = "1.0.0"
-filename = "beta-1.0.0-py3-none-any.whl"
+source = { registry = "https://pypi.org/simple" }
+groups = ["optional:tracing"]
+
+[[package.wheels]]
 url = "https://files.example.com/beta-1.0.0-py3-none-any.whl"
 hash = "sha256:bbbb"
-lanes = ["optional:tracing"]
+size = 0
 
 [[package]]
 name = "gamma"
 version = "2.2.3"
-filename = "gamma-2.2.3-py3-none-any.whl"
+source = { registry = "https://pypi.org/simple" }
+
+[[package.wheels]]
 url = "https://files.example.com/gamma-2.2.3-py3-none-any.whl"
 hash = "sha256:cccc"
+size = 0
 `))
 
 	writeFakeWheel(t, cacheDir, "alpha", "1.0.0", "Requires-Dist: gamma>=2.0\n")

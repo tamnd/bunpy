@@ -11,7 +11,7 @@ import (
 
 // setupOutdatedFixture seeds a project dir with the given pyproject.toml,
 // runs `bunpy pm lock` against the v013 fixture (widget 1.0.0 / 1.1.0)
-// to seed bunpy.lock, then optionally rewrites the lock so a specific
+// to seed uv.lock, then optionally rewrites the lock so a specific
 // version pin is captured. The v013 index lets us exercise the
 // outdated/up-to-date split without authoring a new fixture tree.
 func setupOutdatedFixture(t *testing.T, manifest string, lockVersion string) string {
@@ -41,7 +41,7 @@ func setupOutdatedFixture(t *testing.T, manifest string, lockVersion string) str
 		t.Fatalf("pm lock seed: code=%d err=%v stderr=%s", code, err, stderr.String())
 	}
 	if lockVersion != "" {
-		body, err := os.ReadFile(filepath.Join(tmp, "bunpy.lock"))
+		body, err := os.ReadFile(filepath.Join(tmp, "uv.lock"))
 		if err != nil {
 			t.Fatalf("read lock: %v", err)
 		}
@@ -55,7 +55,7 @@ func setupOutdatedFixture(t *testing.T, manifest string, lockVersion string) str
 				"5b9866d1a5e11d85e37f88de9a941f9349ed18f4cd46508b12b1603d2ad63e2b",
 				"86eaa2517187b884e706a792085ed6dabd2530e6f37d0d9220d08b5448c8a796")
 		}
-		if err := os.WriteFile(filepath.Join(tmp, "bunpy.lock"), []byte(out), 0o644); err != nil {
+		if err := os.WriteFile(filepath.Join(tmp, "uv.lock"), []byte(out), 0o644); err != nil {
 			t.Fatalf("rewrite lock: %v", err)
 		}
 	}

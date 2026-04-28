@@ -40,7 +40,12 @@ type Package struct {
 	Filename string   `toml:"filename"`
 	URL      string   `toml:"url"`
 	Hash     string   `toml:"hash"`
+	Size     int64    `toml:"size,omitempty"`
 	Lanes    []string `toml:"lanes,omitempty"`
+	// Sdist fields carry the source distribution for uv.lock compatibility.
+	SdistURL  string `toml:"sdist_url,omitempty"`
+	SdistHash string `toml:"sdist_hash,omitempty"`
+	SdistSize int64  `toml:"sdist_size,omitempty"`
 }
 
 // Lane labels carried on Package.Lanes. Order in serialised

@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/tamnd/bunpy/v1/pkg/audit"
-	"github.com/tamnd/bunpy/v1/pkg/lockfile"
+	"github.com/tamnd/bunpy/v1/pkg/uvlock"
 )
 
 func auditSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
@@ -71,13 +71,13 @@ func auditSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 			}
 		}
 		if wsRoot != "" {
-			lockPath = filepath.Join(wsRoot, "bunpy.lock")
+			lockPath = filepath.Join(wsRoot, "uv.lock")
 		} else {
-			lockPath = "bunpy.lock"
+			lockPath = "uv.lock"
 		}
 	}
 
-	lock, err := lockfile.Read(lockPath)
+	lock, err := uvlock.ReadLockfile(lockPath)
 	if err != nil {
 		return 1, fmt.Errorf("bunpy audit: %w", err)
 	}

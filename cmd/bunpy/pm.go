@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -15,12 +16,14 @@ import (
 	"time"
 
 	"github.com/tamnd/bunpy/v1/internal/httpkit"
+	"github.com/tamnd/bunpy/v1/internal/uvdetect"
 	"github.com/tamnd/bunpy/v1/pkg/cache"
 	"github.com/tamnd/bunpy/v1/pkg/lockfile"
 	"github.com/tamnd/bunpy/v1/pkg/manifest"
 	"github.com/tamnd/bunpy/v1/pkg/marker"
 	"github.com/tamnd/bunpy/v1/pkg/pypi"
 	"github.com/tamnd/bunpy/v1/pkg/resolver"
+	"github.com/tamnd/bunpy/v1/pkg/uvlock"
 	"github.com/tamnd/bunpy/v1/pkg/version"
 	"github.com/tamnd/bunpy/v1/pkg/wheel"
 )
@@ -237,16 +240,45 @@ func pmInstallWheel(args []string, stdout, stderr io.Writer) (int, error) {
 	return 0, nil
 }
 
-// pmLock regenerates bunpy.lock from pyproject.toml without
-// installing. With --check, exits non-zero on drift: missing
-// lockfile, content-hash mismatch, or a pyproject dep with no
-// lockfile entry. v0.1.5 walks the resolver so transitive deps
-// land in the lockfile alongside the direct ones.
+// pmLockWithUV delegates `pm lock` to the real uv binary.
+// For --check it runs `uv lock --check`; otherwise `uv lock`.
+func pmLockWithUV(check bool, stdout, stderr io.Writer) (int, error) {
+	uvBin, err := uvdetect.Find()
+	if err != nil {
+		return 1, err
+	}
+	uvArgs := []string{"lock"}
+	if check {
+		uvArgs = append(uvArgs, "--check")
+	}
+	cmd := exec.Command(uvBin, uvArgs...)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
+	if err := cmd.Run(); err != nil {
+		if exit, ok := err.(*exec.ExitError); ok {
+			return exit.ExitCode(), nil
+		}
+		return 1, fmt.Errorf("bunpy pm lock --backend=uv: %w", err)
+	}
+	return 0, nil
+}
+
+// pmLock regenerates uv.lock from pyproject.toml without installing.
+// With --check, exits non-zero on drift: missing lockfile, content-hash
+// mismatch, or a pyproject dep with no lockfile entry. v0.1.5 walks
+// the resolver so transitive deps land in the lockfile alongside the
+// direct ones. With --backend=uv, delegates to the real uv binary.
 func pmLock(args []string, stdout, stderr io.Writer) (int, error) {
 	var (
-		check    bool
-		baseURL  string
-		cacheDir string
+		check          bool
+		frozen         bool
+		offline        bool
+		upgrade        bool
+		upgradePkgs    []string
+		baseURL        string
+		cacheDir       string
+		backend        string
 	)
 	for i := 0; i < len(args); i++ {
 		a := args[i]
@@ -255,6 +287,18 @@ func pmLock(args []string, stdout, stderr io.Writer) (int, error) {
 			return printHelp("pm-lock", stdout, stderr)
 		case "--check":
 			check = true
+		case "--frozen":
+			frozen = true
+		case "--offline":
+			offline = true
+		case "--upgrade", "-U":
+			upgrade = true
+		case "--upgrade-package", "-P":
+			if i+1 >= len(args) {
+				return 1, fmt.Errorf("bunpy pm lock: --upgrade-package requires a value")
+			}
+			i++
+			upgradePkgs = append(upgradePkgs, args[i])
 		case "--index":
 			if i+1 >= len(args) {
 				return 1, fmt.Errorf("bunpy pm lock: --index requires a value")
@@ -267,7 +311,17 @@ func pmLock(args []string, stdout, stderr io.Writer) (int, error) {
 			}
 			i++
 			cacheDir = args[i]
+		case "--backend":
+			if i+1 >= len(args) {
+				return 1, fmt.Errorf("bunpy pm lock: --backend requires a value")
+			}
+			i++
+			backend = args[i]
 		default:
+			if strings.HasPrefix(a, "--upgrade-package=") {
+				upgradePkgs = append(upgradePkgs, strings.TrimPrefix(a, "--upgrade-package="))
+				continue
+			}
 			if strings.HasPrefix(a, "--index=") {
 				baseURL = strings.TrimPrefix(a, "--index=")
 				continue
@@ -276,11 +330,17 @@ func pmLock(args []string, stdout, stderr io.Writer) (int, error) {
 				cacheDir = strings.TrimPrefix(a, "--cache-dir=")
 				continue
 			}
-			return 1, fmt.Errorf("bunpy pm lock: unknown flag %q (known: --check, --index, --cache-dir, --help)", a)
+			if strings.HasPrefix(a, "--backend=") {
+				backend = strings.TrimPrefix(a, "--backend=")
+				continue
+			}
+			return 1, fmt.Errorf("bunpy pm lock: unknown flag %q (known: --check, --frozen, --offline, --upgrade, --upgrade-package, --index, --cache-dir, --backend, --help)", a)
 		}
 	}
-	_ = cacheDir
 
+	if backend == "uv" {
+		return pmLockWithUV(check, stdout, stderr)
+	}
 	mf, err := manifest.Load("pyproject.toml")
 	if err != nil {
 		return 1, fmt.Errorf("bunpy pm lock: %w", err)
@@ -289,11 +349,11 @@ func pmLock(args []string, stdout, stderr io.Writer) (int, error) {
 	wantHash := lockfile.HashLanes(laneMap)
 
 	if check {
-		existing, err := lockfile.Read("bunpy.lock")
+		existing, err := uvlock.ReadLockfile("uv.lock")
 		if err != nil {
 			if errors.Is(err, lockfile.ErrNotFound) {
-				fmt.Fprintln(stderr, "bunpy pm lock --check: bunpy.lock missing")
-				return 1, fmt.Errorf("bunpy.lock missing")
+				fmt.Fprintln(stderr, "bunpy pm lock --check: uv.lock missing")
+				return 1, fmt.Errorf("uv.lock missing")
 			}
 			return 1, fmt.Errorf("bunpy pm lock: %w", err)
 		}
@@ -328,6 +388,26 @@ func pmLock(args []string, stdout, stderr io.Writer) (int, error) {
 	}
 	if fix := os.Getenv("BUNPY_PYPI_FIXTURES"); fix != "" {
 		client.HTTP = httpkit.FixturesFS(fix)
+	} else {
+		// Wire disk index cache so repeated pm lock runs skip re-fetching
+		// unchanged package JSON (RC-1: was silently discarding cacheDir).
+		dir := cacheDir
+		if dir == "" {
+			dir = cache.DefaultDir() + "/index"
+		}
+		if idx, err := cache.NewIndex(dir); err == nil {
+			if offline {
+				// --offline: treat every cached page as infinitely fresh;
+				// never attempt a network round-trip.
+				idx.Freshness = 1<<63 - 1
+			} else {
+				// RC-7: skip HTTP round-trips for index pages stored within
+				// the last hour. pm lock still revalidates hourly to catch
+				// new releases; users can bust the cache with --no-cache.
+				idx.Freshness = time.Hour
+			}
+			client.Cache = idx
+		}
 	}
 
 	ctx := context.Background()
@@ -336,6 +416,38 @@ func pmLock(args []string, stdout, stderr io.Writer) (int, error) {
 			body, _, err := loadWheelSource(f.URL)
 			return body, err
 		})
+
+	// RC-5: fast no-op path — if the manifest hash matches the existing
+	// lock's content-hash, the graph hasn't changed; skip re-resolution.
+	// Seed the solver with existing pins so unchanged packages are not
+	// re-fetched even when the manifest did change slightly.
+	// --upgrade clears all pins; --upgrade-package clears named ones only.
+	// --frozen reads the lock and fails if re-resolution would differ.
+	solverLocked := map[string]string{}
+	var existingLock *lockfile.Lock
+	// G-8: preserve non-registry (git/path/editable) packages from prior lock.
+	extraPkgs, _ := uvlock.ReadNonRegistryPackages("uv.lock")
+	if existing, err := uvlock.ReadLockfile("uv.lock"); err == nil {
+		existingLock = existing
+		if !upgrade && !frozen && existing.ContentHash == wantHash {
+			fmt.Fprintf(stdout, "uv.lock up-to-date (%d package%s)\n", len(existing.Packages), pluralS(len(existing.Packages)))
+			return 0, nil
+		}
+		if !upgrade {
+			// Build upgrade set for selective unlocking.
+			upgradeSet := map[string]bool{}
+			for _, p := range upgradePkgs {
+				upgradeSet[pypi.Normalize(p)] = true
+			}
+			for _, p := range existing.Packages {
+				if !upgradeSet[pypi.Normalize(p.Name)] {
+					solverLocked[pypi.Normalize(p.Name)] = p.Version
+				}
+			}
+		}
+		// --upgrade: solverLocked stays empty — resolve everything fresh.
+	}
+	_ = existingLock // used below for --frozen diff
 
 	var roots []resolver.Requirement
 	seenRoot := map[string]bool{}
@@ -357,9 +469,39 @@ func pmLock(args []string, stdout, stderr io.Writer) (int, error) {
 			roots = append(roots, resolver.Requirement{Name: pypi.Normalize(dname), Spec: spec})
 		}
 	}
-	res, err := resolver.New(reg).Solve(roots)
+	slv := resolver.New(reg)
+	slv.Locked = solverLocked
+	res, err := slv.Solve(roots)
 	if err != nil {
 		return 1, fmt.Errorf("bunpy pm lock: %w", err)
+	}
+
+	// --frozen: fail if the resolved pins differ from the existing lock.
+	if frozen {
+		if existingLock == nil {
+			fmt.Fprintln(stderr, "bunpy pm lock --frozen: uv.lock missing")
+			return 1, fmt.Errorf("uv.lock missing")
+		}
+		existingPins := map[string]string{}
+		for _, p := range existingLock.Packages {
+			existingPins[pypi.Normalize(p.Name)] = p.Version
+		}
+		var drift []string
+		for _, pin := range res.Pins {
+			norm := pypi.Normalize(pin.Name)
+			if v, ok := existingPins[norm]; !ok || v != pin.Version {
+				drift = append(drift, fmt.Sprintf("%s: lock=%s resolved=%s", pin.Name, v, pin.Version))
+			}
+		}
+		if len(drift) > 0 {
+			fmt.Fprintf(stderr, "bunpy pm lock --frozen: lock is stale:\n")
+			for _, d := range drift {
+				fmt.Fprintf(stderr, "  %s\n", d)
+			}
+			return 1, fmt.Errorf("lock is stale (run without --frozen to update)")
+		}
+		fmt.Fprintf(stdout, "uv.lock is up-to-date (%d package%s)\n", len(existingLock.Packages), pluralS(len(existingLock.Packages)))
+		return 0, nil
 	}
 
 	pinLanes, err := computePinLanes(reg, res, laneMap)
@@ -373,21 +515,38 @@ func pmLock(args []string, stdout, stderr io.Writer) (int, error) {
 		if !ok {
 			return 1, fmt.Errorf("bunpy pm lock: no wheel pick for %s %s", pin.Name, pin.Version)
 		}
-		lock.Upsert(lockfile.Package{
+		lp := lockfile.Package{
 			Name:     pin.Name,
 			Version:  pin.Version,
 			Filename: f.Filename,
 			URL:      f.URL,
 			Hash:     wheelSha256(f),
+			Size:     f.Size,
 			Lanes:    pinLanes[pin.Name],
-		})
+		}
+		if sd, ok := reg.Sdist(pin.Name, pin.Version); ok {
+			lp.SdistURL = sd.URL
+			lp.SdistHash = "sha256:" + sd.Hashes["sha256"]
+			lp.SdistSize = sd.Size
+		}
+		lock.Upsert(lp)
 	}
 	lock.ContentHash = wantHash
 	lock.Generated = time.Now().UTC()
-	if err := lock.WriteFile("bunpy.lock"); err != nil {
+	root := &uvlock.RootInfo{
+		Name:    mf.Project.Name,
+		Version: mf.Project.Version,
+		Deps:    mf.Project.Dependencies,
+	}
+	if err := uvlock.WriteLockfile("uv.lock", lock, mf.Project.RequiresPython, uvlock.WriteOptions{
+		Root:          root,
+		Graph:         reg.depGraph,
+		DepExtras:     reg.depExtras,
+		ExtraPackages: extraPkgs,
+	}); err != nil {
 		return 1, fmt.Errorf("bunpy pm lock: %w", err)
 	}
-	fmt.Fprintf(stdout, "wrote bunpy.lock (%d package%s)\n", len(lock.Packages), pluralS(len(lock.Packages)))
+	fmt.Fprintf(stdout, "wrote uv.lock (%d package%s)\n", len(lock.Packages), pluralS(len(lock.Packages)))
 	return 0, nil
 }
 
@@ -426,9 +585,10 @@ func computePinLanes(reg *pypiRegistry, res *resolver.Resolution, laneMap map[st
 	return final, nil
 }
 
-// laneClosure walks every dependency reachable from the given
-// rootSpecs through the resolution graph. Returns the set of
-// PEP 503 normalised pinned names.
+// laneClosure walks every dependency reachable from rootSpecs through the
+// resolution graph. It uses the depGraph already populated during Solve()
+// (RC-3) to avoid any additional network fetches. Falls back to
+// reg.Dependencies() only for pins not yet in the cache.
 func laneClosure(reg *pypiRegistry, pinned map[string]string, rootSpecs []string) (map[string]bool, error) {
 	visited := map[string]bool{}
 	queue := []string{}
@@ -448,6 +608,14 @@ func laneClosure(reg *pypiRegistry, pinned map[string]string, rootSpecs []string
 		visited[pkg] = true
 		ver, ok := pinned[pkg]
 		if !ok {
+			continue
+		}
+		// RC-3: prefer the cached dep graph to avoid extra HTTP calls.
+		reg.mu.Lock()
+		names, cached := reg.depGraph[pkg]
+		reg.mu.Unlock()
+		if cached {
+			queue = append(queue, names...)
 			continue
 		}
 		deps, err := reg.Dependencies(pkg, ver)

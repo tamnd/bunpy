@@ -13,6 +13,7 @@ import (
 	"github.com/tamnd/bunpy/v1/pkg/cache"
 	"github.com/tamnd/bunpy/v1/pkg/lockfile"
 	"github.com/tamnd/bunpy/v1/pkg/manifest"
+	"github.com/tamnd/bunpy/v1/pkg/uvlock"
 	"github.com/tamnd/bunpy/v1/pkg/marker"
 	"github.com/tamnd/bunpy/v1/pkg/wheel"
 	"github.com/tamnd/bunpy/v1/pkg/why"
@@ -30,7 +31,7 @@ func whySubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 		laneArg  string
 		cacheDir string
 		manPath  = "pyproject.toml"
-		lockPath = "bunpy.lock"
+		lockPath = "uv.lock"
 		pkg      string
 	)
 	for i := 0; i < len(args); i++ {
@@ -119,7 +120,7 @@ func whySubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 	if err != nil {
 		return 1, fmt.Errorf("bunpy why: read manifest: %w", err)
 	}
-	lf, err := lockfile.Read(lockPath)
+	lf, err := uvlock.ReadLockfile(lockPath)
 	if err != nil {
 		return 1, fmt.Errorf("bunpy why: read lockfile: %w", err)
 	}

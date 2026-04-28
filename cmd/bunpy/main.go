@@ -60,6 +60,10 @@ func run(args []string, stdout, stderr io.Writer) (int, error) {
 		return addSubcommand(args[1:], stdout, stderr)
 	case "install":
 		return installSubcommand(args[1:], stdout, stderr)
+	case "sync":
+		return syncSubcommand(args[1:], stdout, stderr)
+	case "uv":
+		return uvSubcommand(args[1:], stdout, stderr)
 	case "outdated":
 		return outdatedSubcommand(args[1:], stdout, stderr)
 	case "update":

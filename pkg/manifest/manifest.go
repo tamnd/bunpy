@@ -103,7 +103,23 @@ type Tool struct {
 	// this pyproject.toml is a workspace root.
 	Workspace *WorkspaceConfig `json:"workspace,omitempty"`
 
+	// UVSources contains the parsed [tool.uv.sources] table.
+	// Maps package name to its source override (git/path/url).
+	// Currently stored for fidelity; not yet wired into the resolver.
+	UVSources map[string]UVSource `json:"uv_sources,omitempty"`
+
 	Raw map[string]any `json:"raw,omitempty"`
+}
+
+// UVSource is one entry in [tool.uv.sources] — a git, path, or url override.
+type UVSource struct {
+	Git     string `json:"git,omitempty"`
+	Branch  string `json:"branch,omitempty"`
+	Tag     string `json:"tag,omitempty"`
+	Rev     string `json:"rev,omitempty"`
+	Path    string `json:"path,omitempty"`
+	URL     string `json:"url,omitempty"`
+	Editable bool  `json:"editable,omitempty"`
 }
 
 // WorkspaceConfig is the [tool.bunpy.workspace] table.
@@ -173,6 +189,23 @@ func ParseOpts(data []byte, opts LoadOptions) (*Manifest, error) {
 				if ws, ok := bunpy["workspace"].(map[string]any); ok {
 					m.Tool.Workspace = &WorkspaceConfig{
 						Members: stringSlice(ws["members"]),
+					}
+				}
+			}
+			if uv, ok := tt["uv"].(map[string]any); ok {
+				if srcs, ok := uv["sources"].(map[string]any); ok {
+					m.Tool.UVSources = make(map[string]UVSource, len(srcs))
+					for pkgName, srcVal := range srcs {
+						src, _ := srcVal.(map[string]any)
+						m.Tool.UVSources[pkgName] = UVSource{
+							Git:      stringVal(src["git"]),
+							Branch:   stringVal(src["branch"]),
+							Tag:      stringVal(src["tag"]),
+							Rev:      stringVal(src["rev"]),
+							Path:     stringVal(src["path"]),
+							URL:      stringVal(src["url"]),
+							Editable: boolVal(src["editable"]),
+						}
 					}
 				}
 			}
@@ -371,6 +404,16 @@ func parseProject(t map[string]any) Project {
 		}
 	}
 	return p
+}
+
+func stringVal(v any) string {
+	s, _ := v.(string)
+	return s
+}
+
+func boolVal(v any) bool {
+	b, _ := v.(bool)
+	return b
 }
 
 func stringSlice(v any) []string {

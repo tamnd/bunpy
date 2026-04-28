@@ -19,6 +19,7 @@ import (
 	"github.com/tamnd/bunpy/v1/pkg/marker"
 	"github.com/tamnd/bunpy/v1/pkg/pypi"
 	"github.com/tamnd/bunpy/v1/pkg/resolver"
+	"github.com/tamnd/bunpy/v1/pkg/uvlock"
 	"github.com/tamnd/bunpy/v1/pkg/version"
 	"github.com/tamnd/bunpy/v1/pkg/wheel"
 )
@@ -158,10 +159,10 @@ func addSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 	// given, target that member's manifest. Without --member, target the
 	// manifest in the current directory (single-project default).
 	manifestPath := "pyproject.toml"
-	lockPath := "bunpy.lock"
+	lockPath := "uv.lock"
 	if cwd, err := os.Getwd(); err == nil {
 		if wsRoot, _ := findWorkspaceRoot(cwd); wsRoot != "" {
-			lockPath = filepath.Join(wsRoot, "bunpy.lock")
+			lockPath = filepath.Join(wsRoot, "uv.lock")
 			if memberName != "" {
 				ws, err := loadWorkspace(wsRoot)
 				if err != nil {
@@ -293,7 +294,7 @@ func addSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 	return 0, nil
 }
 
-// updateLockfile rewrites bunpy.lock so every pin in res lands in
+// updateLockfile rewrites uv.lock so every pin in res lands in
 // the file. Existing entries are upserted; the content-hash is
 // recomputed from every lane in the freshly written pyproject.
 //
@@ -306,7 +307,7 @@ func updateLockfile(path string, manifestBytes []byte, res *resolver.Resolution,
 	if err != nil {
 		return fmt.Errorf("re-parse manifest: %w", err)
 	}
-	lock, err := lockfile.Read(path)
+	lock, err := uvlock.ReadLockfile(path)
 	if err != nil && !errors.Is(err, lockfile.ErrNotFound) {
 		return err
 	}
@@ -331,7 +332,7 @@ func updateLockfile(path string, manifestBytes []byte, res *resolver.Resolution,
 	}
 	lock.ContentHash = lockfile.HashLanes(manifestLaneMap(mf))
 	lock.Generated = time.Now().UTC()
-	return lock.WriteFile(path)
+	return uvlock.WriteLockfile(path, lock, mf.Project.RequiresPython, uvlock.WriteOptions{})
 }
 
 // mergePinLanes returns the lane set the given pin should carry

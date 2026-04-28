@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -13,10 +12,11 @@ import (
 	"github.com/tamnd/bunpy/v1/pkg/manifest"
 	"github.com/tamnd/bunpy/v1/pkg/patches"
 	"github.com/tamnd/bunpy/v1/pkg/pypi"
+	"github.com/tamnd/bunpy/v1/pkg/uvlock"
 	"github.com/tamnd/bunpy/v1/pkg/wheel"
 )
 
-// installSubcommand wires `bunpy install`. v0.1.5 walks bunpy.lock,
+// installSubcommand wires `bunpy install`. It walks uv.lock,
 // fetches every pinned wheel through the same httpkit/cache path
 // `add` uses, and installs into .bunpy/site-packages. It does not
 // re-resolve: the lockfile is treated as the source of truth, which
@@ -100,7 +100,7 @@ func installSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 	}
 
 	// Auto-detect workspace root when --workspace is not set explicitly.
-	lockPath := "bunpy.lock"
+	lockDir := "."
 	manifestPath := "pyproject.toml"
 	if wsRoot == "" {
 		if cwd, err := os.Getwd(); err == nil {
@@ -110,7 +110,7 @@ func installSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 		}
 	}
 	if wsRoot != "" {
-		lockPath = filepath.Join(wsRoot, "bunpy.lock")
+		lockDir = wsRoot
 		manifestPath = filepath.Join(wsRoot, "pyproject.toml")
 	}
 	_ = manifestPath
@@ -124,12 +124,9 @@ func installSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 		}
 	}
 
-	lock, err := lockfile.Read(lockPath)
+	lock, err := loadLockForInstall(lockDir, stderr)
 	if err != nil {
-		if errors.Is(err, lockfile.ErrNotFound) {
-			return 1, fmt.Errorf("bunpy install: bunpy.lock missing - run `bunpy pm lock` first")
-		}
-		return 1, fmt.Errorf("bunpy install: %w", err)
+		return 1, err
 	}
 
 	keep := installLaneFilter(dev, peer, allExtras, extras)
@@ -197,6 +194,42 @@ func isLinkedPackage(target, name, version string) bool {
 		}
 	}
 	return strings.TrimSpace(string(body)) == editable.InstallerTag
+}
+
+// loadLockForInstall detects which lockfile is present in dir and returns the
+// flat install list. If only bunpy.lock exists it auto-migrates to uv.lock.
+func loadLockForInstall(dir string, stderr io.Writer) (*lockfile.Lock, error) {
+	switch uvlock.DetectFormat(dir) {
+	case "uv":
+		data, err := os.ReadFile(filepath.Join(dir, "uv.lock"))
+		if err != nil {
+			return nil, fmt.Errorf("bunpy install: read uv.lock: %w", err)
+		}
+		uv, err := uvlock.Parse(data)
+		if err != nil {
+			return nil, fmt.Errorf("bunpy install: %w", err)
+		}
+		return uvlock.ToBunpyLock(uv), nil
+
+	case "bunpy":
+		// Migrate bunpy.lock → uv.lock (one-time, automatic).
+		// Return the original lock (which carries lane info) so that
+		// install lane filtering still works after migration.
+		bl, err := lockfile.Read(filepath.Join(dir, "bunpy.lock"))
+		if err != nil {
+			return nil, fmt.Errorf("bunpy install: read bunpy.lock: %w", err)
+		}
+		uv := uvlock.FromBunpyLock(bl, ">=3.12", nil, nil, nil)
+		if err := os.WriteFile(filepath.Join(dir, "uv.lock"), uv.Bytes(), 0o644); err != nil {
+			return nil, fmt.Errorf("bunpy install: write uv.lock: %w", err)
+		}
+		_ = os.Remove(filepath.Join(dir, "bunpy.lock"))
+		fmt.Fprintln(stderr, "Migrated bunpy.lock → uv.lock")
+		return bl, nil
+
+	default:
+		return nil, fmt.Errorf("bunpy install: uv.lock missing - run `bunpy pm lock` first")
+	}
 }
 
 // installLaneFilter returns a predicate that decides whether a

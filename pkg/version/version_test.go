@@ -36,7 +36,7 @@ func TestParseSpec(t *testing.T) {
 }
 
 func TestParseSpecErrors(t *testing.T) {
-	for _, in := range []string{"==", ">=", "==1.0.*", "===1.0", "frob"} {
+	for _, in := range []string{"==", ">=", "===1.0", "frob"} {
 		if _, err := ParseSpec(in); err == nil {
 			t.Errorf("ParseSpec(%q): expected error", in)
 		}
@@ -134,6 +134,39 @@ func TestHighest(t *testing.T) {
 		}
 		if got := Highest(s, candidates); got != tc.want {
 			t.Errorf("Highest(%q) = %q, want %q", tc.spec, got, tc.want)
+		}
+	}
+}
+
+func TestWildcardSpec(t *testing.T) {
+	cases := []struct {
+		spec string
+		v    string
+		want bool
+	}{
+		{"==1.*", "1.0", true},
+		{"==1.*", "1.99", true},
+		{"==1.*", "1.0.0", true},
+		{"==1.*", "2.0", false},
+		{"==1.*", "0.9", false},
+		{"==1.2.*", "1.2.0", true},
+		{"==1.2.*", "1.2.99", true},
+		{"==1.2.*", "1.3", false},
+		{"==1.2.*", "1.1.9", false},
+		{"!=1.*", "2.0", true},
+		{"!=1.*", "1.0", false},
+		{"!=1.*", "1.99", false},
+		{"==1.*,!=1.2.*", "1.3", true},
+		{"==1.*,!=1.2.*", "1.2.0", false},
+		{"==1.*,!=1.2.*", "2.0", false},
+	}
+	for _, tc := range cases {
+		s, err := ParseSpec(tc.spec)
+		if err != nil {
+			t.Fatalf("ParseSpec(%q): %v", tc.spec, err)
+		}
+		if got := s.Match(tc.v); got != tc.want {
+			t.Errorf("Spec(%q).Match(%q) = %v, want %v", tc.spec, tc.v, got, tc.want)
 		}
 	}
 }

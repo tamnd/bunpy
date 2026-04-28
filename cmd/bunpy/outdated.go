@@ -15,6 +15,7 @@ import (
 	"github.com/tamnd/bunpy/v1/pkg/lockfile"
 	"github.com/tamnd/bunpy/v1/pkg/manifest"
 	"github.com/tamnd/bunpy/v1/pkg/pypi"
+	"github.com/tamnd/bunpy/v1/pkg/uvlock"
 	"github.com/tamnd/bunpy/v1/pkg/version"
 )
 
@@ -106,10 +107,10 @@ func outdatedSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 	if err != nil {
 		return 1, fmt.Errorf("bunpy outdated: %w", err)
 	}
-	lock, err := lockfile.Read("bunpy.lock")
+	lock, err := uvlock.ReadLockfile("uv.lock")
 	if err != nil {
 		if errors.Is(err, lockfile.ErrNotFound) {
-			return 1, fmt.Errorf("bunpy outdated: bunpy.lock missing - run `bunpy pm lock` first")
+			return 1, fmt.Errorf("bunpy outdated: uv.lock missing - run `bunpy pm lock` first")
 		}
 		return 1, fmt.Errorf("bunpy outdated: %w", err)
 	}

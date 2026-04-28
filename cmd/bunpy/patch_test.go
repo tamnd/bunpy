@@ -9,7 +9,7 @@ import (
 )
 
 // setupPatchProject seeds a project with a pyproject.toml, a
-// bunpy.lock entry for widget@1.0.0, and a pre-populated wheel
+// uv.lock entry for widget@1.0.0, and a pre-populated wheel
 // cache so `bunpy patch widget` does not hit the network.
 func setupPatchProject(t *testing.T) (proj, cacheDir string) {
 	t.Helper()
@@ -24,17 +24,18 @@ dependencies = [
 ]
 `))
 
-	mustWrite(t, filepath.Join(proj, "bunpy.lock"), []byte(`# bunpy.lock
-version = 1
-generated = "2026-04-27T10:00:00Z"
-content-hash = "sha256:0000"
+	mustWrite(t, filepath.Join(proj, "uv.lock"), []byte(`version = 1
+requires-python = ">=3.12"
 
 [[package]]
 name = "widget"
 version = "1.0.0"
-filename = "widget-1.0.0-py3-none-any.whl"
+source = { registry = "https://pypi.org/simple" }
+
+[[package.wheels]]
 url = "https://files.example.com/widget-1.0.0-py3-none-any.whl"
 hash = "sha256:abcd"
+size = 0
 `))
 
 	wheelSrc, err := os.ReadFile("../../tests/fixtures/v013/widget-1.0.0-py3-none-any.whl")
@@ -202,8 +203,8 @@ func TestPatchRequiresPackageName(t *testing.T) {
 	mustWrite(t, filepath.Join(proj, "pyproject.toml"), []byte(`[project]
 name = "demo"
 `))
-	mustWrite(t, filepath.Join(proj, "bunpy.lock"), []byte(`version = 1
-content-hash = "sha256:0000"
+	mustWrite(t, filepath.Join(proj, "uv.lock"), []byte(`version = 1
+requires-python = ">=3.12"
 `))
 
 	var stdout, stderr bytes.Buffer

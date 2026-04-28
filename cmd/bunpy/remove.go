@@ -16,6 +16,7 @@ import (
 	"github.com/tamnd/bunpy/v1/pkg/marker"
 	"github.com/tamnd/bunpy/v1/pkg/pypi"
 	"github.com/tamnd/bunpy/v1/pkg/resolver"
+	"github.com/tamnd/bunpy/v1/pkg/uvlock"
 	"github.com/tamnd/bunpy/v1/pkg/version"
 	"github.com/tamnd/bunpy/v1/pkg/wheel"
 )
@@ -169,7 +170,7 @@ func removeSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 	// when totalRemoved == 0 so a stale lockfile still gets rewritten
 	// to match the manifest content-hash; this matches `bunpy update`'s
 	// idempotent shape.
-	lock, err := lockfile.Read("bunpy.lock")
+	lock, err := uvlock.ReadLockfile("uv.lock")
 	if err != nil && !errors.Is(err, lockfile.ErrNotFound) {
 		return 1, fmt.Errorf("bunpy remove: %w", err)
 	}
@@ -257,7 +258,7 @@ func removeSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 	}
 	newLock.ContentHash = wantHash
 	newLock.Generated = time.Now().UTC()
-	if err := newLock.WriteFile("bunpy.lock"); err != nil {
+	if err := uvlock.WriteLockfile("uv.lock", newLock, mf.Project.RequiresPython, uvlock.WriteOptions{}); err != nil {
 		return 1, fmt.Errorf("bunpy remove: %w", err)
 	}
 

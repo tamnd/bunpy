@@ -1,15 +1,12 @@
 // Package version implements the slice of PEP 440 that bunpy's
-// v0.1.3 `bunpy add` flow needs: parse a version, parse a spec,
+// v0.1.x `bunpy pm lock` flow needs: parse a version, parse a spec,
 // compare two versions, and pick the highest version in a candidate
 // list that satisfies a spec.
 //
-// Scope is deliberately narrow. v0.1.3 supports operators
-// `==`, `!=`, `>=`, `>`, `<=`, `<`, `~=` and comma-joined clauses;
-// pre-release segments (`a`, `b`, `rc`), post-release (`post`),
-// dev-release (`dev`), and local versions are recognised; wildcards
-// (`==1.2.*`) and arbitrary equality (`===`) are out of scope today
-// and reported as parse errors. Future rungs grow this surface as
-// real PyPI projects force it.
+// Supported operators: `==`, `!=`, `>=`, `>`, `<=`, `<`, `~=`, and
+// wildcard forms `==X.*` / `!=X.*`. Arbitrary equality (`===`) is not
+// supported. This surface is deliberately narrow; future rungs extend
+// it as real PyPI projects force it (v0.10.16 adds wildcard support).
 package version
 
 import (
@@ -32,10 +29,13 @@ const (
 	OpCA Op = "~=" // compatible release
 )
 
-// Clause is one operator + version pair.
+// Clause is one operator + version pair. When Wildcard is true the
+// Version field holds the prefix (e.g. "1" for "==1.*", "1.2" for
+// "==1.2.*") and Op must be OpEQ or OpNE.
 type Clause struct {
-	Op      Op
-	Version string
+	Op       Op
+	Version  string
+	Wildcard bool // true for ==X.* / !=X.*
 }
 
 // Spec is a comma-joined list of clauses. The empty Spec matches
@@ -66,11 +66,25 @@ func parseClause(s string) (Clause, error) {
 	if s == "" {
 		return Clause{}, errors.New("version: empty clause")
 	}
+	if strings.HasPrefix(s, "===") {
+		return Clause{}, fmt.Errorf("version: arbitrary equality (===) not supported")
+	}
 	for _, op := range []Op{OpEQ, OpNE, OpGE, OpLE, OpCA, OpGT, OpLT} {
 		if strings.HasPrefix(s, string(op)) {
 			v := strings.TrimSpace(strings.TrimPrefix(s, string(op)))
 			if v == "" {
 				return Clause{}, fmt.Errorf("version: missing version after %q", op)
+			}
+			// Wildcard: ==X.* or !=X.* (PEP 440 §6.3)
+			if strings.HasSuffix(v, ".*") {
+				if op != OpEQ && op != OpNE {
+					return Clause{}, fmt.Errorf("version: wildcard only valid with == or !=: %q", s)
+				}
+				prefix := strings.TrimSuffix(v, ".*")
+				if err := validateVersion(prefix); err != nil {
+					return Clause{}, fmt.Errorf("version: bad wildcard prefix %q: %w", prefix, err)
+				}
+				return Clause{Op: op, Version: prefix, Wildcard: true}, nil
 			}
 			if err := validateVersion(v); err != nil {
 				return Clause{}, err
@@ -78,11 +92,8 @@ func parseClause(s string) (Clause, error) {
 			return Clause{Op: op, Version: v}, nil
 		}
 	}
-	if strings.HasPrefix(s, "===") {
-		return Clause{}, fmt.Errorf("version: arbitrary equality (===) not supported in v0.1.3")
-	}
 	if strings.Contains(s, "*") {
-		return Clause{}, fmt.Errorf("version: wildcards (==X.Y.*) not supported in v0.1.3: %q", s)
+		return Clause{}, fmt.Errorf("version: wildcard only valid after == or !=: %q", s)
 	}
 	// Bare version is shorthand for ==.
 	if err := validateVersion(s); err != nil {
@@ -113,6 +124,9 @@ func (s Spec) Match(v string) bool {
 }
 
 func (c Clause) match(v string) bool {
+	if c.Wildcard {
+		return matchWildcard(v, c.Version, c.Op == OpEQ)
+	}
 	cmp := Compare(v, c.Version)
 	switch c.Op {
 	case OpEQ:
@@ -131,6 +145,31 @@ func (c Clause) match(v string) bool {
 		return matchCompatible(v, c.Version)
 	}
 	return false
+}
+
+// matchWildcard implements PEP 440 wildcard matching. prefix is the
+// version before ".*" (e.g. "1" for "==1.*"). When eq is true this
+// is an == wildcard; when false it is a != wildcard.
+//
+// ==X.Y.* is equivalent to >= X.Y.dev0, == X.Y.* (prefix match on
+// the release tuple). Concretely, v matches if its release tuple
+// starts with the prefix's release tuple.
+func matchWildcard(v, prefix string, eq bool) bool {
+	pv, errV := parseVersion(v)
+	pp, errP := parseVersion(prefix)
+	if errV != nil || errP != nil {
+		return false
+	}
+	n := len(pp.Release)
+	if len(pv.Release) < n {
+		return !eq // "1.0" does NOT match "==1.0.1.*" semantics; negate for !=
+	}
+	for i := 0; i < n; i++ {
+		if pv.Release[i] != pp.Release[i] {
+			return !eq
+		}
+	}
+	return eq
 }
 
 // equalForSpec mirrors PEP 440 == semantics: both versions are
