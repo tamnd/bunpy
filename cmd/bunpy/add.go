@@ -196,6 +196,7 @@ func addSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 	if err != nil {
 		return 1, fmt.Errorf("bunpy add: %w", err)
 	}
+	reg.prefetchWg.Wait()
 
 	var rootPin resolver.Pin
 	for _, p := range res.Pins {

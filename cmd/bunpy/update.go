@@ -187,6 +187,7 @@ func updateSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 	if err != nil {
 		return 1, fmt.Errorf("bunpy update: %w", err)
 	}
+	reg.prefetchWg.Wait()
 
 	previous := map[string]string{}
 	if lock != nil {

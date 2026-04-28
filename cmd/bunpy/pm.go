@@ -475,6 +475,7 @@ func pmLock(args []string, stdout, stderr io.Writer) (int, error) {
 	if err != nil {
 		return 1, fmt.Errorf("bunpy pm lock: %w", err)
 	}
+	reg.prefetchWg.Wait() // drain background prefetch goroutines before reading registry fields
 
 	// --frozen: fail if the resolved pins differ from the existing lock.
 	if frozen {

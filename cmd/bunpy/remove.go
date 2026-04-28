@@ -232,6 +232,7 @@ func removeSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 	if err != nil {
 		return 1, fmt.Errorf("bunpy remove: %w", err)
 	}
+	reg.prefetchWg.Wait()
 
 	pinLanes, err := computePinLanes(reg, res, laneMap)
 	if err != nil {

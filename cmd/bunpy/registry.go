@@ -200,7 +200,9 @@ func (r *pypiRegistry) Versions(pkg string) ([]string, error) {
 	sort.Slice(versions, func(i, j int) bool {
 		return version.Compare(versions[i], versions[j]) < 0
 	})
+	r.mu.Lock()
 	r.picks[pkg] = picks
+	r.mu.Unlock()
 	// RC-4: speculatively prefetch metadata for the highest version — the
 	// resolver almost always picks it, so this overlaps the next Versions()
 	// call with the current package's metadata fetch.
@@ -227,6 +229,8 @@ func (r *pypiRegistry) Sdist(pkg, ver string) (pypi.File, bool) {
 // Pick returns the wheel chosen for pkg@ver. The resolver only asks
 // for Dependencies after picking, so this is filled by Versions.
 func (r *pypiRegistry) Pick(pkg, ver string) (pypi.File, bool) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	if m, ok := r.picks[pkg]; ok {
 		f, ok := m[ver]
 		return f, ok
