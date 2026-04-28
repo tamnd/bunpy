@@ -13,7 +13,7 @@ Then we switched to `uv.lock` in v0.10.x and deprecated `bunpy.lock`. Here is wh
 
 Nothing was catastrophically wrong with it. It stored the same information a lockfile needs to store: resolved versions, wheel URLs, hashes, extras, and the dependency edges between packages. We could reproduce a build from it reliably.
 
-The problem was compatibility. Every user who already had a `uv.lock` — which is most Python developers who care about reproducible installs today — had to do a migration step before using bunpy. Run `bunpy pm lock`, commit the new file, update CI references. It was maybe 10 minutes of work, but it was friction.
+The problem was compatibility. Every user who already had a `uv.lock` - which is most Python developers who care about reproducible installs today - had to do a migration step before using bunpy. Run `bunpy pm lock`, commit the new file, update CI references. It was maybe 10 minutes of work, but it was friction.
 
 More importantly, it meant you could not use `uv` and `bunpy` on the same project interchangeably. If a teammate preferred uv for local development, their `uv sync` would not read `bunpy.lock`. They would get an out-of-date environment and wonder why the app behaved differently on their machine.
 
@@ -44,7 +44,7 @@ The conversion was mostly straightforward. Both formats store the same core data
 
 Writing a valid `uv.lock` from the resolver output required understanding the format in detail. The file has a header with the uv version and lockfile version, a `[[package]]` section per resolved package, and a `[[distribution]]` section per wheel and sdist entry.
 
-The sections must appear in a specific order (alphabetical by package name) and the hash format must match exactly (sha256:hex). We got this wrong on the first pass — we were writing SHA-256 hashes with the wrong prefix — and caught it because `uv sync` complained about invalid hashes when reading our output.
+The sections must appear in a specific order (alphabetical by package name) and the hash format must match exactly (sha256:hex). We got this wrong on the first pass - we were writing SHA-256 hashes with the wrong prefix - and caught it because `uv sync` complained about invalid hashes when reading our output.
 
 ### Dep edges
 
@@ -56,7 +56,7 @@ Our first implementation omitted these edges. The lockfile loaded and installed 
 
 Extras are the most complex part of the format. A package installed with extras (`requests[security]`) is treated as a distinct node in the dependency graph. It has its own `[[package]]` entry with the extras listed, and its own dependency edges pointing to the packages those extras require.
 
-We had to track extras through the full resolver loop — from the initial requirement spec through the metadata fetch to the final lockfile write. The tricky case is transitive extras: a package that requires `aiohttp[speedups]`, which in turn requires `aiodns` (only when speedups is enabled). Getting the edges right for this case took a few iterations and a test case that specifically covered it.
+We had to track extras through the full resolver loop - from the initial requirement spec through the metadata fetch to the final lockfile write. The tricky case is transitive extras: a package that requires `aiohttp[speedups]`, which in turn requires `aiodns` (only when speedups is enabled). Getting the edges right for this case took a few iterations and a test case that specifically covered it.
 
 
 ## What we gained
@@ -72,6 +72,6 @@ A secondary gain: we can test our resolver output against uv. If our `uv.lock` o
 
 Implementing the format correctly took longer than building the original `bunpy.lock` reader and writer. The format is more complex, the edge cases are more numerous, and the error messages from uv when the format is wrong are not always specific about what is incorrect.
 
-We also committed to tracking the `uv.lock` format specification. If uv releases a new lockfile version with breaking changes, we have to update our parser and writer. That is an ongoing maintenance cost. So far it has not been a problem — the format has been stable across the uv releases we track.
+We also committed to tracking the `uv.lock` format specification. If uv releases a new lockfile version with breaking changes, we have to update our parser and writer. That is an ongoing maintenance cost. So far it has not been a problem - the format has been stable across the uv releases we track.
 
 On balance, the interoperability gain was worth it. If you are migrating from a project that already has `uv.lock`, `bunpy install` just works.

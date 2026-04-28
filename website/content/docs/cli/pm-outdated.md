@@ -10,7 +10,7 @@ bunpy pm outdated [flags]
 
 ## Description
 
-`bunpy pm outdated` compares the versions pinned in `uv.lock` against the latest releases on PyPI and lists every package where a newer version is available. It reads the lock file, not the virtualenv — so it works even before `bunpy install` has run.
+`bunpy pm outdated` compares the versions pinned in `uv.lock` against the latest releases on PyPI and lists every package where a newer version is available. It reads the lock file, not the virtualenv - so it works even before `bunpy install` has run.
 
 Run it periodically to keep dependencies fresh, or in CI to enforce a freshness policy.
 
@@ -42,9 +42,9 @@ urllib3              2.0.7        2.2.1      patch
 
 The `Type` column classifies the version gap by semver component:
 
-- `patch` — only the patch version changed; generally safe to update
-- `minor` — new features added; read the changelog
-- `major` — breaking changes possible; plan the upgrade
+- `patch` - only the patch version changed; generally safe to update
+- `minor` - new features added; read the changelog
+- `major` - breaking changes possible; plan the upgrade
 
 ## JSON output
 
@@ -73,7 +73,7 @@ JSON output is sorted alphabetically by package name and writes to stdout, so it
 
 ## Updating outdated packages
 
-`pm outdated` is read-only — it never modifies `uv.lock` or `pyproject.toml`. To actually update packages, use:
+`pm outdated` is read-only - it never modifies `uv.lock` or `pyproject.toml`. To actually update packages, use:
 
 ```bash
 # Update a single package

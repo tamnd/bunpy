@@ -38,7 +38,7 @@ bunpy fmt src/
 bunpy fmt src/myapp/main.py
 ```
 
-CI check — fails if formatting would change any file:
+CI check - fails if formatting would change any file:
 
 ```bash
 bunpy fmt --check

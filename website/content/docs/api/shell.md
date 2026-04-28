@@ -1,5 +1,5 @@
 ---
-title: bunpy.shell — Shell Commands
+title: bunpy.shell - Shell Commands
 description: Template-string shell execution with safe interpolation, glob expansion, piping, and exit code checking in bunpy.
 weight: 13
 ---
@@ -8,21 +8,21 @@ weight: 13
 from bunpy.shell import shell, sh
 ```
 
-`bunpy.shell` executes shell commands using a template-string syntax. Interpolated values are shell-escaped automatically — no injection vulnerabilities from user input or path names with spaces. `sh` is a short alias for `shell`.
+`bunpy.shell` executes shell commands using a template-string syntax. Interpolated values are shell-escaped automatically - no injection vulnerabilities from user input or path names with spaces. `sh` is a short alias for `shell`.
 
 ## Basic usage
 
 ```python
 from bunpy.shell import sh
 
-# Run a command — output goes to terminal
+# Run a command - output goes to terminal
 sh("ls -la")
 
 # Capture output as a string
 result = sh("git log --oneline -5", capture=True)
 print(result.stdout)
 
-# Interpolate Python values — automatically shell-escaped
+# Interpolate Python values - automatically shell-escaped
 filename = "my file with spaces.txt"
 sh(f"wc -l {filename!r}")   # → wc -l 'my file with spaces.txt'
 ```
@@ -37,7 +37,7 @@ from bunpy.shell import sh
 branch = "feat/new-feature"
 message = "Release: v1.2.0"
 
-# Safe — branch and message are quoted automatically
+# Safe - branch and message are quoted automatically
 sh(f"git checkout -b {branch!r}")
 sh(f'git commit -m {message!r}')
 
@@ -76,17 +76,17 @@ result = sh(
 | `capture` | `False` | Capture stdout/stderr and return them |
 | `check` | `False` | Raise `ShellError` on non-zero exit code |
 | `timeout` | `None` | Timeout in seconds |
-| `quiet` | `False` | Suppress stdout/stderr — discard output silently |
+| `quiet` | `False` | Suppress stdout/stderr - discard output silently |
 
 ## Return value
 
 ```python
 result = sh("git status", capture=True)
 
-result.stdout      # str — captured standard output
-result.stderr      # str — captured standard error
-result.returncode  # int — exit code
-result.ok          # bool — True when returncode == 0
+result.stdout      # str - captured standard output
+result.stderr      # str - captured standard error
+result.returncode  # int - exit code
+result.ok          # bool - True when returncode == 0
 ```
 
 When `capture=False` (default), output goes directly to the terminal and `stdout`/`stderr` are empty strings.

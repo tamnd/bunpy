@@ -1,5 +1,5 @@
 ---
-title: bunpy.password — Password Hashing
+title: bunpy.password - Password Hashing
 description: Bcrypt and Argon2id password hashing, verification, timing-safe compare, and migration from legacy hashes in bunpy.
 weight: 17
 ---
@@ -8,7 +8,7 @@ weight: 17
 import bunpy.password as password
 ```
 
-`bunpy.password` provides secure password hashing with bcrypt and Argon2id. Both algorithms are slow by design, making brute-force attacks expensive. Use Argon2id for new projects — it is the winner of the Password Hashing Competition and the current OWASP recommendation.
+`bunpy.password` provides secure password hashing with bcrypt and Argon2id. Both algorithms are slow by design, making brute-force attacks expensive. Use Argon2id for new projects - it is the winner of the Password Hashing Competition and the current OWASP recommendation.
 
 ## Quick start
 
@@ -47,11 +47,11 @@ hashed_slow = password.bcrypt.hash("my-password", cost=14)
 | 14   | ~1 s |
 
 Cost 12 is the OWASP-recommended minimum as of 2024.
-Increase cost as hardware improves — old hashes with lower cost remain valid and can be re-hashed on next login.
+Increase cost as hardware improves - old hashes with lower cost remain valid and can be re-hashed on next login.
 
 ### password.bcrypt.verify(plain, hashed) → bool
 
-Returns `True` if `plain` matches `hashed`. The comparison is constant-time — it takes the same amount of time regardless of where the strings differ, preventing timing attacks.
+Returns `True` if `plain` matches `hashed`. The comparison is constant-time - it takes the same amount of time regardless of where the strings differ, preventing timing attacks.
 
 ```python
 ok = password.bcrypt.verify("my-password", hashed)  # True
@@ -70,7 +70,7 @@ if password.bcrypt.needsRehash(user.password_hash, cost=13):
 
 ## Argon2id
 
-Argon2id is memory-hard — attackers need large amounts of RAM per attempt, not just fast CPUs.
+Argon2id is memory-hard - attackers need large amounts of RAM per attempt, not just fast CPUs.
 It is the recommended algorithm for new applications.
 
 ### password.argon2.hash(plain, time_cost=3, memory_cost=65536, parallelism=4) → str
@@ -124,7 +124,7 @@ ok = password.verify("my-password", hashed)     # True
 
 # Switch algorithm
 hashed_bcrypt = password.hash("my-password", algorithm="bcrypt")
-ok = password.verify("my-password", hashed_bcrypt)  # True — auto-detected
+ok = password.verify("my-password", hashed_bcrypt)  # True - auto-detected
 ```
 
 `password.verify` detects the algorithm from the hash string prefix (`$2b$` for bcrypt, `$argon2id$` for Argon2id).
@@ -144,7 +144,7 @@ if password.timingSafeEqual(provided_token, expected_token):
 ### password.timingSafeEqual(a, b) → bool
 
 Compares `a` and `b` character by character in constant time.
-Returns `False` immediately only after processing all characters — it never short-circuits on a mismatch.
+Returns `False` immediately only after processing all characters - it never short-circuits on a mismatch.
 Both `str` and `bytes` are accepted; a `str` is encoded to UTF-8 before comparison.
 
 ## User registration

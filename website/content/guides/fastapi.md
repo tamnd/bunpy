@@ -292,7 +292,7 @@ docker build -t my-api .
 docker run -p 8000:8000 my-api
 ```
 
-Or use the pre-compiled `.pyz` for an even smaller image — no bunpy needed at runtime:
+Or use the pre-compiled `.pyz` for an even smaller image - no bunpy needed at runtime:
 
 ```dockerfile
 FROM python:3.12-slim

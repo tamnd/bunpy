@@ -1,5 +1,5 @@
 ---
-title: bunpy.env — Environment Variables
+title: bunpy.env - Environment Variables
 description: Read env vars, load .env files, set required variables with errors on missing, and coerce types in bunpy.
 weight: 11
 ---
@@ -8,20 +8,20 @@ weight: 11
 import bunpy.env as env
 ```
 
-`bunpy.env` loads environment variables and `.env` files, validates required keys at startup, and coerces values to the types your code actually needs — integers, booleans, lists — without boilerplate.
+`bunpy.env` loads environment variables and `.env` files, validates required keys at startup, and coerces values to the types your code actually needs - integers, booleans, lists - without boilerplate.
 
 ## Reading variables
 
 ```python
 import bunpy.env as env
 
-# Read a variable — returns str or None
+# Read a variable - returns str or None
 host = env.get("HOST")
 
 # With a default
 host = env.get("HOST", "127.0.0.1")
 
-# Required — raises EnvError if missing or empty
+# Required - raises EnvError if missing or empty
 secret = env.require("SECRET_KEY")
 ```
 
@@ -31,7 +31,7 @@ Returns the value of `key` from the process environment. Returns `default` when 
 
 ### env.require(key) → str
 
-Returns the value of `key`. Raises `bunpy.env.EnvError` immediately if the key is missing or set to an empty string — fail fast, not at the point of use.
+Returns the value of `key`. Raises `bunpy.env.EnvError` immediately if the key is missing or set to an empty string - fail fast, not at the point of use.
 
 ```python
 # Raises EnvError with a clear message:
@@ -79,7 +79,7 @@ env.load()
 # Load a specific file
 env.load(".env.production")
 
-# Load silently — no error if file is missing
+# Load silently - no error if file is missing
 env.load(".env.local", silent=True)
 ```
 
@@ -156,7 +156,7 @@ class Config:
     WORKERS  = env.int("WORKERS", 4)
     LOG_LEVEL = env.get("LOG_LEVEL", "info")
 
-    # Required — crash at import time if missing in production
+    # Required - crash at import time if missing in production
     SECRET_KEY   = env.require("SECRET_KEY")
     DATABASE_URL = env.require("DATABASE_URL")
 
@@ -231,8 +231,8 @@ def test_require_raises(monkeypatch):
 | `env.float(key, default)` | `float` | Read and parse as float |
 | `env.bool(key, default)` | `bool` | Read and parse as boolean |
 | `env.list(key, default, sep)` | `list[str]` | Read and split as list |
-| `env.set(key, value)` | — | Set variable in current process |
-| `env.unset(key)` | — | Remove variable |
+| `env.set(key, value)` | - | Set variable in current process |
+| `env.unset(key)` | - | Remove variable |
 | `env.has(key)` | `bool` | Check if key exists |
 | `env.all()` | `dict` | Snapshot of all variables |
-| `env.load(path, override, silent)` | — | Load a `.env` file |
+| `env.load(path, override, silent)` | - | Load a `.env` file |

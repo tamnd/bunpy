@@ -10,7 +10,7 @@ bunpy test --coverage [flags]
 
 ## Description
 
-`bunpy test --coverage` instruments your source code as tests run and reports which lines, branches, and functions were executed. Coverage data is collected by the goipy VM's built-in tracer — no third-party tool like `coverage.py` is required.
+`bunpy test --coverage` instruments your source code as tests run and reports which lines, branches, and functions were executed. Coverage data is collected by the goipy VM's built-in tracer - no third-party tool like `coverage.py` is required.
 
 ## Flags
 
@@ -50,7 +50,7 @@ TOTAL                         205     78      38      20    73%
 --------------------------------------------------------------------
 ```
 
-Lines with no test coverage are shown in the `Miss` column. `Branch` and `BrMiss` track conditional branches — a line with `if/else` counts as two branches; both must be exercised for full coverage.
+Lines with no test coverage are shown in the `Miss` column. `Branch` and `BrMiss` track conditional branches - a line with `if/else` counts as two branches; both must be exercised for full coverage.
 
 ## HTML output
 
@@ -107,7 +107,7 @@ bunpy test --coverage --coverage-threshold 80
 If total line coverage is below 80%, the command exits with code 1:
 
 ```
-Coverage: 73% — below threshold 80%
+Coverage: 73% - below threshold 80%
 ```
 
 This makes coverage a hard requirement in CI.
@@ -132,7 +132,7 @@ Options in `pyproject.toml` are the defaults; CLI flags override them.
 
 ## Excluding files
 
-Exclude files that should not count toward coverage — migrations, generated code, CLI entry points that are exercised manually:
+Exclude files that should not count toward coverage - migrations, generated code, CLI entry points that are exercised manually:
 
 ```bash
 bunpy test --coverage --coverage-exclude "src/myapp/migrations/**" --coverage-exclude "src/myapp/cli.py"

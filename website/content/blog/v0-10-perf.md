@@ -1,16 +1,12 @@
 ---
-title: "bunpy pm lock is 16x faster than uv on a warm cache"
+title: "How bunpy pm lock got from 14 seconds to 85 milliseconds"
 date: 2026-04-28
-description: We started 10x slower than uv on pm lock. Here is what we found, what we fixed, and where we landed.
+description: Six root causes, six fixes. A walkthrough of every performance bug we found in the package-manager resolver during v0.10.x.
 ---
 
-When we first shipped the bunpy package manager in v0.10.0, I ran a quick benchmark against uv to see where we stood. The result was not pretty. bunpy took 14 seconds to lock a 47-package dependency tree. uv took 1.4 seconds. We were 10x slower, and that was on a warm network cache.
+When we first shipped the bunpy package manager in v0.10.0, locking a 47-package dependency tree took 14 seconds on a warm cache. By v0.10.29 the same operation takes 85 milliseconds. This post walks through every root cause we found and fixed.
 
-I wrote it down, filed it as a future problem, and shipped anyway. v0.10.0 had other things going for it. But the number stayed in my head.
-
-By v0.10.29, bunpy warm lock takes 85 milliseconds on the same tree. uv cold lock takes 1.4 seconds. We are now 16x faster than uv on warm cache, and 0.28x the time of a uv cold lock.
-
-Here is what we found and what we fixed.
+The investigation followed a simple loop: profile the slowest run, find one bottleneck, ship a fix, re-measure, repeat. Six iterations, one root cause each.
 
 
 ## The benchmark setup
@@ -24,13 +20,13 @@ Network:  1 Gbps fiber (for cold runs)
 Runs:     10 iterations, median reported
 ```
 
-Baseline before any fixes:
+Baseline:
 
-| Operation | bunpy v0.10.0 | uv (warm) | uv (cold) |
-|---|---|---|---|
-| pm lock | 14.2s | 0.31s | 1.4s |
+| Operation | bunpy v0.10.0 (warm) | bunpy v0.10.0 (cold) |
+|---|---|---|
+| pm lock | 14.2s | 48.1s |
 
-We were not just slower than uv warm. We were slower than uv cold. That told us we were not using our cache at all.
+The warm run hitting the network as hard as the cold run was the first hint that the cache was not being used.
 
 
 ## Root cause 1: Cache not wired
@@ -101,21 +97,19 @@ This last fix gave us less than the others individually, but combined with the p
 
 ## Before and after
 
-| Operation | bunpy v0.10.0 | bunpy v0.10.29 | uv (warm) | uv (cold) |
-|---|---|---|---|---|
-| pm lock, warm cache | 14.2s | 0.085s | 0.31s | - |
-| pm lock, cold cache | 48.1s | 1.4s | - | 1.4s |
-| Improvement | baseline | 167x faster | - | - |
+| Operation | bunpy v0.10.0 | bunpy v0.10.29 |
+|---|---|---|
+| pm lock, warm cache | 14.2s | 0.085s |
+| pm lock, cold cache | 48.1s | 1.4s |
+| Improvement | baseline | 167x faster |
 
 The warm-cache number is the one that matters most for daily use. You lock, change a dependency, lock again. That cycle is now 85 milliseconds.
 
-The cold-cache number is relevant for CI. On a runner with no cache, bunpy takes the same time as uv cold. That makes sense — both are bottlenecked by network.
-
-The ratio we are proud of: bunpy warm is 0.28x the time of uv cold. If your CI warms the bunpy cache, you are resolving in under 100ms instead of 1.4 seconds.
+The cold-cache number is relevant for CI. On a runner with no cache, the bottleneck is network throughput, not the resolver. If your CI warms the bunpy cache between runs, you are resolving in under 100 ms instead of seconds.
 
 
 ## What is next
 
-The 85ms number is for a 47-package tree. We have not measured against larger trees (500+) yet. The goroutine pool is the main bottleneck at that scale — the semaphore limit of 8 was set conservatively to avoid hammering PyPI. We will tune it based on measurements on larger projects.
+The 85 ms number is for a 47-package tree. We have not measured against larger trees (500+) yet. The goroutine pool is the main bottleneck at that scale; the semaphore limit of 8 was set conservatively to avoid hammering PyPI. We will tune it based on measurements on larger projects.
 
 There is also one remaining issue: sdist packages require a build step to extract metadata. We extract them sequentially today. Parallelizing sdist metadata extraction is on the roadmap for v0.11.x.

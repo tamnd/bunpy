@@ -140,7 +140,7 @@ railway add --plugin postgresql
 
 This provisions a managed Postgres instance and injects the following environment variables into your service automatically:
 
-- `DATABASE_URL` — full connection string
+- `DATABASE_URL` - full connection string
 - `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD`, `PGDATABASE`
 
 Read the connection string in your app:

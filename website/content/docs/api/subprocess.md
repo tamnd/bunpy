@@ -1,5 +1,5 @@
 ---
-title: bunpy.spawn — Subprocess
+title: bunpy.spawn - Subprocess
 description: Run subprocesses, capture output, pipe stdin/stdout, set timeouts and environment, and use async subprocess in bunpy.
 weight: 12
 ---
@@ -8,7 +8,7 @@ weight: 12
 from bunpy.spawn import spawn
 ```
 
-`bunpy.spawn` runs external programs as subprocesses. It is lower-level than `bunpy.shell` — you get explicit control over argument lists, file descriptors, environment, and working directory without going through a shell.
+`bunpy.spawn` runs external programs as subprocesses. It is lower-level than `bunpy.shell` - you get explicit control over argument lists, file descriptors, environment, and working directory without going through a shell.
 
 ## Basic usage
 
@@ -33,7 +33,7 @@ Blocks until the process exits and returns a `CompletedProcess`.
 
 | CompletedProcess field | Type | Description |
 |------------------------|------|-------------|
-| `returncode` | int | Exit code — 0 means success |
+| `returncode` | int | Exit code - 0 means success |
 | `stdout` | str | Captured standard output |
 | `stderr` | str | Captured standard error |
 | `args` | list | The command that was run |
@@ -56,7 +56,7 @@ result = spawn(
 | Option | Default | Description |
 |--------|---------|-------------|
 | `cwd` | `None` (inherit) | Working directory for the subprocess |
-| `env` | `None` (inherit) | Environment variables — merged with current env unless `env_replace=True` |
+| `env` | `None` (inherit) | Environment variables - merged with current env unless `env_replace=True` |
 | `env_replace` | `False` | Replace environment entirely instead of merging |
 | `timeout` | `None` | Kill after this many seconds; raises `TimeoutError` |
 | `stdin` | `None` | String or bytes piped to stdin; `None` inherits parent stdin |
@@ -89,7 +89,7 @@ def is_clean() -> bool:
     return result.stdout.strip() == ""
 
 if not is_clean():
-    raise SystemExit("Uncommitted changes — aborting deploy")
+    raise SystemExit("Uncommitted changes - aborting deploy")
 ```
 
 ## Capturing stderr separately
@@ -170,7 +170,7 @@ asyncio.run(run_tests())
 ### aspawn(args, **options) → Coroutine[CompletedProcess]
 
 Same signature as `spawn`. Returns a coroutine that resolves to `CompletedProcess`.
-The process runs in the asyncio event loop — no thread-pool blocking.
+The process runs in the asyncio event loop - no thread-pool blocking.
 
 ## Piping multiple commands
 
@@ -200,7 +200,7 @@ import os
 # Add a variable while keeping the rest of the environment
 result = spawn(
     ["node", "server.js"],
-    env={"PORT": "9000"},    # merged — other env vars are preserved
+    env={"PORT": "9000"},    # merged - other env vars are preserved
 )
 
 # Fully isolated environment

@@ -26,7 +26,7 @@ Run it:
 bunpy main.py
 ```
 
-Each `Process` maps to a dedicated goroutine under the hood. bunpy does not use OS threads for the GIL workaround — it forks a new Python interpreter state per process, so CPU-bound work scales across all cores without contention.
+Each `Process` maps to a dedicated goroutine under the hood. bunpy does not use OS threads for the GIL workaround - it forks a new Python interpreter state per process, so CPU-bound work scales across all cores without contention.
 
 ## Pool.map for parallel computation
 
@@ -67,11 +67,11 @@ if __name__ == "__main__":
     print(f"Time: {elapsed:.2f}s")
 ```
 
-`Pool()` without an argument creates one worker per logical CPU. All arguments and return values must be picklable — define worker functions at module level, not inside `if __name__ == "__main__"`.
+`Pool()` without an argument creates one worker per logical CPU. All arguments and return values must be picklable - define worker functions at module level, not inside `if __name__ == "__main__"`.
 
 ## Pool.starmap and imap
 
-`starmap` unpacks each item as positional arguments, removing the need to pack into a tuple. `imap` is the lazy version — results are yielded one by one rather than collected in full:
+`starmap` unpacks each item as positional arguments, removing the need to pack into a tuple. `imap` is the lazy version - results are yielded one by one rather than collected in full:
 
 ```python
 from multiprocessing import Pool
@@ -172,7 +172,7 @@ if __name__ == "__main__":
     print(f"Time: {elapsed:.2f}s")
 ```
 
-`Value` accepts any `ctypes` type — `c_int`, `c_double`, `c_bool`, and so on. Always guard reads and writes with a `Lock` unless the operation is atomic at the OS level.
+`Value` accepts any `ctypes` type - `c_int`, `c_double`, `c_bool`, and so on. Always guard reads and writes with a `Lock` unless the operation is atomic at the OS level.
 
 `Array` works the same way for fixed-length sequences:
 

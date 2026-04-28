@@ -59,7 +59,7 @@ bunpy create workspace myws --yes
 
 ## Cross-member imports
 
-Members can import each other — bunpy adds each member's source root to the
+Members can import each other - bunpy adds each member's source root to the
 search path:
 
 ```python

@@ -5,10 +5,10 @@ description: Run parallel I/O and CPU-bound work with ThreadPoolExecutor and Pro
 
 ## Overview
 
-`concurrent.futures` is in the standard library — no install needed. It gives you two executors:
+`concurrent.futures` is in the standard library - no install needed. It gives you two executors:
 
-- `ThreadPoolExecutor` — for I/O-bound work (network calls, disk reads, database queries). Threads share memory and the GIL, so they do not speed up CPU-bound Python code.
-- `ProcessPoolExecutor` — for CPU-bound work (image processing, number crunching, compression). Separate processes bypass the GIL but have higher startup cost and cannot share memory.
+- `ThreadPoolExecutor` - for I/O-bound work (network calls, disk reads, database queries). Threads share memory and the GIL, so they do not speed up CPU-bound Python code.
+- `ProcessPoolExecutor` - for CPU-bound work (image processing, number crunching, compression). Separate processes bypass the GIL but have higher startup cost and cannot share memory.
 
 ## ThreadPoolExecutor basics
 
@@ -62,7 +62,7 @@ for limit, count in zip(limits, counts):
 print(f"Done in {elapsed:.2f}s")
 ```
 
-Because `ProcessPoolExecutor` uses `multiprocessing` under the hood, all arguments and return values must be picklable. Lambdas and local functions are not — define them at module level.
+Because `ProcessPoolExecutor` uses `multiprocessing` under the hood, all arguments and return values must be picklable. Lambdas and local functions are not - define them at module level.
 
 ## as_completed: process results as they arrive
 
@@ -128,7 +128,7 @@ with ThreadPoolExecutor(max_workers=4) as executor:
 
 ## Cancel pending futures
 
-Submit work, then cancel tasks that have not started yet — useful for timeouts or early-exit patterns:
+Submit work, then cancel tasks that have not started yet - useful for timeouts or early-exit patterns:
 
 ```python
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -150,7 +150,7 @@ with ThreadPoolExecutor(max_workers=2) as executor:
         print(f"Result: {future.result()}")
 ```
 
-`cancel()` returns `True` only if the task has not started. Running tasks cannot be cancelled — that is a fundamental limit of threads.
+`cancel()` returns `True` only if the task has not started. Running tasks cannot be cancelled - that is a fundamental limit of threads.
 
 ## map with timeout
 
@@ -272,7 +272,7 @@ print(f"Fetched {len(items)} items in {elapsed:.2f}s")
 
 ## Real-world: image resizing with processes
 
-Image processing is CPU-bound — use `ProcessPoolExecutor` to use all cores:
+Image processing is CPU-bound - use `ProcessPoolExecutor` to use all cores:
 
 ```bash
 bunpy add pillow
@@ -346,7 +346,7 @@ for i, future in enumerate(futures):
     try:
         print(f"Result {i}: {future.result()}")
     except ZeroDivisionError as exc:
-        print(f"Result {i}: error — {exc}")
+        print(f"Result {i}: error - {exc}")
 ```
 
 ## Choosing workers count
@@ -380,4 +380,4 @@ bunpy resize_images.py
 bunpy log_analyzer.py
 ```
 
-`concurrent.futures` is the right tool when you want straightforward parallelism without the complexity of raw `threading` or `multiprocessing`. For async I/O (aiohttp, httpx async), prefer `asyncio` with `asyncio.gather` — threads add overhead that async avoids entirely when the whole stack is async-native.
+`concurrent.futures` is the right tool when you want straightforward parallelism without the complexity of raw `threading` or `multiprocessing`. For async I/O (aiohttp, httpx async), prefer `asyncio` with `asyncio.gather` - threads add overhead that async avoids entirely when the whole stack is async-native.

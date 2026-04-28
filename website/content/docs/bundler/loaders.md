@@ -26,7 +26,7 @@ from data import config
 print(config.data["host"])   # "localhost"
 ```
 
-The file is parsed once at bundle time. At runtime, the Python dict is constructed from a literal — no file I/O, no `json.loads`.
+The file is parsed once at bundle time. At runtime, the Python dict is constructed from a literal - no file I/O, no `json.loads`.
 
 ## Built-in loader: JSON
 
@@ -49,7 +49,7 @@ The emitted Python module looks like:
 data = {"version": 1, "tables": ["users", "products"]}
 ```
 
-No runtime `json` import, no file open — the data is embedded directly in the bundle.
+No runtime `json` import, no file open - the data is embedded directly in the bundle.
 
 ## Built-in loader: TOML
 
@@ -210,4 +210,4 @@ This is the lightest-weight option when you only need a file's raw content at ru
 
 ## Size considerations
 
-Every file processed by a loader is embedded in the bundle. Text and binary loaders are lossless — the file size is included in full. For data files larger than a few hundred KB, consider whether embedding makes sense or whether the file should be loaded from disk at runtime. The `.pyz` format is a ZIP archive, so large text files benefit from compression automatically.
+Every file processed by a loader is embedded in the bundle. Text and binary loaders are lossless - the file size is included in full. For data files larger than a few hundred KB, consider whether embedding makes sense or whether the file should be loaded from disk at runtime. The `.pyz` format is a ZIP archive, so large text files benefit from compression automatically.

@@ -10,7 +10,7 @@ bunpy pm info <package> [flags]
 
 ## Description
 
-`bunpy pm info` fetches and displays metadata for any package on PyPI — installed or not. Use it to inspect a dependency before adding it, verify a version's license, or check what it depends on without installing anything.
+`bunpy pm info` fetches and displays metadata for any package on PyPI - installed or not. Use it to inspect a dependency before adding it, verify a version's license, or check what it depends on without installing anything.
 
 The data comes directly from the PyPI JSON API. No virtualenv or lock file is needed.
 
@@ -159,4 +159,4 @@ If the network is unavailable, it exits with:
 error: could not reach PyPI (https://pypi.org/pypi/requests/json): connection refused
 ```
 
-No fallback to a local cache is attempted — `pm info` is intentionally a live query.
+No fallback to a local cache is attempted - `pm info` is intentionally a live query.

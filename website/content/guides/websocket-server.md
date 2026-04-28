@@ -14,7 +14,7 @@ bunpy create --template minimal chat-server
 cd chat-server
 ```
 
-No extra packages required — `bunpy.serve` handles the WebSocket upgrade natively.
+No extra packages required - `bunpy.serve` handles the WebSocket upgrade natively.
 
 ## Server: connection state
 

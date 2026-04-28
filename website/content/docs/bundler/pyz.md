@@ -6,7 +6,7 @@ weight: 1
 
 ## What is a .pyz?
 
-A `.pyz` file is a standard Python ZIP application — a ZIP archive that Python
+A `.pyz` file is a standard Python ZIP application - a ZIP archive that Python
 (and bunpy) can execute directly. It contains:
 
 ```
@@ -50,7 +50,7 @@ bunpy traces `import` statements statically and includes:
 - Your entry point and all reachable local modules
 - Any wheels installed in `.bunpy/site-packages/` that are imported
 
-Standard library modules are **not** bundled — they are provided by the goipy
+Standard library modules are **not** bundled - they are provided by the goipy
 VM at run time.
 
 ## Size

@@ -1,6 +1,6 @@
 ---
 title: Documentation
-description: bunpy — the Python runtime, package manager, and bundler in one binary.
+description: bunpy - the Python runtime, package manager, and bundler in one binary.
 weight: 1
 next: /docs/installation
 ---

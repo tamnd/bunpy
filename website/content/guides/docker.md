@@ -1,14 +1,14 @@
 ---
 title: Deploy with Docker
-description: Two approaches to containerizing a bunpy app — full install with layer caching, and a single .pyz file in a scratch image.
+description: Two approaches to containerizing a bunpy app - full install with layer caching, and a single .pyz file in a scratch image.
 ---
 
 Docker and bunpy fit together well. You get deterministic builds from `uv.lock`, fast rebuilds from layer caching, and either a full Python environment or a self-contained binary depending on what your app needs.
 
 This guide covers two approaches:
 
-1. **Full install** — copies your dependencies into the image, runs with `python:3.14-slim`. Good for apps that use C extensions or need the full Python stdlib.
-2. **.pyz bundle** — packages everything into a single archive, runs on a minimal base. Good for pure-Python services.
+1. **Full install** - copies your dependencies into the image, runs with `python:3.14-slim`. Good for apps that use C extensions or need the full Python stdlib.
+2. **.pyz bundle** - packages everything into a single archive, runs on a minimal base. Good for pure-Python services.
 
 
 ## Approach 1: Full install with layer caching
@@ -27,11 +27,11 @@ ENV PATH="/root/.bunpy/bin:$PATH"
 
 WORKDIR /app
 
-# Copy lockfiles first — this layer is cached until the lockfiles change
+# Copy lockfiles first - this layer is cached until the lockfiles change
 COPY pyproject.toml uv.lock ./
 RUN bunpy install --frozen --target /app/site-packages
 
-# Now copy source — cache miss here does not invalidate the install layer above
+# Now copy source - cache miss here does not invalidate the install layer above
 COPY src/ src/
 
 # ──────────────────────────────────────────────
@@ -179,7 +179,7 @@ The `.bunpy/` directory contains your local cache. It can be hundreds of megabyt
 | Compiled binary | `distroless/static-debian12` | ~25 MB |
 | Compiled binary | `scratch` | ~22 MB |
 
-The compiled binary route gives the smallest image by a large margin because it carries no OS packages and no Python installation. The tradeoff is that C extension dependencies (`psycopg`, `cryptography`, and similar) do not work in a compiled binary — they require a CPython runtime.
+The compiled binary route gives the smallest image by a large margin because it carries no OS packages and no Python installation. The tradeoff is that C extension dependencies (`psycopg`, `cryptography`, and similar) do not work in a compiled binary - they require a CPython runtime.
 
 
 ## Passing environment variables

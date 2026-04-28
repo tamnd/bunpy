@@ -144,7 +144,7 @@ class Post(BaseModel):
 
 post = Post(id=1, title="Hello", body="World", published_at=datetime.now())
 
-# dict — by_alias and exclude_none are useful for API output
+# dict - by_alias and exclude_none are useful for API output
 d = post.model_dump()
 print(d)
 
@@ -178,7 +178,7 @@ print(post2.published_at.year)   # 2024
 
 ## JSON schema generation
 
-Pydantic can emit a JSON Schema for your models — useful for documentation or validation on the client side:
+Pydantic can emit a JSON Schema for your models - useful for documentation or validation on the client side:
 
 ```python
 from pydantic import BaseModel, Field
@@ -296,7 +296,7 @@ print(order.payment.email)
 
 ## Real-world: API request and response models
 
-A complete pattern for a FastAPI-style endpoint — even if you are not using FastAPI, defining explicit request/response shapes makes your code self-documenting and easy to test:
+A complete pattern for a FastAPI-style endpoint - even if you are not using FastAPI, defining explicit request/response shapes makes your code self-documenting and easy to test:
 
 ```python
 from pydantic import BaseModel, field_validator, model_validator
@@ -378,4 +378,4 @@ print(result["tags"])    # ['python', 'api']
 bunpy validate.py
 ```
 
-Pydantic v2 is built in Rust and is dramatically faster than v1. Use it as the canonical source of truth for your data shapes — validators, serialization, and schema generation all live in one place.
+Pydantic v2 is built in Rust and is dramatically faster than v1. Use it as the canonical source of truth for your data shapes - validators, serialization, and schema generation all live in one place.

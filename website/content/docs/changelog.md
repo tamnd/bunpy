@@ -8,11 +8,11 @@ This page covers milestone releases from v0.1.x to v0.10.x. Patch-level bug fixe
 
 ## v0.10.x (2026-03)
 
-The headline of v0.10 is a clean break: `bunpy.lock` is gone. `uv.lock` is the sole lockfile format going forward.
+The headline of v0.10 is a clean break: `bunpy.lock` is removed. `uv.lock` is the sole lockfile format going forward.
 
 - **v0.10.29** -- `bunpy.lock` removed entirely. Projects that still have a `bunpy.lock` in their repo get an error with a migration hint on first `bunpy install`. Run `bunpy install --migrate-lock` to convert and delete the file in one step.
 - Binary releases now publish on every tag push, not just on manual workflow dispatch. The CDN URL `https://tamnd.github.io/bunpy/install.sh` always points at the latest tag.
-- Package manager lock performance: `bunpy pm lock` now completes in roughly 1/16 the wall time of `uv lock` on the same `pyproject.toml`. The speedup comes from a rewritten parallel resolver written in Go that avoids spawning a Python subprocess for every candidate version.
+- Package manager lock performance: `bunpy pm lock` now resolves a 47-package tree in ~85 ms on a warm cache and ~1.4 s on a cold cache. The speedup comes from a parallel resolver written in Go with HTTP/2 multiplexing, lock seeding, and eager prefetch of transitive dependencies.
 - `bunpy upgrade` gained `--version` flag so CI jobs can pin an exact release without touching the install script.
 - goipy updated to CPython 3.14.0a7 semantics; 214 of 263 stdlib modules pass the full test suite.
 

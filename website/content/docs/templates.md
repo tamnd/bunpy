@@ -5,7 +5,7 @@ weight: 3
 ---
 
 `bunpy create` scaffolds a new project from a built-in template. No network
-access needed — templates are embedded in the bunpy binary.
+access needed - templates are embedded in the bunpy binary.
 
 ## Usage
 
@@ -95,7 +95,7 @@ mylib/
 
 ## script
 
-A single-file script — minimal boilerplate, just a `.py` file:
+A single-file script - minimal boilerplate, just a `.py` file:
 
 ```bash
 bunpy create script myscript --yes
@@ -112,7 +112,7 @@ myscript/
 
 ```python
 #!/usr/bin/env bunpy
-"""myscript — a standalone bunpy script."""
+"""myscript - a standalone bunpy script."""
 
 
 def main():

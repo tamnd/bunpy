@@ -72,7 +72,7 @@ Failures are collected and printed together after all tests finish.
 
 ## JUnit XML reporter
 
-The JUnit XML reporter writes a `<testsuites>` XML document that CI systems — Jenkins, GitHub Actions test summary, GitLab test reports, CircleCI — can parse to display test results in a structured UI.
+The JUnit XML reporter writes a `<testsuites>` XML document that CI systems - Jenkins, GitHub Actions test summary, GitLab test reports, CircleCI - can parse to display test results in a structured UI.
 
 ```bash
 bunpy test --reporter junit --reporter-output test-results.xml
@@ -136,7 +136,7 @@ The `mikepenz/action-junit-report` action posts a check run on the pull request 
 
 ## Combining reporters
 
-Run two reporters in one pass by passing `--reporter` twice — one for the terminal, one for CI:
+Run two reporters in one pass by passing `--reporter` twice - one for the terminal, one for CI:
 
 ```bash
 bunpy test --reporter console --reporter junit --reporter-output test-results.xml

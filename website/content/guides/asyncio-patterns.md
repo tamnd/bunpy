@@ -5,7 +5,7 @@ description: Write concurrent Python with async/await, gather parallel tasks, us
 
 ## Basics: async def and await
 
-An `async def` function is a coroutine. Calling it returns a coroutine object — it does not run until you `await` it or schedule it on an event loop:
+An `async def` function is a coroutine. Calling it returns a coroutine object - it does not run until you `await` it or schedule it on an event loop:
 
 ```python
 import asyncio
@@ -22,7 +22,7 @@ async def main() -> None:
 asyncio.run(main())
 ```
 
-`asyncio.run` creates a new event loop, runs the coroutine to completion, and closes the loop. Always use it as the entry point — never call `loop.run_until_complete` manually in new code.
+`asyncio.run` creates a new event loop, runs the coroutine to completion, and closes the loop. Always use it as the entry point - never call `loop.run_until_complete` manually in new code.
 
 ## gather: run tasks in parallel
 
@@ -40,7 +40,7 @@ async def fetch(symbol: str, delay: float) -> tuple[str, float]:
 async def main() -> None:
     start = time.perf_counter()
 
-    # All four fetches run concurrently — total time is max(delays), not sum
+    # All four fetches run concurrently - total time is max(delays), not sum
     results = await asyncio.gather(
         fetch("AAPL", 0.3),
         fetch("GOOG", 0.1),
@@ -106,7 +106,7 @@ async def main() -> None:
 asyncio.run(main())
 ```
 
-TaskGroup enforces that you do not leak background tasks — the `async with` block does not exit until every task created inside it has finished or been cancelled.
+TaskGroup enforces that you do not leak background tasks - the `async with` block does not exit until every task created inside it has finished or been cancelled.
 
 ## Timeout with asyncio.timeout
 
@@ -295,7 +295,7 @@ async def fetch_repo_stats(repos: list[str]) -> None:
 
         for repo, result in zip(repos, results):
             if isinstance(result, Exception):
-                print(f"{repo}: ERROR — {result}")
+                print(f"{repo}: ERROR - {result}")
             else:
                 print(f"{repo}: {result['stargazers_count']} stars, {result['open_issues_count']} open issues")
 
@@ -380,4 +380,4 @@ bunpy parallel_api.py
 bunpy async_queue.py
 ```
 
-asyncio's model is single-threaded cooperative multitasking: only one coroutine runs at a time, but any coroutine can yield control at an `await` point. That means shared state is safe within a single event loop — but blocking for more than a few milliseconds without `await` stalls everything else.
+asyncio's model is single-threaded cooperative multitasking: only one coroutine runs at a time, but any coroutine can yield control at an `await` point. That means shared state is safe within a single event loop - but blocking for more than a few milliseconds without `await` stalls everything else.

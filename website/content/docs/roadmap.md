@@ -33,7 +33,7 @@ The globals page will be rewritten from scratch. Right now it lists `fetch`, `Ab
 Standalone how-to guides are planned for: deploying to Fly.io, deploying to Railway, using bunpy in a GitHub Actions matrix, writing a REST API, serving static files, writing a CLI tool with `argparse`, and migrating a Flask or FastAPI app to `bunpy.serve`.
 
 **Migration guides**
-v0.10 removed `bunpy.lock`. That gets a dedicated migration page. v0.11 will also document how to migrate from pip+venv, from Poetry, and from uv-without-bunpy to bunpy.
+v0.10 removed `bunpy.lock`. That gets a dedicated migration page. v0.11 will also document how to migrate from pip+venv, Poetry, or other Python toolchains to bunpy.
 
 ### Performance work in v0.11
 

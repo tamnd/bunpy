@@ -36,7 +36,7 @@ Register the plugin in `pyproject.toml`:
 plugins = ["myplugin:plugin"]
 ```
 
-The string `"myplugin:plugin"` follows the `module:attribute` pattern — bunpy imports `myplugin` and reads its `plugin` attribute.
+The string `"myplugin:plugin"` follows the `module:attribute` pattern - bunpy imports `myplugin` and reads its `plugin` attribute.
 
 ## Resolve hook
 
@@ -198,7 +198,7 @@ plugins = [
 ]
 ```
 
-Plugins run in declaration order. The resolve hooks run in order until one returns a non-`None` value. The transform hooks run in order and chain — the output of hook N is passed as `args.contents` to hook N+1.
+Plugins run in declaration order. The resolve hooks run in order until one returns a non-`None` value. The transform hooks run in order and chain - the output of hook N is passed as `args.contents` to hook N+1.
 
 ## TransformArgs and ResolveArgs reference
 

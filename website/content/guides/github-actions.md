@@ -1,6 +1,6 @@
 ---
 title: CI/CD with GitHub Actions
-description: Full GitHub Actions workflow for bunpy — lint, type check, test with coverage, build .pyz, and deploy. With caching and matrix builds.
+description: Full GitHub Actions workflow for bunpy - lint, type check, test with coverage, build .pyz, and deploy. With caching and matrix builds.
 ---
 
 This guide builds a production-grade GitHub Actions workflow for a bunpy project. The pipeline runs lint, type check, tests with coverage upload, builds a `.pyz` archive, and deploys on merge to main. It caches the bunpy install between runs to keep CI fast.

@@ -1,10 +1,10 @@
 ---
 title: Node.js compatibility
-description: bunpy.node.* — a Node.js standard library shim for Python.
+description: bunpy.node.* - a Node.js standard library shim for Python.
 weight: 4
 ---
 
-bunpy 0.8+ ships `bunpy.node` — a Go-backed shim of the Node.js standard
+bunpy 0.8+ ships `bunpy.node` - a Go-backed shim of the Node.js standard
 library that lets Python code use the same APIs as Node.js scripts.
 
 ## Available modules

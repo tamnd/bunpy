@@ -8,7 +8,7 @@ weight: 16
 from bunpy.serve import serve, SSEResponse
 ```
 
-Server-Sent Events (SSE) let a server push a stream of text events to a browser over a plain HTTP connection. `bunpy.serve` turns an async generator into an SSE response — the generator `yield`s events, and bunpy handles framing, flushing, and connection teardown.
+Server-Sent Events (SSE) let a server push a stream of text events to a browser over a plain HTTP connection. `bunpy.serve` turns an async generator into an SSE response - the generator `yield`s events, and bunpy handles framing, flushing, and connection teardown.
 
 ## Basic SSE response
 
@@ -37,7 +37,7 @@ The generator yields dicts with optional keys:
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| `data` | str | — | The event payload (required) |
+| `data` | str | - | The event payload (required) |
 | `event` | str | `None` | Named event type |
 | `id` | str | `None` | Event ID for client reconnect |
 | `retry` | int | `None` | Client reconnect delay in milliseconds |
@@ -52,13 +52,13 @@ import asyncio
 import json
 
 async def live_feed():
-    # Unnamed event — client listens with onmessage
+    # Unnamed event - client listens with onmessage
     yield {"data": "connected"}
 
     for tick in range(100):
         await asyncio.sleep(0.5)
         if tick % 10 == 0:
-            # Named event — client listens with addEventListener("heartbeat", ...)
+            # Named event - client listens with addEventListener("heartbeat", ...)
             yield {"event": "heartbeat", "data": str(tick)}
         else:
             yield {
@@ -153,7 +153,7 @@ serve(handler, port=3000)
 
 ## Token streaming for LLM output
 
-Stream LLM tokens as they arrive — the pattern used by ChatGPT, Claude, and every modern AI chat UI:
+Stream LLM tokens as they arrive - the pattern used by ChatGPT, Claude, and every modern AI chat UI:
 
 ```python
 from bunpy.serve import serve, SSEResponse
@@ -228,7 +228,7 @@ print("Stock ticker on http://localhost:3000?symbols=AAPL,TSLA")
 
 ## Headers and CORS
 
-Pass additional headers to `SSEResponse` — useful for CORS when the client is on a different origin:
+Pass additional headers to `SSEResponse` - useful for CORS when the client is on a different origin:
 
 ```python
 from bunpy.serve import serve, SSEResponse
@@ -267,7 +267,7 @@ async def stream_with_cleanup():
             await asyncio.sleep(0.1)
     finally:
         resource.release()
-        print("client disconnected — resource released")
+        print("client disconnected - resource released")
 
 def handler(req):
     return SSEResponse(stream_with_cleanup())

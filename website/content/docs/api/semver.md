@@ -1,5 +1,5 @@
 ---
-title: bunpy.semver — Semantic Versioning
+title: bunpy.semver - Semantic Versioning
 description: Parse, compare, range-check, increment, and format semantic version strings in bunpy with full semver 2.0 support.
 weight: 18
 ---
@@ -46,8 +46,8 @@ Returns a `Version` object. Raises `ValueError` if the string is not valid semve
 import bunpy.semver as semver
 
 semver.valid("1.2.3")        # True
-semver.valid("v1.2.3")       # True — leading "v" is accepted
-semver.valid("1.2")          # False — missing patch
+semver.valid("v1.2.3")       # True - leading "v" is accepted
+semver.valid("1.2")          # False - missing patch
 semver.valid("not-a-version") # False
 
 # Coerce loose version strings
@@ -113,9 +113,9 @@ import bunpy.semver as semver
 
 semver.satisfies("1.2.3", ">=1.0.0 <2.0.0")   # True
 semver.satisfies("2.0.0", ">=1.0.0 <2.0.0")   # False
-semver.satisfies("1.2.3", "^1.0.0")            # True  — compatible with 1.x.x
+semver.satisfies("1.2.3", "^1.0.0")            # True  - compatible with 1.x.x
 semver.satisfies("2.0.0", "^1.0.0")            # False
-semver.satisfies("1.2.3", "~1.2.0")            # True  — compatible with 1.2.x
+semver.satisfies("1.2.3", "~1.2.0")            # True  - compatible with 1.2.x
 semver.satisfies("1.3.0", "~1.2.0")            # False
 semver.satisfies("1.2.3", "1.x")               # True
 semver.satisfies("1.2.3", "*")                 # True
@@ -125,8 +125,8 @@ semver.satisfies("1.2.3", "*")                 # True
 
 | Operator | Meaning |
 |----------|---------|
-| `^1.2.3` | `>=1.2.3 <2.0.0` — compatible changes |
-| `~1.2.3` | `>=1.2.3 <1.3.0` — patch-level changes |
+| `^1.2.3` | `>=1.2.3 <2.0.0` - compatible changes |
+| `~1.2.3` | `>=1.2.3 <1.3.0` - patch-level changes |
 | `>=1.0.0 <2.0.0` | Intersection of two bounds |
 | `1.x` | Any 1.y.z version |
 | `1.2.x` | Any 1.2.z version |

@@ -222,14 +222,14 @@ report = df.groupby(["month", "region", "product"]).agg(
 # CSV
 report.to_csv("monthly_report.csv", index=False)
 
-# JSON (records — one object per row)
+# JSON (records - one object per row)
 report.to_json("monthly_report.json", orient="records", indent=2)
 
 # Excel with formatting
 with pd.ExcelWriter("monthly_report.xlsx", engine="openpyxl") as writer:
     report.to_excel(writer, sheet_name="Monthly Summary", index=False)
 
-# Parquet — best for large datasets (columnar, compressed)
+# Parquet - best for large datasets (columnar, compressed)
 report.to_parquet("monthly_report.parquet", index=False)
 
 print("Exported monthly_report.csv / .json / .xlsx / .parquet")

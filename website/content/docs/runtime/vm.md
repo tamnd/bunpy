@@ -17,7 +17,7 @@ source.py
 Each stage is a separate Go module wired together by bunpy's `runtime`
 package.
 
-## gopapy — the parser
+## gopapy - the parser
 
 gopapy is a pure-Go Python 3.14 parser. It accepts UTF-8 source and produces
 a concrete syntax tree that gocopy walks to emit bytecode. gopapy supports:
@@ -26,7 +26,7 @@ a concrete syntax tree that gocopy walks to emit bytecode. gopapy supports:
   PEP 695 generics, and f-string nesting
 - Error recovery for better IDE-style diagnostics
 
-## gocopy — the compiler
+## gocopy - the compiler
 
 gocopy translates the gopapy AST into CPython 3.14 bytecode (`.pyc` format).
 It handles:
@@ -36,7 +36,7 @@ It handles:
 - Comprehension code objects
 - Class and function code objects with nested closures
 
-## goipy — the interpreter
+## goipy - the interpreter
 
 goipy is a pure-Go CPython 3.14 bytecode interpreter. It implements the
 CPython frame-based execution model:
@@ -49,7 +49,7 @@ CPython frame-based execution model:
 ## Threading model
 
 bunpy runs Python code on Go goroutines. `threading.Thread` maps 1:1 to a
-goroutine. There is no GIL — goroutines can run concurrently, but individual
+goroutine. There is no GIL - goroutines can run concurrently, but individual
 Python `object.*` operations are not goroutine-safe by default. Shared state
 must be protected by `threading.Lock()`.
 

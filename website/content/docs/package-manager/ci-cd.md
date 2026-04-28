@@ -125,7 +125,7 @@ jobs:
           PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
 ```
 
-Alternatively, use PyPI's trusted publishing (OIDC) to publish without a stored secret — set `PYPI_TOKEN` to the OIDC exchange result or configure the PyPI project to accept GitHub Actions identities.
+Alternatively, use PyPI's trusted publishing (OIDC) to publish without a stored secret - set `PYPI_TOKEN` to the OIDC exchange result or configure the PyPI project to accept GitHub Actions identities.
 
 ## GitLab CI
 
@@ -165,7 +165,7 @@ publish:
     - bunpy publish --token "$PYPI_TOKEN"
 ```
 
-Override `BUNPY_CACHE_DIR` to a project-local path so GitLab's cache key mechanism can manage it. The cache key is tied to `uv.lock` — same semantics as the GitHub Actions setup.
+Override `BUNPY_CACHE_DIR` to a project-local path so GitLab's cache key mechanism can manage it. The cache key is tied to `uv.lock` - same semantics as the GitHub Actions setup.
 
 ## Lock file validation
 
@@ -206,6 +206,6 @@ Run `pm audit` on every push. Run `pm outdated --check` on a weekly schedule to 
 | Cache path | What it stores | Key recommendation |
 |------------|----------------|-------------------|
 | `~/.cache/bunpy/` | Wheels by content hash | `hashFiles('uv.lock')` |
-| `.bunpy/site-packages/` | Extracted packages | Do not cache — fast to restore from wheel cache |
+| `.bunpy/site-packages/` | Extracted packages | Do not cache - fast to restore from wheel cache |
 
 Do not cache `.bunpy/site-packages/` directly. The wheel cache is the correct level: extracting wheels from the local cache is near-instant, and caching the extracted tree introduces stale-file edge cases when the lock file changes.

@@ -1,6 +1,6 @@
 ---
 title: Linting and formatting with ruff
-description: Add ruff to a bunpy project — pyproject.toml config, ruff check and format, pre-commit hook, VS Code extension, and CI integration.
+description: Add ruff to a bunpy project - pyproject.toml config, ruff check and format, pre-commit hook, VS Code extension, and CI integration.
 ---
 
 ruff is a fast Python linter and formatter written in Rust. It replaces flake8, isort, pyupgrade, and black with a single tool that runs in milliseconds. This guide covers adding ruff to a bunpy project, configuring it for FastAPI and Django, wiring it into pre-commit, and running it in CI.
@@ -12,7 +12,7 @@ ruff is a fast Python linter and formatter written in Rust. It replaces flake8, 
 bunpy add ruff --dev
 ```
 
-This adds ruff to the `dev` dependency group in `pyproject.toml` and updates `uv.lock`. ruff is a development tool — it does not need to be present in the production image.
+This adds ruff to the `dev` dependency group in `pyproject.toml` and updates `uv.lock`. ruff is a development tool - it does not need to be present in the production image.
 
 Verify the install:
 
@@ -82,7 +82,7 @@ select = [
   "RUF",  # ruff-specific rules
 ]
 ignore = [
-  "E501",  # line too long — handled by formatter
+  "E501",  # line too long - handled by formatter
   "B008",  # do not perform function calls in default arguments (conflicts with FastAPI Depends)
 ]
 
@@ -118,7 +118,7 @@ Django uses class-based views and models that trigger naming convention rules. A
 select = ["E", "W", "F", "I", "B", "C4", "UP", "RUF"]
 ignore = [
   "E501",
-  "N805",   # first argument of a method should be named self — conflicts with cls in classmethods
+  "N805",   # first argument of a method should be named self - conflicts with cls in classmethods
   "RUF012", # mutable class attributes (Django model fields)
 ]
 per-file-ignores = { "*/migrations/*" = ["E501", "N806"] }

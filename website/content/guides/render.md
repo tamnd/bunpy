@@ -1,6 +1,6 @@
 ---
 title: Deploy to Render
-description: Deploy a bunpy app to Render using render.yaml — build command, start command, managed Postgres, env vars, and health checks.
+description: Deploy a bunpy app to Render using render.yaml - build command, start command, managed Postgres, env vars, and health checks.
 ---
 
 Render is a fully managed cloud platform with a straightforward YAML configuration. You define your service, database, environment variables, and health checks in a single `render.yaml` file committed to your repository. This guide walks through a complete setup.
@@ -55,9 +55,9 @@ databases:
 
 **`startCommand`** is what Render runs to start the web process. Render injects `PORT` into the environment; your app must listen on that port.
 
-**`healthCheckPath`** — Render pings this endpoint after deploy. The service is considered healthy when it returns HTTP 200. Render routes traffic to the new instance only after the health check passes. If it fails within the timeout, Render rolls back to the previous deploy automatically.
+**`healthCheckPath`** - Render pings this endpoint after deploy. The service is considered healthy when it returns HTTP 200. Render routes traffic to the new instance only after the health check passes. If it fails within the timeout, Render rolls back to the previous deploy automatically.
 
-**`autoDeploy: true`** — triggers a new deploy every time you push to the connected branch.
+**`autoDeploy: true`** - triggers a new deploy every time you push to the connected branch.
 
 
 ## Environment variables

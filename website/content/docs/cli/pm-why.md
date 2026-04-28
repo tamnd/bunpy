@@ -10,7 +10,7 @@ bunpy pm why <package> [flags]
 
 ## Description
 
-`bunpy pm why` traces the reverse dependency graph for a package — it answers "what pulled this in?" by walking up from the target package to the roots (your direct dependencies and the project itself). The output is a tree showing every path through which a package is required.
+`bunpy pm why` traces the reverse dependency graph for a package - it answers "what pulled this in?" by walking up from the target package to the roots (your direct dependencies and the project itself). The output is a tree showing every path through which a package is required.
 
 It reads `uv.lock` exclusively. No network access, no Python interpreter needed.
 
@@ -40,7 +40,7 @@ certifi 2024.2.2
     └── required by myproject (direct)
 ```
 
-Each line shows the package that requires the target and the version specifier it uses. When a package is reachable through multiple paths, all paths are shown. The root nodes are marked `(direct)` — these are packages you explicitly listed in `pyproject.toml`.
+Each line shows the package that requires the target and the version specifier it uses. When a package is reachable through multiple paths, all paths are shown. The root nodes are marked `(direct)` - these are packages you explicitly listed in `pyproject.toml`.
 
 ## Real-world example: requests → certifi
 
@@ -112,7 +112,7 @@ If you want to drop a direct dependency, `pm why` tells you whether anything els
 bunpy pm why urllib3
 ```
 
-If `urllib3` shows up as required by `requests` or `httpx`, removing your direct entry in `pyproject.toml` will not drop it from `uv.lock` — it will stay as a transitive dependency.
+If `urllib3` shows up as required by `requests` or `httpx`, removing your direct entry in `pyproject.toml` will not drop it from `uv.lock` - it will stay as a transitive dependency.
 
 ### Auditing unexpected packages
 

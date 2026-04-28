@@ -23,11 +23,11 @@ fly launch
 
 Fly will ask a series of questions:
 
-- **App name** — pick something globally unique, e.g. `myapp-prod`
-- **Region** — choose the region closest to your users or database
-- **Postgres** — say no for now if you plan to use SQLite
-- **Redis** — say no unless your app needs it
-- **Deploy now** — say no; you'll configure `fly.toml` first
+- **App name** - pick something globally unique, e.g. `myapp-prod`
+- **Region** - choose the region closest to your users or database
+- **Postgres** - say no for now if you plan to use SQLite
+- **Redis** - say no unless your app needs it
+- **Deploy now** - say no; you'll configure `fly.toml` first
 
 `fly launch` writes a `fly.toml` file to the current directory. You'll edit it in the next step.
 
@@ -128,7 +128,7 @@ CMD ["python", "-m", "myapp"]
 
 ## Step 4: Secrets
 
-Secrets are environment variables that Fly encrypts at rest and injects at runtime. Never put secrets in `fly.toml` — it is committed to source control.
+Secrets are environment variables that Fly encrypts at rest and injects at runtime. Never put secrets in `fly.toml` - it is committed to source control.
 
 ```bash
 # Set a secret

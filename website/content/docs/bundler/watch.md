@@ -13,11 +13,11 @@ On any change, it rebuilds and prints the result:
 
 ```
 [watch] built app.pyz (12 KB, 3.2 ms)
-[watch] rebuilt app.pyz — 1 change (2.8 ms)
-[watch] error in mylib/utils.py:7 — SyntaxError: invalid syntax
+[watch] rebuilt app.pyz - 1 change (2.8 ms)
+[watch] error in mylib/utils.py:7 - SyntaxError: invalid syntax
 ```
 
-Errors do not stop the watch process — bunpy waits for the next save and
+Errors do not stop the watch process - bunpy waits for the next save and
 tries again.
 
 ## Combining with --compile

@@ -69,7 +69,7 @@ print(r.get("page_views"))  # 2
 
 ## Hash operations
 
-Hashes map string fields to string values under one key — ideal for storing records:
+Hashes map string fields to string values under one key - ideal for storing records:
 
 ```python
 import redis
@@ -102,7 +102,7 @@ print(r.hexists("user:1", "email"))   # True
 
 ## List as a queue
 
-Redis lists support O(1) push and pop on both ends — a natural fit for task queues:
+Redis lists support O(1) push and pop on both ends - a natural fit for task queues:
 
 ```python
 import redis
@@ -135,7 +135,7 @@ while True:
     print(f"Sending email to {job['to']}: {job['subject']}")
 ```
 
-`blpop` blocks until an item arrives or the timeout expires — more efficient than polling.
+`blpop` blocks until an item arrives or the timeout expires - more efficient than polling.
 
 ## Pub/Sub pattern
 
@@ -345,4 +345,4 @@ bunpy cache.py
 bunpy session.py
 ```
 
-Redis pipelines batch multiple commands into one network round trip — always use them when you need to fire several commands together. For operations that must be atomic, reach for Lua scripts via `r.eval()`.
+Redis pipelines batch multiple commands into one network round trip - always use them when you need to fire several commands together. For operations that must be atomic, reach for Lua scripts via `r.eval()`.

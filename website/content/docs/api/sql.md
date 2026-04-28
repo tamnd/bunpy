@@ -23,7 +23,7 @@ db.exec("CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, name TEXT)")
 # Insert with positional parameters
 db.exec("INSERT INTO users (name) VALUES (?)", "Alice")
 
-# Query — returns list of row dicts
+# Query - returns list of row dicts
 rows = db.query("SELECT * FROM users")
 for row in rows:
     print(row["name"])

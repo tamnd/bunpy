@@ -10,7 +10,7 @@ bunpy build --minify app.py
 
 The `--minify` flag strips:
 
-- Blank lines and indentation (byte-safe — preserved inside strings)
+- Blank lines and indentation (byte-safe - preserved inside strings)
 - Single-line `#` comments
 - Module-level and function-level docstrings
 
@@ -29,5 +29,5 @@ size itself (the VM is the dominant factor).
 ## When to use
 
 Minification is primarily useful when distributing `.pyz` files where source
-confidentiality is a concern. It is not a security measure — the bytecode is
+confidentiality is a concern. It is not a security measure - the bytecode is
 still human-readable with a disassembler.

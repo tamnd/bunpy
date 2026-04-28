@@ -1,11 +1,11 @@
 ---
 title: Stream data with Server-Sent Events
-description: Push live updates from server to browser using SSE — log streaming, LLM token output, and EventSource reconnect handling.
+description: Push live updates from server to browser using SSE - log streaming, LLM token output, and EventSource reconnect handling.
 ---
 
 ## SSE vs WebSocket
 
-Server-Sent Events (SSE) are a simple, HTTP-native way for the server to push a stream of text events to the browser. Unlike WebSockets, SSE is unidirectional — the server writes, the client reads. That simplicity makes it the right choice for:
+Server-Sent Events (SSE) are a simple, HTTP-native way for the server to push a stream of text events to the browser. Unlike WebSockets, SSE is unidirectional - the server writes, the client reads. That simplicity makes it the right choice for:
 
 - Live log tails
 - Progress updates for long-running jobs
@@ -153,7 +153,7 @@ while true; do echo "$(date) - request processed" >> /tmp/app.log; sleep 1; done
 
 ## LLM token streaming
 
-Streaming tokens from an LLM API as they arrive makes the interface feel responsive. The pattern is identical to the log streamer — yield each chunk as a separate SSE event.
+Streaming tokens from an LLM API as they arrive makes the interface feel responsive. The pattern is identical to the log streamer - yield each chunk as a separate SSE event.
 
 ```python
 import json
@@ -212,7 +212,7 @@ curl -N "http://localhost:3000/generate?prompt=Hello"
 
 ## Client JavaScript (EventSource)
 
-Paste this into any HTML page to consume the log stream. The same pattern works for the LLM streamer — just swap the URL and the `onmessage` handler.
+Paste this into any HTML page to consume the log stream. The same pattern works for the LLM streamer - just swap the URL and the `onmessage` handler.
 
 ```html
 CLIENT_HTML = """
@@ -250,7 +250,7 @@ CLIENT_HTML = """
     };
 
     es.onerror = () => {
-      append("Connection lost — retrying…", "ts");
+      append("Connection lost - retrying…", "ts");
     };
 
     es.addEventListener("done", () => {

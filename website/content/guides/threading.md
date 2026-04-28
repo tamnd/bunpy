@@ -33,7 +33,7 @@ Run it:
 bunpy main.py
 ```
 
-All five threads start nearly simultaneously. Because each sleeps for a different duration, they finish out of order — which is exactly the point. Threads are the right tool when your work spends most of its time waiting on I/O: network calls, disk reads, database queries. For CPU-bound work that needs true parallelism, see the [multiprocessing guide](../multiprocessing).
+All five threads start nearly simultaneously. Because each sleeps for a different duration, they finish out of order - which is exactly the point. Threads are the right tool when your work spends most of its time waiting on I/O: network calls, disk reads, database queries. For CPU-bound work that needs true parallelism, see the [multiprocessing guide](../multiprocessing).
 
 ## Threading.Thread in detail
 
@@ -64,7 +64,7 @@ for t in threads:
 print(results)
 ```
 
-`join()` blocks the calling thread until the target thread exits. Without `join()` the main thread may exit before the workers finish — safe only when they are daemons doing background bookkeeping you do not need to wait for.
+`join()` blocks the calling thread until the target thread exits. Without `join()` the main thread may exit before the workers finish - safe only when they are daemons doing background bookkeeping you do not need to wait for.
 
 ## ThreadPoolExecutor for concurrent I/O
 
@@ -143,7 +143,7 @@ for t in threads:
 print(f"Final count: {counter.value:,}")   # 1,000,000
 ```
 
-`with lock:` is equivalent to `lock.acquire()` / `lock.release()` in a try/finally block. Always use the context manager form — it releases even if an exception is raised inside the block.
+`with lock:` is equivalent to `lock.acquire()` / `lock.release()` in a try/finally block. Always use the context manager form - it releases even if an exception is raised inside the block.
 
 For read-heavy access patterns where writes are rare, `threading.RLock` (reentrant) or `threading.Event` may suit better, but `Lock` covers the majority of real-world cases.
 
@@ -169,7 +169,7 @@ class Cache:
 
     def get_or_set(self, key: str, default: str) -> str:
         with self._lock:               # outer acquire
-            existing = self.get(key)   # inner acquire — safe with RLock
+            existing = self.get(key)   # inner acquire - safe with RLock
             if existing is None:
                 self.set(key, default)
                 return default
@@ -234,7 +234,7 @@ print("Pipeline done")
 
 ## Daemon threads for background work
 
-A daemon thread does not prevent the process from exiting. Use daemons for heartbeats, log flushers, and metric collectors — work that should stop when the main program is done, not delay it:
+A daemon thread does not prevent the process from exiting. Use daemons for heartbeats, log flushers, and metric collectors - work that should stop when the main program is done, not delay it:
 
 ```python
 import threading
@@ -253,7 +253,7 @@ for i in range(5):
     print(f"Main: step {i}")
     time.sleep(1)
 
-print("Main: done — daemon thread exits automatically")
+print("Main: done - daemon thread exits automatically")
 ```
 
 If `daemon=False` (the default), the process stays alive until every non-daemon thread finishes. Missing a `join()` on a non-daemon thread that never exits is a common source of hung processes.
@@ -282,7 +282,7 @@ for t in threads:
     t.join()
 ```
 
-Each thread sees its own `local_data.name` and `local_data.start` — writes from one thread never appear in another.
+Each thread sees its own `local_data.name` and `local_data.start` - writes from one thread never appear in another.
 
 ## Choosing between threading and asyncio
 
@@ -294,7 +294,7 @@ Each thread sees its own `local_data.name` and `local_data.start` — writes fro
 | CPU-bound parallel work | `multiprocessing` |
 | Mix of sync and async | `asyncio.run_in_executor` |
 
-The GIL means Python threads do not accelerate CPU-bound work — two threads computing primes will not run faster than one. They do accelerate I/O-bound work because a thread waiting for a network response releases the GIL, allowing other threads to run.
+The GIL means Python threads do not accelerate CPU-bound work - two threads computing primes will not run faster than one. They do accelerate I/O-bound work because a thread waiting for a network response releases the GIL, allowing other threads to run.
 
 ## Run the examples
 

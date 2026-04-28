@@ -19,7 +19,7 @@ print(response.status_code)   # 200
 print(response.json())
 ```
 
-Pass query parameters as a dict — httpx URL-encodes them automatically:
+Pass query parameters as a dict - httpx URL-encodes them automatically:
 
 ```python
 import httpx
@@ -29,7 +29,7 @@ response = httpx.get("https://api.github.com/search/repositories", params=params
 data = response.json()
 print(f"Total results: {data['total_count']}")
 for repo in data["items"]:
-    print(repo["full_name"], "—", repo["stargazers_count"], "stars")
+    print(repo["full_name"], "-", repo["stargazers_count"], "stars")
 ```
 
 ## POST with JSON body
@@ -150,7 +150,7 @@ with httpx.Client(
 
 ## Retry with tenacity
 
-For transient network failures — connection resets, 500 errors — wrap requests with tenacity:
+For transient network failures - connection resets, 500 errors - wrap requests with tenacity:
 
 ```python
 import httpx

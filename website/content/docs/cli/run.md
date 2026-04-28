@@ -58,7 +58,7 @@ Load a `.env` file:
 bunpy run --env-file .env.production server.py
 ```
 
-Watch mode — re-runs on every save:
+Watch mode - re-runs on every save:
 
 ```bash
 bunpy run --watch dev.py

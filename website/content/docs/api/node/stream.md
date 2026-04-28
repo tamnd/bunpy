@@ -32,7 +32,7 @@ content = w.getContents()   # b"hello world"
 
 ## PassThrough
 
-Bidirectional passthrough — data written to it can be read out:
+Bidirectional passthrough - data written to it can be read out:
 
 ```python
 pt = stream.PassThrough()

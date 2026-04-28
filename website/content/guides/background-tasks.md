@@ -5,13 +5,13 @@ description: Run work outside the request cycle with bunpy.queue, Celery + Redis
 
 ## Why background tasks
 
-Some operations take too long to run inside an HTTP request — sending email, resizing images, calling third-party APIs, generating reports. Move them out of the request cycle so the server responds immediately and the work happens in parallel.
+Some operations take too long to run inside an HTTP request - sending email, resizing images, calling third-party APIs, generating reports. Move them out of the request cycle so the server responds immediately and the work happens in parallel.
 
 bunpy gives you three tools for this:
 
-- `bunpy.queue` — lightweight in-process task queue backed by threads, zero dependencies
-- Celery + Redis — production-grade distributed task queue with retries, results, and monitoring
-- `bunpy.cron` — cron-style scheduler for recurring jobs
+- `bunpy.queue` - lightweight in-process task queue backed by threads, zero dependencies
+- Celery + Redis - production-grade distributed task queue with retries, results, and monitoring
+- `bunpy.cron` - cron-style scheduler for recurring jobs
 
 ## In-process queue with bunpy.queue
 
@@ -55,7 +55,7 @@ def handler(req):
         user_id = body.get("user_id")
         email   = body.get("email")
 
-        # Enqueue — returns immediately
+        # Enqueue - returns immediately
         send_welcome_email.delay(user_id, email)
 
         return {
@@ -193,13 +193,13 @@ serve(handler, port=3000)
 ```
 
 ```bash
-# Terminal 1 — worker
+# Terminal 1 - worker
 bunpy run -m celery -A tasks worker --loglevel=info
 
-# Terminal 2 — server
+# Terminal 2 - server
 bunpy server.py
 
-# Terminal 3 — test
+# Terminal 3 - test
 curl -X POST http://localhost:3000/register \
   -H "Content-Type: application/json" \
   -d '{"user_id": 1, "email": "alice@example.com"}'
@@ -246,7 +246,7 @@ Cron jobs run in background threads managed by bunpy. They survive request traff
 
 ## Long-running background thread
 
-Sometimes you want a permanent background loop — polling a queue, watching a directory, or keeping a WebSocket connection to an upstream service alive.
+Sometimes you want a permanent background loop - polling a queue, watching a directory, or keeping a WebSocket connection to an upstream service alive.
 
 ```python
 import threading
@@ -351,7 +351,7 @@ for i in 1 2 3 4 5; do
     -d "{\"n\": $i}" &
 done
 
-# Shut down — tasks in flight complete before exit
+# Shut down - tasks in flight complete before exit
 kill -TERM $SERVER_PID
 # [server] received signal 15, draining queue…
 # [task] done 1

@@ -10,7 +10,7 @@ bunpy pm audit [flags]
 
 ## Description
 
-`bunpy pm audit` checks every package pinned in `uv.lock` against the [OSV (Open Source Vulnerabilities)](https://osv.dev/) database — the same source used by GitHub Dependabot and `pip audit`. It sends the list of `(name, version)` pairs to the OSV batch API and reports any matching advisories.
+`bunpy pm audit` checks every package pinned in `uv.lock` against the [OSV (Open Source Vulnerabilities)](https://osv.dev/) database - the same source used by GitHub Dependabot and `pip audit`. It sends the list of `(name, version)` pairs to the OSV batch API and reports any matching advisories.
 
 No packages are modified. `pm audit` is a read-only check.
 
@@ -121,7 +121,7 @@ Add an audit step to every CI run so vulnerabilities are caught before code ship
 For teams that want to audit without blocking merges (visibility-first), suppress the exit code:
 
 ```bash
-bunpy pm audit || echo "::warning::Vulnerabilities found — review pm audit output"
+bunpy pm audit || echo "::warning::Vulnerabilities found - review pm audit output"
 ```
 
 ### Filtering by severity
@@ -156,4 +156,4 @@ Document suppressed IDs in a comment near the command so future maintainers unde
 
 ## Data source
 
-All advisory data comes from `https://api.osv.dev/v1/querybatch`. The OSV dataset aggregates advisories from NVD, GitHub Advisory Database, PyPA, and others. No data is sent beyond package names and versions — no source code, no file paths, no credentials.
+All advisory data comes from `https://api.osv.dev/v1/querybatch`. The OSV dataset aggregates advisories from NVD, GitHub Advisory Database, PyPA, and others. No data is sent beyond package names and versions - no source code, no file paths, no credentials.

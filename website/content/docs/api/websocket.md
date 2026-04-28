@@ -1,5 +1,5 @@
 ---
-title: bunpy.serve — WebSocket
+title: bunpy.serve - WebSocket
 description: WebSocket upgrade from bunpy.serve, send and receive messages, broadcast, rooms, and connection lifecycle handling.
 weight: 15
 ---
@@ -26,7 +26,7 @@ serve(handler, port=3000)
 ```
 
 `req.upgrade()` performs the handshake and returns a `WebSocket` instance.
-The handler must return the `WebSocket` — bunpy uses the return value to track the live connection.
+The handler must return the `WebSocket` - bunpy uses the return value to track the live connection.
 
 ## Sending and receiving messages
 

@@ -13,7 +13,7 @@ bunpy add pymongo
 Make sure MongoDB is reachable. For local development:
 
 ```bash
-# Docker — quickest option
+# Docker - quickest option
 docker run -d -p 27017:27017 --name mongo mongo:7
 
 # macOS with Homebrew
@@ -31,7 +31,7 @@ db: Database = client["myapp"]
 
 # verify the connection
 info = client.server_info()
-print(f"Connected — MongoDB {info['version']}")
+print(f"Connected - MongoDB {info['version']}")
 ```
 
 For Atlas or any remote cluster, pass the full connection string. Store it in an environment variable rather than in source:
@@ -45,7 +45,7 @@ client = MongoClient(MONGO_URL)
 db = client["myapp"]
 ```
 
-A `MongoClient` manages a connection pool internally. Create one instance at startup and share it across your application — do not create a new client per request.
+A `MongoClient` manages a connection pool internally. Create one instance at startup and share it across your application - do not create a new client per request.
 
 ## Insert documents
 
@@ -84,7 +84,7 @@ result = users.insert_many(new_users)
 print(f"Inserted {len(result.inserted_ids)} documents")
 ```
 
-Documents are Python dicts. Any serializable value — strings, numbers, lists, nested dicts, datetimes, booleans — is stored as BSON natively. You do not define a schema upfront.
+Documents are Python dicts. Any serializable value - strings, numbers, lists, nested dicts, datetimes, booleans - is stored as BSON natively. You do not define a schema upfront.
 
 ## Find documents
 
@@ -113,7 +113,7 @@ recent = list(
 )
 ```
 
-`find` returns a lazy cursor — no data is fetched until you iterate it. Call `list()` to materialize all results, or iterate directly to process one document at a time without loading everything into memory.
+`find` returns a lazy cursor - no data is fetched until you iterate it. Call `list()` to materialize all results, or iterate directly to process one document at a time without loading everything into memory.
 
 ## Update documents
 
@@ -169,7 +169,7 @@ print(f"Deleted {result.deleted_count} viewers")
 db["temp_data"].drop()
 ```
 
-`delete_one` is safer than `delete_many` when you mean to remove a specific record — it will not cascade if your filter is accidentally broad.
+`delete_one` is safer than `delete_many` when you mean to remove a specific record - it will not cascade if your filter is accidentally broad.
 
 ## Aggregation pipeline
 
@@ -228,7 +228,7 @@ Common pipeline stages:
 | `$limit` / `$skip` | Paginate |
 | `$count` | Count matching documents |
 
-Add a `$match` stage early to filter before grouping — MongoDB can use an index on `$match` but not on later stages.
+Add a `$match` stage early to filter before grouping - MongoDB can use an index on `$match` but not on later stages.
 
 ## Indexes for performance
 
@@ -242,13 +242,13 @@ db = client["myapp"]
 users = db["users"]
 posts = db["posts"]
 
-# unique index — enforce uniqueness and speed up lookups
+# unique index - enforce uniqueness and speed up lookups
 users.create_index("email", unique=True)
 
-# compound index — efficient for queries that filter on both fields
+# compound index - efficient for queries that filter on both fields
 posts.create_index([("author_id", ASCENDING), ("created_at", DESCENDING)])
 
-# text index — enables full-text search with $text
+# text index - enables full-text search with $text
 posts.create_index([("title", TEXT), ("body", TEXT)])
 
 # list all indexes on a collection
@@ -295,7 +295,7 @@ def create_user(username: str, email: str) -> dict | None:
         print(f"User with email {email!r} already exists.")
         return None
     except ServerSelectionTimeoutError:
-        print("Could not reach MongoDB — check the connection URL.")
+        print("Could not reach MongoDB - check the connection URL.")
         raise
     except OperationFailure as exc:
         print(f"Database operation failed: {exc.details}")
@@ -305,7 +305,7 @@ user = create_user("alice", "alice@example.com")
 print(user)
 
 duplicate = create_user("alice2", "alice@example.com")
-print(duplicate)   # None — duplicate key, handled gracefully
+print(duplicate)   # None - duplicate key, handled gracefully
 ```
 
 `serverSelectionTimeoutMS` controls how long PyMongo waits before raising `ServerSelectionTimeoutError` when no server is available. Set it low in health-check code so failures surface quickly.
@@ -382,4 +382,4 @@ if __name__ == "__main__":
 bunpy catalogue.py
 ```
 
-PyMongo is synchronous. For async web frameworks like FastAPI, use `motor` (`bunpy add motor`) — it wraps PyMongo with an async interface and the same query API. Connection strings, CRUD methods, and aggregation pipelines are identical; only the `await` calls differ.
+PyMongo is synchronous. For async web frameworks like FastAPI, use `motor` (`bunpy add motor`) - it wraps PyMongo with an async interface and the same query API. Connection strings, CRUD methods, and aggregation pipelines are identical; only the `await` calls differ.

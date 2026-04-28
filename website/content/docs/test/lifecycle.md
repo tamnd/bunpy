@@ -70,7 +70,7 @@ def reset_tables():
 
 @afterEach
 def log_test_result():
-    # useful for debugging — runs even on failure
+    # useful for debugging - runs even on failure
     pass
 
 @test("counter starts at zero")

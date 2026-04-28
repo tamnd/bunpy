@@ -101,7 +101,7 @@ bunpy test tests/test_auth.py
 1 passed, 0 failed, 2 skipped
 ```
 
-`.only` is a development tool. It should not be committed — leave it in and you silently skip the rest of the suite. bunpy will warn if `.only` is found when `CI=true` is set.
+`.only` is a development tool. It should not be committed - leave it in and you silently skip the rest of the suite. bunpy will warn if `.only` is found when `CI=true` is set.
 
 ## .skip
 
@@ -124,7 +124,7 @@ Use `.skip` to suppress a known-broken test while tracking the work to fix it, r
 
 ## --bail
 
-Stop the entire test run after the first failure. Useful when a fundamental setup error causes every subsequent test to fail — stopping early gives you a cleaner signal.
+Stop the entire test run after the first failure. Useful when a fundamental setup error causes every subsequent test to fail - stopping early gives you a cleaner signal.
 
 ```bash
 bunpy test --bail
@@ -171,7 +171,7 @@ Retry failing tests automatically, up to a specified number of times. The test p
 bunpy test --retry 3
 ```
 
-This is useful for tests that interact with real network services or external processes that occasionally flake. It is not a substitute for fixing flaky tests — but it buys time while the underlying issue is diagnosed.
+This is useful for tests that interact with real network services or external processes that occasionally flake. It is not a substitute for fixing flaky tests - but it buys time while the underlying issue is diagnosed.
 
 ```
 ✗ payment gateway responds (attempt 1/3)
@@ -207,8 +207,8 @@ bunpy test tests/test_billing.py --watch --grep "charge"
 
 When multiple filters are active, they apply in order:
 
-1. File paths — only the specified files are collected.
-2. `--grep` — only tests matching the pattern are collected from those files.
-3. `.only` — if any `.only` exists in a collected file, all non-`.only` tests in that file are skipped.
-4. `.skip` — matching tests are removed from the collected set.
-5. `--bail` — stops execution after the first failure in the remaining set.
+1. File paths - only the specified files are collected.
+2. `--grep` - only tests matching the pattern are collected from those files.
+3. `.only` - if any `.only` exists in a collected file, all non-`.only` tests in that file are skipped.
+4. `.skip` - matching tests are removed from the collected set.
+5. `--bail` - stops execution after the first failure in the remaining set.

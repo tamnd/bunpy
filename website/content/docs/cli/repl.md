@@ -56,7 +56,7 @@ Use injected globals:
 200
 ```
 
-Pipe input (non-interactive mode — used in tests):
+Pipe input (non-interactive mode - used in tests):
 
 ```bash
 printf 'x = 1 + 1\nprint(x)\n:quit\n' | bunpy repl --quiet

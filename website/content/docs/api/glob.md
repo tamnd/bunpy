@@ -1,5 +1,5 @@
 ---
-title: bunpy.glob — Glob Patterns
+title: bunpy.glob - Glob Patterns
 description: Find files by glob pattern, recursive search, ignore rules, and async glob scanning in bunpy.
 weight: 14
 ---
@@ -8,7 +8,7 @@ weight: 14
 import bunpy.glob as glob
 ```
 
-`bunpy.glob` finds files and directories by pattern. It handles recursive `**` globbing, ignore patterns, and a streaming async interface for large directory trees — without spawning a subprocess or importing `pathlib` boilerplate.
+`bunpy.glob` finds files and directories by pattern. It handles recursive `**` globbing, ignore patterns, and a streaming async interface for large directory trees - without spawning a subprocess or importing `pathlib` boilerplate.
 
 ## Finding files
 
@@ -18,7 +18,7 @@ import bunpy.glob as glob
 # All Python files in the current directory
 files = glob.find("*.py")
 
-# Recursive — all .py files under src/
+# Recursive - all .py files under src/
 files = glob.find("src/**/*.py")
 
 # Multiple patterns
@@ -33,7 +33,7 @@ Returns a sorted list of absolute paths matching `pattern`.
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `pattern` | — | A glob string or list of glob strings |
+| `pattern` | - | A glob string or list of glob strings |
 | `cwd` | `None` (process cwd) | Base directory to resolve relative patterns from |
 | `ignore` | `None` | Pattern, list of patterns, or path to `.gitignore`-format file to exclude |
 | `dot` | `False` | Include dotfiles (names starting with `.`) |
@@ -74,7 +74,7 @@ files = glob.find(
     ignore=".gitignore",
 )
 
-# Combine — pass a list with a file path and extra patterns
+# Combine - pass a list with a file path and extra patterns
 files = glob.find(
     "**/*.py",
     ignore=[".gitignore", "scratch/**"],
@@ -93,7 +93,7 @@ entries = glob.scan("src/")
 for entry in entries:
     print(entry.name, entry.is_file, entry.size)
 
-# Recursive scan — yields DirEntry objects
+# Recursive scan - yields DirEntry objects
 for entry in glob.scanAll("src/"):
     if entry.is_file and entry.name.endswith(".py"):
         print(entry.path)
@@ -123,11 +123,11 @@ import asyncio
 import bunpy.glob as glob
 
 async def index_project():
-    # Async find — does not block event loop
+    # Async find - does not block event loop
     py_files = await glob.afind("src/**/*.py")
     print(f"Found {len(py_files)} Python files")
 
-    # Async scan — yields entries as they arrive
+    # Async scan - yields entries as they arrive
     async for entry in glob.ascanAll("src/"):
         if entry.is_file:
             process(entry.path)

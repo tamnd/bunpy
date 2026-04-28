@@ -60,10 +60,10 @@ pretty = true
 
 `strict = true` enables a bundle of flags:
 
-- `--disallow-untyped-defs` — every function must have type annotations
-- `--disallow-any-generics` — `list` must be `list[str]`, not bare `list`
-- `--warn-return-any` — flag functions that implicitly return `Any`
-- `--no-implicit-optional` — `x: str = None` must be `x: str | None = None`
+- `--disallow-untyped-defs` - every function must have type annotations
+- `--disallow-any-generics` - `list` must be `list[str]`, not bare `list`
+- `--warn-return-any` - flag functions that implicitly return `Any`
+- `--no-implicit-optional` - `x: str = None` must be `x: str | None = None`
 
 Start without `strict` on a large codebase and enable individual flags one at a time.
 
@@ -90,7 +90,7 @@ if name is not None:
 
 ### TypedDict
 
-Use `TypedDict` to type plain dicts with a fixed shape — common when working with JSON APIs:
+Use `TypedDict` to type plain dicts with a fixed shape - common when working with JSON APIs:
 
 ```python
 from typing import TypedDict
@@ -114,7 +114,7 @@ print(format_user(alice))
 
 ### Protocol
 
-`Protocol` defines structural interfaces — duck typing with type-checker support:
+`Protocol` defines structural interfaces - duck typing with type-checker support:
 
 ```python
 from typing import Protocol, runtime_checkable
@@ -276,7 +276,7 @@ Install the Pylance extension (or the mypy extension) and point it at the local 
 }
 ```
 
-With `fromEnvironment`, VS Code uses the mypy from `.bunpy/site-packages/` — the same version CI runs.
+With `fromEnvironment`, VS Code uses the mypy from `.bunpy/site-packages/` - the same version CI runs.
 
 ## CI step
 
@@ -314,7 +314,7 @@ On an existing codebase, enable mypy incrementally:
 4. Gradually extend coverage by removing overrides module by module.
 
 ```toml
-# pyproject.toml — gradual adoption
+# pyproject.toml - gradual adoption
 [tool.mypy]
 python_version = "3.12"
 ignore_missing_imports = true

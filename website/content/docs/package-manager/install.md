@@ -19,7 +19,7 @@ See [bunpy install CLI reference](/bunpy/docs/cli/install/) for all flags.
 
 Downloaded wheels are cached at `~/.cache/bunpy/wheels/` (or
 `$XDG_CACHE_HOME/bunpy/wheels/`). A subsequent `bunpy install` in a different
-project with the same dependency re-uses the cached wheel — no network request.
+project with the same dependency re-uses the cached wheel - no network request.
 
 Override the cache directory:
 

@@ -88,7 +88,7 @@ Create `/etc/systemd/system/myapp.service`:
 
 ```ini
 [Unit]
-Description=myapp — bunpy web service
+Description=myapp - bunpy web service
 Documentation=https://github.com/tamnd/myapp
 After=network.target postgresql.service
 Wants=postgresql.service
@@ -131,21 +131,21 @@ WantedBy=multi-user.target
 
 ### Key directives explained
 
-**`After=network.target postgresql.service`** — systemd starts myapp only after the network is up and PostgreSQL has started. Use `After=` with services your app requires to connect on startup.
+**`After=network.target postgresql.service`** - systemd starts myapp only after the network is up and PostgreSQL has started. Use `After=` with services your app requires to connect on startup.
 
-**`EnvironmentFile=/etc/myapp/environment`** — injects every line from the file as an environment variable. Lines starting with `#` are comments and are ignored.
+**`EnvironmentFile=/etc/myapp/environment`** - injects every line from the file as an environment variable. Lines starting with `#` are comments and are ignored.
 
-**`WorkingDirectory=/opt/myapp`** — sets the current directory for the process. Relative file paths in your app resolve against this directory.
+**`WorkingDirectory=/opt/myapp`** - sets the current directory for the process. Relative file paths in your app resolve against this directory.
 
-**`Restart=always`** — restarts the process whenever it exits, regardless of exit code. Use `Restart=on-failure` if you want to preserve intentional exits (e.g., `sys.exit(0)`).
+**`Restart=always`** - restarts the process whenever it exits, regardless of exit code. Use `Restart=on-failure` if you want to preserve intentional exits (e.g., `sys.exit(0)`).
 
-**`RestartSec=5s`** — waits 5 seconds before restarting. Prevents a crashing app from hammering a database with reconnect attempts.
+**`RestartSec=5s`** - waits 5 seconds before restarting. Prevents a crashing app from hammering a database with reconnect attempts.
 
-**`StartLimitBurst=5` / `StartLimitIntervalSec=60s`** — if the service crashes more than 5 times in 60 seconds, systemd stops trying to restart it. This prevents runaway restart loops. After hitting the limit, restart manually with `systemctl restart myapp`.
+**`StartLimitBurst=5` / `StartLimitIntervalSec=60s`** - if the service crashes more than 5 times in 60 seconds, systemd stops trying to restart it. This prevents runaway restart loops. After hitting the limit, restart manually with `systemctl restart myapp`.
 
-**`ProtectSystem=strict`** — mounts the filesystem read-only for the service process except for paths listed in `ReadWritePaths`. This prevents the app from writing to unexpected locations.
+**`ProtectSystem=strict`** - mounts the filesystem read-only for the service process except for paths listed in `ReadWritePaths`. This prevents the app from writing to unexpected locations.
 
-**`PrivateTmp=yes`** — gives the service its own `/tmp` directory. Files written to `/tmp` by the app are not visible to other processes.
+**`PrivateTmp=yes`** - gives the service its own `/tmp` directory. Files written to `/tmp` by the app are not visible to other processes.
 
 
 ## Enable and start
@@ -167,7 +167,7 @@ sudo systemctl status myapp
 Example `status` output:
 
 ```
-● myapp.service - myapp — bunpy web service
+● myapp.service - myapp - bunpy web service
      Loaded: loaded (/etc/systemd/system/myapp.service; enabled; vendor preset: enabled)
      Active: active (running) since Mon 2026-04-28 10:23:01 UTC; 2min ago
    Main PID: 12345 (bunpy)
@@ -221,7 +221,7 @@ For a zero-downtime update, deploy behind a reverse proxy (nginx or Caddy) and s
 
 ## Socket activation (bonus)
 
-Socket activation allows systemd to listen on the port and hand the socket to your app when the first connection arrives. This lets the app start lazily and means no connections are refused during restart — systemd holds the socket open while the app is starting.
+Socket activation allows systemd to listen on the port and hand the socket to your app when the first connection arrives. This lets the app start lazily and means no connections are refused during restart - systemd holds the socket open while the app is starting.
 
 Create `/etc/systemd/system/myapp.socket`:
 
@@ -241,7 +241,7 @@ Update the unit file to accept the socket from systemd:
 
 ```ini
 [Unit]
-Description=myapp — bunpy web service
+Description=myapp - bunpy web service
 Requires=myapp.socket
 After=myapp.socket
 

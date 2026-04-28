@@ -1,6 +1,6 @@
 ---
 title: bunpy.html_rewriter
-description: HTML transformation API — rewrite HTML without a DOM.
+description: HTML transformation API - rewrite HTML without a DOM.
 ---
 
 ```python
@@ -51,9 +51,9 @@ result = HTMLRewriter().on("a", LinkHandler()).transform(html)
 
 `HTMLRewriter` supports a subset of CSS selectors:
 
-- `*` — any element
-- `div`, `a`, `span` — tag name
-- `#id` — by id attribute
-- `.class` — by class attribute
-- `[attr]` — has attribute
-- `[attr="value"]` — attribute equals value
+- `*` - any element
+- `div`, `a`, `span` - tag name
+- `#id` - by id attribute
+- `.class` - by class attribute
+- `[attr]` - has attribute
+- `[attr="value"]` - attribute equals value

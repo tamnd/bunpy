@@ -1,5 +1,5 @@
 ---
-title: bunpy.file — File I/O
+title: bunpy.file - File I/O
 description: Read, write, stat, watch, and stream files from bunpy with a minimal, fast API built on Python 3.14.
 weight: 10
 ---
@@ -21,7 +21,7 @@ text = file.read("README.md")
 # Read as bytes
 raw = file.read("image.png", encoding=None)
 
-# Read JSON — parses and returns a dict/list
+# Read JSON - parses and returns a dict/list
 config = file.readJSON("pyproject.toml")
 ```
 
@@ -47,13 +47,13 @@ for line in lines:
 ## Writing files
 
 ```python
-# Write text — creates parent dirs automatically
+# Write text - creates parent dirs automatically
 file.write("dist/output.txt", "hello world\n")
 
 # Write bytes
 file.write("dist/data.bin", b"\x00\x01\x02")
 
-# Write JSON — pretty-printed by default
+# Write JSON - pretty-printed by default
 file.writeJSON("dist/report.json", {"ok": True, "count": 42})
 
 # Append to an existing file
@@ -63,7 +63,7 @@ file.append("app.log", "[INFO] server started\n")
 ### file.write(path, data, encoding="utf-8")
 
 Writes `data` (str or bytes) to `path`. Missing parent directories are created.
-The write is atomic on POSIX — the file is written to a temp path and renamed.
+The write is atomic on POSIX - the file is written to a temp path and renamed.
 
 ### file.writeJSON(path, data, indent=2)
 
@@ -83,7 +83,7 @@ else:
 
 info = file.stat("large_dataset.csv")
 print(info.size)       # bytes
-print(info.mtime)      # float — Unix timestamp
+print(info.mtime)      # float - Unix timestamp
 print(info.is_file)    # bool
 print(info.is_dir)     # bool
 ```
@@ -106,7 +106,7 @@ Returns `True` if the path exists (file or directory).
 ## Streaming large files
 
 Loading a 2 GB CSV into memory with `file.read` will exhaust RAM.
-Use `file.stream` instead — it returns an iterator of chunks.
+Use `file.stream` instead - it returns an iterator of chunks.
 
 ```python
 import bunpy.file as file
@@ -116,7 +116,7 @@ with file.stream("large_dataset.csv", chunk_size=65536) as stream:
     for chunk in stream:
         process(chunk)
 
-# Stream lines — useful for log parsing
+# Stream lines - useful for log parsing
 with file.streamLines("access.log") as lines:
     for line in lines:
         if "ERROR" in line:
@@ -149,7 +149,7 @@ async def build():
 asyncio.run(build())
 ```
 
-The async API mirrors the sync API exactly — every function name is the same.
+The async API mirrors the sync API exactly - every function name is the same.
 Reads and writes are dispatched to a thread-pool executor so they never block the event loop.
 
 ## Watching for changes

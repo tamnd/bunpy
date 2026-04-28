@@ -31,7 +31,7 @@ my-flask-app/
 
 ## Application factory
 
-`app.py` — the entire application in one file for clarity. A larger project would split this into a package with blueprints.
+`app.py` - the entire application in one file for clarity. A larger project would split this into a package with blueprints.
 
 ```python
 import os
@@ -196,7 +196,7 @@ def contact():
 {% if messages %}
   <ul>
     {% for msg in messages %}
-      <li><strong>{{ msg.name }}</strong> — {{ msg.body }} <small>({{ msg.created }})</small></li>
+      <li><strong>{{ msg.name }}</strong> - {{ msg.body }} <small>({{ msg.created }})</small></li>
     {% endfor %}
   </ul>
 {% else %}

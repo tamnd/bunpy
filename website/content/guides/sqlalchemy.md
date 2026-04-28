@@ -117,7 +117,7 @@ with Session(engine) as session:
     )
     posts = session.scalars(posts_stmt).all()
     for post in posts:
-        print(post.title, "—", post.published)
+        print(post.title, "-", post.published)
 ```
 
 ```python
@@ -147,7 +147,7 @@ with Session(engine) as session:
 
 ## Relationships and eager loading
 
-By default SQLAlchemy uses lazy loading — it fires a second query when you access `user.posts`. For most use cases, eager loading is cleaner:
+By default SQLAlchemy uses lazy loading - it fires a second query when you access `user.posts`. For most use cases, eager loading is cleaner:
 
 ```python
 from sqlalchemy import select
@@ -162,7 +162,7 @@ with Session(engine) as session:
     alice = session.scalars(stmt).one()
 
     for post in alice.posts:
-        print(f"  [{post.id}] {post.title} — published={post.published}")
+        print(f"  [{post.id}] {post.title} - published={post.published}")
 ```
 
 `selectinload` emits one query per relationship, which is usually better than `joinedload` for one-to-many when you expect many rows.
@@ -304,13 +304,13 @@ Alembic tracks schema changes as versioned migration scripts. Initialize it once
 bunpy run alembic init migrations
 ```
 
-Edit `alembic.ini` — set the database URL:
+Edit `alembic.ini` - set the database URL:
 
 ```
 sqlalchemy.url = sqlite:///blog.db
 ```
 
-Edit `migrations/env.py` — import your Base so Alembic can detect model changes:
+Edit `migrations/env.py` - import your Base so Alembic can detect model changes:
 
 ```python
 # migrations/env.py (relevant section)
@@ -351,4 +351,4 @@ bunpy run alembic downgrade -1
 bunpy blog.py
 ```
 
-SQLAlchemy 2.x with `Mapped` annotations gives you full type-checker support — mypy and pyright understand the column types without any plugins.
+SQLAlchemy 2.x with `Mapped` annotations gives you full type-checker support - mypy and pyright understand the column types without any plugins.

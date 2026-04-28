@@ -214,7 +214,7 @@ python3 myapp.pyz
 
 The `.pyz` contains your source, all dependencies, and a `__main__.py` entry point. It does not embed the goipy runtime, so the target machine needs either bunpy or a CPython 3.14 install.
 
-## The uv.lock file
+## The lockfile
 
 Every `bunpy add` and `bunpy install` updates `uv.lock`. Commit this file to version control. It guarantees that `bunpy install` produces byte-for-byte identical installs on every machine:
 
