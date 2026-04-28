@@ -1,10 +1,10 @@
 ---
 title: Roadmap
-description: Public roadmap for bunpy v0.11 and v0.12 -- documentation parity, stdlib completion, WebSocket, SQLite, and type stubs.
+description: Public roadmap for bunpy -- what shipped in v0.12.x and what is planned for v0.13.x.
 weight: 91
 ---
 
-This page describes what is planned for v0.11.x and v0.12.x. Nothing here is a commitment; priorities can shift based on community feedback and engineering constraints. To influence what lands and when, open an issue on [GitHub](https://github.com/tamnd/bunpy/issues) and explain your use case.
+This page describes what shipped in the v0.12.x performance cycle and what is planned for v0.13.x. Nothing here is a commitment; priorities shift based on community feedback and engineering constraints. To influence what lands and when, open an issue on [GitHub](https://github.com/tamnd/bunpy/issues) and explain your use case.
 
 The roadmap is scoped to two releases ahead. Anything further out lives in a separate notes document that changes frequently and is not published here.
 
@@ -49,21 +49,37 @@ v0.11 is not a feature release, but some rough edges will be smoothed along the 
 - `bunpy add` with a version constraint that conflicts with an existing dependency currently prints a resolver error that references internal goipy types. The error message will be rewritten to show the conflicting constraint in plain English.
 - `bunpy test --watch` occasionally misses file changes on Linux due to inotify event coalescing. A debounce fix is planned.
 
-## v0.12.x -- Stdlib parity, WebSocket, SQLite, type stubs
+## v0.12.x -- Performance cycle (shipped)
 
-v0.12 is where the runtime catches up with CPython. The goal is to have every module that matters for typical application development working correctly, with the remaining gaps limited to things that genuinely do not apply in the bunpy execution model.
+v0.12.x was a performance release cycle. Every rung targeted one measured bottleneck. Eight rungs shipped across v0.12.0 through v0.12.9.
+
+| Rung | Version | What shipped |
+|------|---------|-------------|
+| B-1  | v0.12.2 | Parallel wheel install (−22% on 47 pkgs) |
+| B-2  | v0.12.3 | Resolver parallel prefetch |
+| B-3  | v0.12.4 | PyPI concurrency 4→16/32; HTTP/2 debug flag |
+| B-4  | v0.12.5 | Bounded test runner pool; `--jobs` flag |
+| B-6  | v0.12.6 | Real line-trace coverage infrastructure |
+| B-7  | v0.12.7 | Incremental build cache; ~55 µs warm hit |
+| B-8  | v0.12.8 | `-c` flag; lazy module loading; startup profiler |
+
+See the [v0.12.x performance post](/blog/v0-12-perf) for the full before/after numbers and root causes.
+
+## v0.13.x -- Stdlib parity, WebSocket, SQLite, type stubs
+
+v0.13 is where the runtime catches up with CPython. The goal is to have every module that matters for typical application development working correctly, with the remaining gaps limited to things that genuinely do not apply in the bunpy execution model.
 
 ### Stdlib parity: 263 of 263 modules
 
-As of v0.10.29, goipy provides 214 of the 263 modules in the CPython 3.14 stdlib. The 49 missing modules fall into a few categories:
+As of v0.12.9, goipy provides 214 of the 263 modules in the CPython 3.14 stdlib. The 49 missing modules fall into a few categories:
 
 - **Not applicable**: `tkinter`, `turtle`, `idlelib`, and similar GUI modules have no path to a server-side interpreter. These will be documented as permanently out of scope.
 - **Blocked on goipy work**: `ctypes`, `multiprocessing`, `ssl` (full implementation), `sqlite3` (stdlib wrapper; bunpy.sqlite is the replacement), and a handful of others require runtime features that goipy is still building out.
 - **Low priority**: a set of rarely-used modules (`imaplib`, `nntplib`, `ossaudiodev`, etc.) that have no demand signals from the community.
 
-The v0.12 target is 263/263 in the sense that every module either works correctly or has a documented reason it does not apply. The GUI modules and the goipy-blocked modules will be listed explicitly in the compatibility page rather than silently absent.
+The v0.13 target is 263/263 in the sense that every module either works correctly or has a documented reason it does not apply. The GUI modules and the goipy-blocked modules will be listed explicitly in the compatibility page rather than silently absent.
 
-Modules targeted for completion in v0.12 that have real community demand: `ssl` (full TLS client and server), `hashlib` (currently missing some digest algorithms), `csv` (currently partial), `xml.etree.ElementTree` (currently partial), `configparser`, `shelve`, and `zipimport`.
+Modules targeted for completion in v0.13 that have real community demand: `ssl` (full TLS client and server), `hashlib` (currently missing some digest algorithms), `csv` (currently partial), `xml.etree.ElementTree` (currently partial), `configparser`, `shelve`, and `zipimport`.
 
 ### WebSocket client
 
@@ -102,7 +118,7 @@ The stdlib `sqlite3` module will also be wired to bunpy.sqlite internally, so un
 
 ### Type stubs package
 
-`bunpy-stubs` will be published to PyPI in v0.12. Installing it gives you full type information for all `bunpy.*` APIs:
+`bunpy-stubs` will be published to PyPI in v0.13. Installing it gives you full type information for all `bunpy.*` APIs:
 
 ```bash
 bunpy add --dev bunpy-stubs
