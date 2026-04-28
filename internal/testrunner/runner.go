@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	bunpyAPI "github.com/tamnd/bunpy/v1/api/bunpy"
@@ -15,12 +16,26 @@ import (
 	goipyVM "github.com/tamnd/goipy/vm"
 )
 
+// vmInitMu serializes goipyVM.New() calls. goipy's installDunderHooks writes
+// to global package-level hook variables (object.InstanceReprHook etc.) on
+// every New() call; concurrent calls race on those globals.
+// Holding the mutex only during New() keeps test execution concurrent.
+var vmInitMu sync.Mutex
+
 // RunOptions configures a test run.
 type RunOptions struct {
 	// Verbose prints each test name as it runs.
 	Verbose bool
 	// Filter is an optional substring; only tests whose name contains it run.
 	Filter string
+	// Workers sets the goroutine pool size for RunParallel. 0 means
+	// runtime.GOMAXPROCS(0)*2; overridden by BUNPY_TEST_PARALLELISM.
+	Workers int
+	// Coverage, when non-nil, enables real line-trace coverage collection.
+	// The collector is shared across all files in a RunParallel call.
+	Coverage *CoverageCollector
+	// RunFileFunc replaces RunFile in RunParallel when set (test hook).
+	RunFileFunc func(path string, opts RunOptions) FileResult
 }
 
 // RunFile compiles and executes a single test file, collecting results.
@@ -35,11 +50,27 @@ func RunFile(path string, opts RunOptions) FileResult {
 		return result
 	}
 
-	co, err := gocopyCompiler.Compile(src, gocopyCompiler.Options{Filename: path})
+	compileSrc := src
+	if opts.Coverage != nil {
+		if instrumented, instrErr := Instrument(path, src); instrErr == nil {
+			// Use instrumented source only when gocopy can compile it. The compiler
+			// doesn't yet support call expressions (injected __cov_hit__ calls), so
+			// for now this gracefully degrades to zero hits for unsupported files.
+			compileSrc = instrumented
+		}
+	}
+
+	co, err := gocopyCompiler.Compile(compileSrc, gocopyCompiler.Options{Filename: path})
 	if err != nil {
-		result.CompileError = fmt.Sprintf("compile error: %v", err)
-		result.Duration = time.Since(start)
-		return result
+		if opts.Coverage != nil && compileSrc != nil && len(compileSrc) != len(src) {
+			// Instrumented source failed; retry with original.
+			co, err = gocopyCompiler.Compile(src, gocopyCompiler.Options{Filename: path})
+		}
+		if err != nil {
+			result.CompileError = fmt.Sprintf("compile error: %v", err)
+			result.Duration = time.Since(start)
+			return result
+		}
 	}
 
 	stream, err := gocopyMarshal.Marshal(co)
@@ -64,10 +95,29 @@ func RunFile(path string, opts RunOptions) FileResult {
 	}
 
 	// Build a fresh interpreter with bunpy modules + expect + runner hook.
+	vmInitMu.Lock()
 	interp := goipyVM.New()
+	vmInitMu.Unlock()
 	mods := bunpyAPI.Modules()
 	bunpyAPI.InjectGlobals(interp)
 	InjectExpect(interp)
+
+	if opts.Coverage != nil {
+		cov := opts.Coverage
+		interp.Builtins.SetStr("__cov_hit__", &goipyObject.BuiltinFunc{
+			Name: "__cov_hit__",
+			Call: func(_ any, args []goipyObject.Object, _ *goipyObject.Dict) (goipyObject.Object, error) {
+				if len(args) >= 2 {
+					if f, ok := args[0].(*goipyObject.Str); ok {
+						if n, ok2 := args[1].(*goipyObject.Int); ok2 {
+							cov.Record(f.V, int(n.I))
+						}
+					}
+				}
+				return goipyObject.None, nil
+			},
+		})
+	}
 
 	// Inject the __bunpy_runner__ NativeModule that collects test results.
 	collector := &testCollector{opts: opts, file: path}

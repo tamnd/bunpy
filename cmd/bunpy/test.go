@@ -18,6 +18,7 @@ func testSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 	var shardIndex, shardTotal int
 	var changed string
 	var coverDir string
+	var jobs int
 
 	positional := []string{}
 	for i := 0; i < len(args); i++ {
@@ -60,6 +61,13 @@ func testSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 			if coverDir == "" {
 				coverDir = "coverage"
 			}
+		case a == "--jobs" && i+1 < len(args):
+			i++
+			fmt.Sscanf(args[i], "%d", &jobs)
+			parallel = true
+		case strings.HasPrefix(a, "--jobs="):
+			fmt.Sscanf(strings.TrimPrefix(a, "--jobs="), "%d", &jobs)
+			parallel = true
 		case a == "--timeout" && i+1 < len(args):
 			i++ // future use
 		case strings.HasPrefix(a, "-"):
@@ -97,6 +105,12 @@ func testSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 		files = testrunner.ShardFiles(files, shardIndex, shardTotal)
 	}
 
+	var cov *testrunner.CoverageCollector
+	if coverDir != "" {
+		cov = &testrunner.CoverageCollector{}
+		opts.Coverage = cov
+	}
+
 	start := time.Now()
 	var summary testrunner.Summary
 
@@ -118,6 +132,7 @@ func testSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 			}
 		}
 	} else if parallel {
+		opts.Workers = jobs
 		results := testrunner.RunParallel(files, opts)
 		for _, fr := range results {
 			printer.PrintFileResult(fr)
@@ -147,7 +162,7 @@ func testSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 	printer.PrintSummary(summary)
 
 	if coverDir != "" {
-		if cerr := testrunner.WriteCoverage(files, coverDir, stdout); cerr != nil {
+		if cerr := testrunner.WriteCoverage(files, coverDir, stdout, cov); cerr != nil {
 			fmt.Fprintf(stderr, "bunpy test: coverage error: %v\n", cerr)
 		}
 	}

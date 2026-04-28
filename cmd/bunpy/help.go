@@ -683,7 +683,8 @@ USAGE
 OPTIONS
   --verbose, -v          Print each test name (default: only failures)
   --filter <name>        Only run tests whose name contains the string
-  --parallel             Run test files concurrently
+  --parallel             Run test files concurrently (default pool: GOMAXPROCS×2)
+  --jobs <n>             Set parallel worker count (implies --parallel)
   --isolate              Run each file in a subprocess
   --shard <n/total>      Run shard n of total (e.g. --shard 1/4)
   --changed[=<ref>]      Only run test files changed since ref (default: HEAD)

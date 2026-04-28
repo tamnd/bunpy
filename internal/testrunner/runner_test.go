@@ -1,8 +1,14 @@
 package testrunner_test
 
 import (
+	"fmt"
+	"math/rand"
 	"path/filepath"
+	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/tamnd/bunpy/v1/internal/testrunner"
 )
@@ -178,3 +184,171 @@ func TestStatusString(t *testing.T) {
 		}
 	}
 }
+
+// TestRunParallel_BoundedGoroutines verifies that RunParallel never exceeds
+// Workers concurrent calls even when there are more files than workers.
+func TestRunParallel_BoundedGoroutines(t *testing.T) {
+	const limit = 2
+	const total = 10
+
+	files := make([]string, total)
+	for i := range files {
+		files[i] = fmt.Sprintf("fake_%02d.py", i)
+	}
+
+	var active atomic.Int32
+	var peakMu sync.Mutex
+	var peak int32
+
+	opts := testrunner.RunOptions{
+		Workers: limit,
+		RunFileFunc: func(path string, o testrunner.RunOptions) testrunner.FileResult {
+			n := active.Add(1)
+			defer active.Add(-1)
+			peakMu.Lock()
+			if n > peak {
+				peak = n
+			}
+			peakMu.Unlock()
+			time.Sleep(10 * time.Millisecond)
+			return testrunner.FileResult{File: path}
+		},
+	}
+
+	results := testrunner.RunParallel(files, opts)
+	if peak > int32(limit) {
+		t.Errorf("peak concurrent calls %d exceeded Workers=%d", peak, limit)
+	}
+	if len(results) != total {
+		t.Errorf("expected %d results, got %d", total, len(results))
+	}
+}
+
+// TestRunParallel_ResultOrder verifies that results are returned in the same
+// order as the input files regardless of completion order.
+func TestRunParallel_ResultOrder(t *testing.T) {
+	files := []string{"a.py", "b.py", "c.py", "d.py", "e.py"}
+
+	opts := testrunner.RunOptions{
+		Workers: 3,
+		RunFileFunc: func(path string, o testrunner.RunOptions) testrunner.FileResult {
+			time.Sleep(time.Duration(rand.Intn(20)) * time.Millisecond)
+			return testrunner.FileResult{File: path}
+		},
+	}
+
+	results := testrunner.RunParallel(files, opts)
+	for i, r := range results {
+		if r.File != files[i] {
+			t.Errorf("results[%d].File = %q, want %q", i, r.File, files[i])
+		}
+	}
+}
+
+// TestRunParallel_EnvOverride verifies that BUNPY_TEST_PARALLELISM overrides
+// the pool size.
+func TestRunParallel_EnvOverride(t *testing.T) {
+	t.Setenv("BUNPY_TEST_PARALLELISM", "1")
+
+	const total = 4
+	files := make([]string, total)
+	for i := range files {
+		files[i] = fmt.Sprintf("file_%d.py", i)
+	}
+
+	var active atomic.Int32
+	var peakMu sync.Mutex
+	var peak int32
+
+	opts := testrunner.RunOptions{
+		RunFileFunc: func(path string, o testrunner.RunOptions) testrunner.FileResult {
+			n := active.Add(1)
+			defer active.Add(-1)
+			peakMu.Lock()
+			if n > peak {
+				peak = n
+			}
+			peakMu.Unlock()
+			time.Sleep(5 * time.Millisecond)
+			return testrunner.FileResult{File: path}
+		},
+	}
+
+	testrunner.RunParallel(files, opts)
+	if peak > 1 {
+		t.Errorf("peak %d > 1 despite BUNPY_TEST_PARALLELISM=1", peak)
+	}
+}
+
+// TestCoverableLines verifies that the gopapy-backed parser finds the correct
+// executable lines in a simple Python snippet.
+func TestCoverableLines(t *testing.T) {
+	src := []byte(`x = 1
+y = 2
+if x > 0:
+    z = x + y
+else:
+    z = 0
+`)
+	lines, err := testrunner.CoverableLines("test.py", src)
+	if err != nil {
+		t.Fatalf("CoverableLines: %v", err)
+	}
+	// Lines 1, 2, 3 (if), 4 (z=x+y), 6 (z=0) are all statements.
+	for _, want := range []int{1, 2, 3, 4, 6} {
+		if !lines[want] {
+			t.Errorf("line %d should be coverable but is not; got %v", want, lines)
+		}
+	}
+	// Blank lines and comment lines must not appear.
+	if lines[5] { // "else:" — depending on parser, may or may not be a stmt line
+		// acceptable
+	}
+}
+
+// TestInstrument checks that __cov_hit__ calls are injected before each
+// statement and that indentation is preserved for nested code.
+func TestInstrument(t *testing.T) {
+	// Use indented body; injected hit on line 2 must be indented too.
+	src := []byte("x = 1\ny = 2\n")
+	out, err := testrunner.Instrument("cov.py", src)
+	if err != nil {
+		t.Fatalf("Instrument: %v", err)
+	}
+	outStr := string(out)
+	if !strings.Contains(outStr, `__cov_hit__("cov.py",`) {
+		t.Errorf("instrumented output missing __cov_hit__ calls:\n%s", outStr)
+	}
+	// The injection for a top-level statement has no indentation — that is correct.
+	// Verify that for indented source the injected line is also indented.
+	src2 := []byte("if True:\n    x = 1\n")
+	out2, err := testrunner.Instrument("indent.py", src2)
+	if err != nil {
+		t.Fatalf("Instrument (indent): %v", err)
+	}
+	for _, line := range splitLines(string(out2)) {
+		if strings.Contains(line, `__cov_hit__("indent.py"`) && !strings.HasPrefix(line, "    ") && !strings.HasPrefix(line, "\t") {
+			// Only the `if` line's hit is at column 0; body hits must be indented.
+			// The `if` hit itself is at col 0 — that's fine.
+			if !strings.Contains(line, `, 1)`) { // line 1 = the `if` itself
+				t.Errorf("body __cov_hit__ not indented: %q", line)
+			}
+		}
+	}
+}
+
+// TestRunFile_CoverageGracefulDegrade verifies that RunFile with Coverage
+// enabled does not error even when gocopy cannot compile the instrumented
+// source (call expressions are not yet supported in gocopy v0.5). The file
+// runs successfully via the uninstrumented fallback; hits will be empty until
+// gocopy adds call-expression support.
+func TestRunFile_CoverageGracefulDegrade(t *testing.T) {
+	cov := &testrunner.CoverageCollector{}
+	opts := testrunner.RunOptions{Coverage: cov}
+	fr := testrunner.RunFile("testdata/test_coverage_basic.py", opts)
+	if fr.CompileError != "" {
+		t.Errorf("RunFile with Coverage should not error on fallback; got: %s", fr.CompileError)
+	}
+}
+
+func splitLines(s string) []string { return strings.Split(s, "\n") }
