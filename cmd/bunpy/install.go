@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/tamnd/bunpy/v1/pkg/cache"
 	"github.com/tamnd/bunpy/v1/pkg/editable"
 	"github.com/tamnd/bunpy/v1/pkg/lockfile"
 	"github.com/tamnd/bunpy/v1/pkg/manifest"
@@ -173,6 +174,12 @@ func installSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 	}
 	close(jobCh)
 
+	root := cacheDir
+	if root == "" {
+		root = cache.DefaultDir()
+	}
+	uvRoot := cache.UVCacheDir()
+
 	var wg sync.WaitGroup
 	for range workers {
 		wg.Add(1)
@@ -180,22 +187,52 @@ func installSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 			defer wg.Done()
 			for idx := range jobCh {
 				p := jobs[idx].pkg
-				f := pypi.File{Filename: p.Filename, URL: p.URL}
-				body, err := fetchAddWheel(f, p.Name, cacheDir)
-				if err != nil {
-					outcomes[idx] = installOutcome{p.Name, p.Version, false, err}
-					continue
+				var installErr error
+				sha256hex := strings.TrimPrefix(p.Hash, "sha256:")
+				if sha256hex != "" && sha256hex != p.Hash {
+					archiveKey := cache.ArchiveKey(sha256hex)
+					if cache.HasArchive(root, archiveKey) {
+						installErr = cache.InstallFromArchive(root, archiveKey, target, "bunpy")
+					} else if uvRoot != "" {
+						if uvKey, _, ok := cache.ReadPointer(cache.PointerPath(uvRoot, p.Name, p.Filename)); ok && cache.HasArchive(uvRoot, uvKey) {
+							installErr = cache.InstallFromArchive(uvRoot, uvKey, target, "bunpy")
+						}
+					}
+					if installErr == nil && !cache.HasArchive(root, archiveKey) {
+						// Not yet in any archive: download, extract, install.
+						f := pypi.File{Filename: p.Filename, URL: p.URL}
+						body, err := fetchAddWheel(f, p.Name, cacheDir)
+						if err != nil {
+							outcomes[idx] = installOutcome{p.Name, p.Version, false, err}
+							continue
+						}
+						if err := cache.ExtractToArchive(root, archiveKey, body); err != nil {
+							outcomes[idx] = installOutcome{p.Name, p.Version, false, err}
+							continue
+						}
+						_ = cache.WritePointer(cache.PointerPath(root, p.Name, p.Filename), archiveKey, sha256hex, p.Filename, p.URL)
+						installErr = cache.InstallFromArchive(root, archiveKey, target, "bunpy")
+					}
+				} else {
+					// No hash available (e.g. local dev fixture): use old path.
+					f := pypi.File{Filename: p.Filename, URL: p.URL}
+					body, err := fetchAddWheel(f, p.Name, cacheDir)
+					if err != nil {
+						outcomes[idx] = installOutcome{p.Name, p.Version, false, err}
+						continue
+					}
+					w, err := wheel.OpenReader(p.Filename, body)
+					if err != nil {
+						outcomes[idx] = installOutcome{p.Name, p.Version, false, err}
+						continue
+					}
+					_, installErr = w.Install(target, wheel.InstallOptions{
+						Installer:    "bunpy",
+						VerifyHashes: &verify,
+					})
 				}
-				w, err := wheel.OpenReader(p.Filename, body)
-				if err != nil {
-					outcomes[idx] = installOutcome{p.Name, p.Version, false, err}
-					continue
-				}
-				if _, err := w.Install(target, wheel.InstallOptions{
-					Installer:    "bunpy",
-					VerifyHashes: &verify,
-				}); err != nil {
-					outcomes[idx] = installOutcome{p.Name, p.Version, false, err}
+				if installErr != nil {
+					outcomes[idx] = installOutcome{p.Name, p.Version, false, installErr}
 					continue
 				}
 				patched, err := applyRegisteredPatch(target, p.Name, p.Version, patchEntries)
