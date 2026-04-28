@@ -7,9 +7,8 @@ import "runtime"
 // "bunpy dev" and hides commit/buildDate/toolchain lines so it cannot lie
 // about identity.
 //
-// Source of truth for the toolchain pins is scripts/sync-deps.sh; the build
-// pipeline reads that file via scripts/build-ldflags.sh and bakes the same
-// commits into Goipy/Gocopy/Gopapy here.
+// The toolchain versions (Goipy/Gocopy/Gopapy) are read from go.mod by
+// scripts/build-ldflags.sh and baked in at build time.
 var (
 	Version   = "dev"
 	Commit    = ""

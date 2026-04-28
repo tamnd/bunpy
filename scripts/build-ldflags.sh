@@ -8,12 +8,11 @@
 #   BUNPY_COMMIT      defaults to `git rev-parse --short HEAD` if available
 #   BUNPY_BUILD_DATE  defaults to current UTC time, RFC 3339
 #
-# The pinned sibling commits (gopapy, gocopy, goipy) come from the
-# constants in scripts/sync-deps.sh, so there's one source of truth.
+# The toolchain versions (gopapy, gocopy, goipy) are read from go.mod.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-SYNC="$ROOT/scripts/sync-deps.sh"
+GOMOD="$ROOT/go.mod"
 
 version="${BUNPY_VERSION:-dev}"
 commit="${BUNPY_COMMIT:-}"
@@ -22,20 +21,15 @@ if [ -z "$commit" ]; then
 fi
 date="${BUNPY_BUILD_DATE:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}"
 
-extract_rev() {
-  local key="$1"
-  awk -v k="^${key}=" '$0 ~ k {
-    s = $0
-    sub(k, "", s)
-    gsub(/"/, "", s)
-    print substr(s, 1, 7)
-    exit
-  }' "$SYNC"
+# Read module version from go.mod, strip leading 'v' and return first 7 chars.
+extract_mod() {
+  local mod="$1"
+  awk -v m="$mod" '$1 == m { v=$2; sub(/^v/,"",v); print substr(v,1,7); exit }' "$GOMOD"
 }
 
-gopapy="$(extract_rev GOPAPY_REV)"
-gocopy="$(extract_rev GOCOPY_REV)"
-goipy="$(extract_rev GOIPY_REV)"
+gopapy="$(extract_mod github.com/tamnd/gopapy)"
+gocopy="$(extract_mod github.com/tamnd/gocopy)"
+goipy="$(extract_mod github.com/tamnd/goipy)"
 
 pkg="github.com/tamnd/bunpy/v1/runtime"
 printf -- "-s -w"
