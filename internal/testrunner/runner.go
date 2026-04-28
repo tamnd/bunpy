@@ -72,7 +72,7 @@ func RunFile(path string, opts RunOptions) FileResult {
 	// Inject the __bunpy_runner__ NativeModule that collects test results.
 	collector := &testCollector{opts: opts, file: path}
 	mods["__bunpy_runner__"] = collector.buildModule
-	interp.NativeModules = mods
+	interp.SetNativeModules(mods)
 
 	if abs, aerr := filepath.Abs(filepath.Dir(path)); aerr == nil {
 		interp.SearchPath = []string{abs}
@@ -144,7 +144,7 @@ func (c *testCollector) runOne(name string, fn goipyObject.Object) TestResult {
 		}
 	}()
 
-	_, err := c.interp.Call(fn, nil, nil)
+	_, err := c.interp.CallObject(fn, nil, nil)
 	if err == nil {
 		tr.Status = StatusPass
 		return tr

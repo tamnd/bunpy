@@ -71,13 +71,13 @@ func newNodeWorkerInstance(interp *goipyVM.Interp, fn goipyObject.Object) *goipy
 
 	if fn != nil {
 		go func() {
-			interp.Call(fn, nil, nil)
+			interp.CallObject(fn, nil, nil)
 			st.done.Store(true)
 			st.mu.Lock()
 			exitHandlers := append([]goipyObject.Object(nil), st.handlers["exit"]...)
 			st.mu.Unlock()
 			for _, h := range exitHandlers {
-				interp.Call(h, []goipyObject.Object{goipyObject.NewInt(0)}, nil)
+				interp.CallObject(h, []goipyObject.Object{goipyObject.NewInt(0)}, nil)
 			}
 		}()
 	}
@@ -110,7 +110,7 @@ func newNodeWorkerInstance(interp *goipyVM.Interp, fn goipyObject.Object) *goipy
 			msgHandlers := append([]goipyObject.Object(nil), st.handlers["message"]...)
 			st.mu.Unlock()
 			for _, h := range msgHandlers {
-				interp.Call(h, []goipyObject.Object{msg}, nil)
+				interp.CallObject(h, []goipyObject.Object{msg}, nil)
 			}
 			return goipyObject.None, nil
 		},

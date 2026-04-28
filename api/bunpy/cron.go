@@ -96,7 +96,7 @@ func (j *cronJob) start() {
 				interp := j.interp
 				j.mu.Unlock()
 				go func() {
-					interp.Call(h, nil, nil)
+					interp.CallObject(h, nil, nil)
 				}()
 			case <-j.stop:
 				return

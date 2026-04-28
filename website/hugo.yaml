@@ -28,8 +28,8 @@ params:
   page:
     breadcrumb: true
   highlight:
-    copy: true
-    copyNotation: true
+    copy:
+      enable: true
 
 menu:
   main:

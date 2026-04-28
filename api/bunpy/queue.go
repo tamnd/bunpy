@@ -77,7 +77,7 @@ func (q *jobQueue) dispatch(job queueJob) {
 	jobDict.SetStr("data", job.data)
 	jobDict.SetStr("attempt", goipyObject.NewInt(int64(job.attempt)))
 	// call handler, ignore errors (log and continue)
-	q.interp.Call(handler, []goipyObject.Object{jobDict}, nil)
+	q.interp.CallObject(handler, []goipyObject.Object{jobDict}, nil)
 }
 
 func buildQueueInstance(q *jobQueue) *goipyObject.Instance {

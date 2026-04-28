@@ -11,7 +11,7 @@ import (
 
 func newInterp() *goipyVM.Interp {
 	i := goipyVM.New()
-	i.NativeModules = bunpyAPI.Modules()
+	i.SetNativeModules(bunpyAPI.Modules())
 	return i
 }
 

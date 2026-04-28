@@ -15,7 +15,7 @@ import (
 func fetchInterp(t *testing.T) *goipyVM.Interp {
 	t.Helper()
 	i := goipyVM.New()
-	i.NativeModules = bunpyAPI.Modules()
+	i.SetNativeModules(bunpyAPI.Modules())
 	bunpyAPI.InjectGlobals(i)
 	return i
 }

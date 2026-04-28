@@ -235,7 +235,7 @@ func newNodeHTTPServerInstance(interp *goipyVM.Interp, handler goipyObject.Objec
 				})
 				resObj := &goipyObject.Instance{Class: &goipyObject.Class{Name: "ServerResponse"}, Dict: resD}
 
-				interp.Call(handler, []goipyObject.Object{reqObj, resObj}, nil)
+				interp.CallObject(handler, []goipyObject.Object{reqObj, resObj}, nil)
 			})
 
 			srv := &http.Server{

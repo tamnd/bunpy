@@ -200,7 +200,7 @@ func attachDBMethods(i *goipyVM.Interp, inst *goipyObject.Instance, db *sql.DB) 
 				return nil, fmt.Errorf("db.transaction(): %w", err)
 			}
 			txInst := buildTxInstance(tx)
-			_, callErr := i.Call(args[0], []goipyObject.Object{txInst}, nil)
+			_, callErr := i.CallObject(args[0], []goipyObject.Object{txInst}, nil)
 			if callErr != nil {
 				tx.Rollback()
 				return nil, callErr

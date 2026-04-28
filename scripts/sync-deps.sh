@@ -17,9 +17,9 @@ GOPAPY_REPO="https://github.com/tamnd/gopapy.git"
 GOCOPY_REPO="https://github.com/tamnd/gocopy.git"
 GOIPY_REPO="https://github.com/tamnd/goipy.git"
 
-GOPAPY_REV="df586985862310a92808e7963e1eaa30f7b48631"
-GOCOPY_REV="adfe1903651080d236a7ecde9086d2804622214c"
-GOIPY_REV="e6b4eda3e67fa197ac0f115b4bef4a264f2540bd"
+GOPAPY_REV="7e162ceac871cdefb7e25cecf9b10504c0660cc9"
+GOCOPY_REV="bdaac9f48f29e08a327118916c511af216940623"
+GOIPY_REV="2a20bf907ec38c5870087afd7b72607f63ca73b0"
 
 mkdir -p "$DEPS"
 

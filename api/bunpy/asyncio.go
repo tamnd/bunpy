@@ -28,7 +28,7 @@ func BuildAsyncio(i *goipyVM.Interp) *goipyObject.Module {
 			}
 			ch := make(chan result, 1)
 			go func() {
-				v, err := i.Call(args[0], nil, nil)
+				v, err := i.CallObject(args[0], nil, nil)
 				ch <- result{v, err}
 			}()
 			r := <-ch
@@ -47,7 +47,7 @@ func BuildAsyncio(i *goipyVM.Interp) *goipyObject.Module {
 				wg.Add(1)
 				go func(j int, f goipyObject.Object) {
 					defer wg.Done()
-					v, err := i.Call(f, nil, nil)
+					v, err := i.CallObject(f, nil, nil)
 					results[j] = v
 					errs[j] = err
 				}(idx, fn)
@@ -108,7 +108,7 @@ func newTaskHandle(i *goipyVM.Interp, fn goipyObject.Object) *goipyObject.Instan
 	var ready = make(chan struct{})
 
 	go func() {
-		v, err := i.Call(fn, nil, nil)
+		v, err := i.CallObject(fn, nil, nil)
 		mu.Lock()
 		state.result = v
 		state.err = err

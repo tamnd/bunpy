@@ -81,10 +81,10 @@ func newMockFn(i *goipyVM.Interp, returnValue goipyObject.Object, original goipy
 			state.mu.Unlock()
 
 			if state.sideEffect != nil {
-				return i.Call(state.sideEffect, args, kwargs)
+				return i.CallObject(state.sideEffect, args, kwargs)
 			}
 			if state.original != nil {
-				return i.Call(state.original, args, kwargs)
+				return i.CallObject(state.original, args, kwargs)
 			}
 			if state.returnValue != nil {
 				return state.returnValue, nil

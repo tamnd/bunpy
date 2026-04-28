@@ -155,7 +155,7 @@ func rewriteHTML(i *goipyVM.Interp, src string, handlers map[string]goipyObject.
 		// build element object
 		attrs := parseTagAttrs(parts[1:])
 		el := buildElementObj(tagName, attrs, selfClose)
-		_, err := i.Call(handler, []goipyObject.Object{el}, nil)
+		_, err := i.CallObject(handler, []goipyObject.Object{el}, nil)
 		if err != nil {
 			return "", fmt.Errorf("HTMLRewriter handler error: %w", err)
 		}

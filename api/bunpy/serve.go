@@ -185,7 +185,7 @@ func handleHTTPRequest(i *goipyVM.Interp, w http.ResponseWriter, r *http.Request
 	})
 
 	// Call the Python handler.
-	result, callErr := i.Call(handler, []goipyObject.Object{reqInst}, nil)
+	result, callErr := i.CallObject(handler, []goipyObject.Object{reqInst}, nil)
 	if callErr != nil {
 		http.Error(w, callErr.Error(), 500)
 		return

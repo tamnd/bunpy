@@ -107,13 +107,13 @@ func newWorkerInstance(i *goipyVM.Interp, fn goipyObject.Object) *goipyObject.In
 				listeners := append([]goipyObject.Object{}, state.listeners["message"]...)
 				state.listenerMu.Unlock()
 				for _, l := range listeners {
-					i.Call(l, []goipyObject.Object{data}, nil)
+					i.CallObject(l, []goipyObject.Object{data}, nil)
 				}
 				return goipyObject.None, nil
 			},
 		}
 		// Call the worker function with postMessage
-		i.Call(fn, []goipyObject.Object{postToMain}, nil)
+		i.CallObject(fn, []goipyObject.Object{postToMain}, nil)
 
 		// Then drain inbox
 		for msg := range state.inbox {
@@ -121,7 +121,7 @@ func newWorkerInstance(i *goipyVM.Interp, fn goipyObject.Object) *goipyObject.In
 			listeners := append([]goipyObject.Object{}, state.listeners["message"]...)
 			state.listenerMu.Unlock()
 			for _, l := range listeners {
-				i.Call(l, []goipyObject.Object{msg}, nil)
+				i.CallObject(l, []goipyObject.Object{msg}, nil)
 			}
 		}
 
@@ -130,7 +130,7 @@ func newWorkerInstance(i *goipyVM.Interp, fn goipyObject.Object) *goipyObject.In
 		exitListeners := append([]goipyObject.Object{}, state.listeners["exit"]...)
 		state.listenerMu.Unlock()
 		for _, l := range exitListeners {
-			i.Call(l, nil, nil)
+			i.CallObject(l, nil, nil)
 		}
 	}()
 

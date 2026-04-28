@@ -62,7 +62,7 @@ func buildSetTimeout(i *goipyVM.Interp) *goipyObject.BuiltinFunc {
 					timersMu.Lock()
 					delete(timers, id)
 					timersMu.Unlock()
-					i.Call(cb, cbArgs, nil)
+					i.CallObject(cb, cbArgs, nil)
 				case <-cancel:
 				}
 			}()
@@ -96,7 +96,7 @@ func buildSetInterval(i *goipyVM.Interp) *goipyObject.BuiltinFunc {
 				for {
 					select {
 					case <-ticker.C:
-						i.Call(cb, nil, nil)
+						i.CallObject(cb, nil, nil)
 					case <-cancel:
 						timersMu.Lock()
 						delete(timers, id)
