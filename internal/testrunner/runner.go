@@ -8,8 +8,8 @@ import (
 	"time"
 
 	bunpyAPI "github.com/tamnd/bunpy/v1/api/bunpy"
-	gocopyCompiler "github.com/tamnd/gocopy/v1/compiler"
-	gocopyMarshal "github.com/tamnd/gocopy/v1/marshal"
+	gocopyCompiler "github.com/tamnd/gocopy/compiler"
+	gocopyMarshal "github.com/tamnd/gocopy/marshal"
 	goipyMarshal "github.com/tamnd/goipy/marshal"
 	goipyObject "github.com/tamnd/goipy/object"
 	goipyVM "github.com/tamnd/goipy/vm"

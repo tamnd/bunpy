@@ -12,8 +12,8 @@ import (
 	"os"
 	"path/filepath"
 
-	gocopyCompiler "github.com/tamnd/gocopy/v1/compiler"
-	gocopyMarshal "github.com/tamnd/gocopy/v1/marshal"
+	gocopyCompiler "github.com/tamnd/gocopy/compiler"
+	gocopyMarshal "github.com/tamnd/gocopy/marshal"
 
 	bunpyAPI "github.com/tamnd/bunpy/v1/api/bunpy"
 	goipyMarshal "github.com/tamnd/goipy/marshal"
