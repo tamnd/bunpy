@@ -5,9 +5,12 @@ package benchmarks_test
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
+	"sync"
 	"testing"
 
 	"github.com/tamnd/bunpy/v1/internal/testrunner"
@@ -75,6 +78,7 @@ func BenchmarkPMLock_47pkgs(b *testing.B) {
 
 // BenchmarkInstall_47pkgs measures sequential wheel installation for
 // 47 pre-opened wheel archives into a fresh target directory.
+// This is the v0.12.1 baseline — compare against BenchmarkInstallParallel_47pkgs.
 func BenchmarkInstall_47pkgs(b *testing.B) {
 	paths, err := filepath.Glob("fixtures/index/files.example/pkg*/*.whl")
 	if err != nil || len(paths) == 0 {
@@ -106,6 +110,71 @@ func BenchmarkInstall_47pkgs(b *testing.B) {
 
 		b.StopTimer()
 		os.RemoveAll(target)
+		b.StartTimer()
+	}
+}
+
+// BenchmarkInstallParallel_47pkgs is the v0.12.2 parallel counterpart to
+// BenchmarkInstall_47pkgs. It installs the same 47 pre-opened wheel archives
+// using a bounded goroutine pool (GOMAXPROCS*2 workers), mirroring the
+// production installPins implementation introduced in v0.12.2.
+func BenchmarkInstallParallel_47pkgs(b *testing.B) {
+	paths, err := filepath.Glob("fixtures/index/files.example/pkg*/*.whl")
+	if err != nil || len(paths) == 0 {
+		b.Fatalf("no wheel fixtures found; run: go run ./benchmarks/fixtures/build_fixtures.go")
+	}
+
+	wheels := make([]*wheel.Wheel, 0, len(paths))
+	for _, p := range paths {
+		w, werr := wheel.Open(p)
+		if werr != nil {
+			b.Fatalf("open wheel %s: %v", p, werr)
+		}
+		wheels = append(wheels, w)
+	}
+
+	workers := runtime.GOMAXPROCS(0) * 2
+	if workers > len(wheels) {
+		workers = len(wheels)
+	}
+	if workers < 1 {
+		workers = 1
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		b.StopTimer()
+		target, _ := os.MkdirTemp("", "bench-install-par-*")
+		b.StartTimer()
+
+		jobs := make(chan *wheel.Wheel, len(wheels))
+		for _, w := range wheels {
+			jobs <- w
+		}
+		close(jobs)
+
+		errc := make(chan error, workers)
+		var wg sync.WaitGroup
+		for range workers {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				for w := range jobs {
+					if _, werr := w.Install(target, wheel.InstallOptions{}); werr != nil {
+						errc <- fmt.Errorf("install %s: %v", w.Filename, werr)
+						return
+					}
+				}
+			}()
+		}
+		wg.Wait()
+		close(errc)
+
+		b.StopTimer()
+		os.RemoveAll(target)
+		if werr := <-errc; werr != nil {
+			b.Fatal(werr)
+		}
 		b.StartTimer()
 	}
 }

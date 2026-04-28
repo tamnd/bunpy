@@ -214,26 +214,8 @@ func addSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 	}
 
 	if !noInstall {
-		for _, pin := range res.Pins {
-			f, ok := reg.Pick(pin.Name, pin.Version)
-			if !ok {
-				return 1, fmt.Errorf("bunpy add: no wheel for %s %s", pin.Name, pin.Version)
-			}
-			body, err := fetchAddWheel(f, pin.Name, cacheDir)
-			if err != nil {
-				return 1, fmt.Errorf("bunpy add: %w", err)
-			}
-			w, err := wheel.OpenReader(f.Filename, body)
-			if err != nil {
-				return 1, fmt.Errorf("bunpy add: %w", err)
-			}
-			verify := true
-			if _, err := w.Install(target, wheel.InstallOptions{
-				Installer:    "bunpy",
-				VerifyHashes: &verify,
-			}); err != nil {
-				return 1, fmt.Errorf("bunpy add: %w", err)
-			}
+		if err := installPins(res.Pins, reg, target, cacheDir); err != nil {
+			return 1, fmt.Errorf("bunpy add: %w", err)
 		}
 	}
 

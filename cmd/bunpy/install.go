@@ -5,7 +5,9 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
+	"sync"
 
 	"github.com/tamnd/bunpy/v1/pkg/editable"
 	"github.com/tamnd/bunpy/v1/pkg/lockfile"
@@ -132,6 +134,12 @@ func installSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 	keep := installLaneFilter(dev, peer, allExtras, extras)
 	verify := !noVerify
 	skipped := 0
+
+	// Separate the package list into linked (skip) and to-install.
+	type installJob struct {
+		pkg lockfile.Package
+	}
+	var jobs []installJob
 	for _, p := range lock.Packages {
 		if !keep(p.Lanes) {
 			skipped++
@@ -141,29 +149,71 @@ func installSubcommand(args []string, stdout, stderr io.Writer) (int, error) {
 			fmt.Fprintf(stdout, "kept linked %s %s\n", p.Name, p.Version)
 			continue
 		}
-		f := pypi.File{Filename: p.Filename, URL: p.URL}
-		body, err := fetchAddWheel(f, p.Name, cacheDir)
-		if err != nil {
-			return 1, fmt.Errorf("bunpy install: %s: %w", p.Name, err)
+		jobs = append(jobs, installJob{p})
+	}
+
+	// Parallel fetch + install, bounded by GOMAXPROCS*2.
+	type installOutcome struct {
+		name, version string
+		patched       bool
+		err           error
+	}
+	outcomes := make([]installOutcome, len(jobs))
+	workers := runtime.GOMAXPROCS(0) * 2
+	if workers > len(jobs) {
+		workers = len(jobs)
+	}
+	if workers < 1 {
+		workers = 1
+	}
+
+	jobCh := make(chan int, len(jobs))
+	for i := range jobs {
+		jobCh <- i
+	}
+	close(jobCh)
+
+	var wg sync.WaitGroup
+	for range workers {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for idx := range jobCh {
+				p := jobs[idx].pkg
+				f := pypi.File{Filename: p.Filename, URL: p.URL}
+				body, err := fetchAddWheel(f, p.Name, cacheDir)
+				if err != nil {
+					outcomes[idx] = installOutcome{p.Name, p.Version, false, err}
+					continue
+				}
+				w, err := wheel.OpenReader(p.Filename, body)
+				if err != nil {
+					outcomes[idx] = installOutcome{p.Name, p.Version, false, err}
+					continue
+				}
+				if _, err := w.Install(target, wheel.InstallOptions{
+					Installer:    "bunpy",
+					VerifyHashes: &verify,
+				}); err != nil {
+					outcomes[idx] = installOutcome{p.Name, p.Version, false, err}
+					continue
+				}
+				patched, err := applyRegisteredPatch(target, p.Name, p.Version, patchEntries)
+				outcomes[idx] = installOutcome{p.Name, p.Version, patched, err}
+			}
+		}()
+	}
+	wg.Wait()
+
+	// Emit output in lock-file order and surface the first error.
+	for _, o := range outcomes {
+		if o.err != nil {
+			return 1, fmt.Errorf("bunpy install: %s: %w", o.name, o.err)
 		}
-		w, err := wheel.OpenReader(p.Filename, body)
-		if err != nil {
-			return 1, fmt.Errorf("bunpy install: %s: %w", p.Name, err)
-		}
-		if _, err := w.Install(target, wheel.InstallOptions{
-			Installer:    "bunpy",
-			VerifyHashes: &verify,
-		}); err != nil {
-			return 1, fmt.Errorf("bunpy install: %s: %w", p.Name, err)
-		}
-		patched, err := applyRegisteredPatch(target, p.Name, p.Version, patchEntries)
-		if err != nil {
-			return 1, fmt.Errorf("bunpy install: %s: %w", p.Name, err)
-		}
-		if patched {
-			fmt.Fprintf(stdout, "patched %s %s\n", p.Name, p.Version)
+		if o.patched {
+			fmt.Fprintf(stdout, "patched %s %s\n", o.name, o.version)
 		} else {
-			fmt.Fprintf(stdout, "installed %s %s\n", p.Name, p.Version)
+			fmt.Fprintf(stdout, "installed %s %s\n", o.name, o.version)
 		}
 	}
 	if skipped > 0 {
