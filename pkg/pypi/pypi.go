@@ -18,7 +18,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"sort"
+	"strconv"
 	"strings"
 
 	jsonv2 "github.com/go-json-experiment/json"
@@ -40,11 +42,18 @@ type Client struct {
 	UserAgent string
 }
 
-// New returns a Client with sane defaults.
+// New returns a Client with sane defaults. The HTTP concurrency limit
+// defaults to 16 and can be overridden with BUNPY_PYPI_CONCURRENCY.
 func New() *Client {
+	n := 16
+	if s := os.Getenv("BUNPY_PYPI_CONCURRENCY"); s != "" {
+		if v, err := strconv.Atoi(s); err == nil && v > 0 {
+			n = v
+		}
+	}
 	return &Client{
 		BaseURL:   DefaultBaseURL,
-		HTTP:      httpkit.Default(4),
+		HTTP:      httpkit.Default(n),
 		UserAgent: "bunpy/0.3.1",
 	}
 }

@@ -11,8 +11,11 @@
 package httpkit
 
 import (
+	"fmt"
 	"net"
 	"net/http"
+	"os"
+	"strings"
 	"sync"
 	"time"
 )
@@ -74,7 +77,22 @@ func (l *Limited) Do(req *http.Request) (*http.Response, error) {
 	gate := l.gate(host)
 	gate <- struct{}{}
 	defer func() { <-gate }()
-	return l.client.Do(req)
+	resp, err := l.client.Do(req)
+	if err == nil && debugContains("http2") {
+		fmt.Fprintf(os.Stderr, "[bunpy debug/http2] %s %s → %s\n",
+			req.Method, req.URL.Host, resp.Proto)
+	}
+	return resp, err
+}
+
+// debugContains reports whether BUNPY_DEBUG contains the given comma-separated token.
+func debugContains(token string) bool {
+	for _, t := range strings.Split(os.Getenv("BUNPY_DEBUG"), ",") {
+		if strings.TrimSpace(t) == token {
+			return true
+		}
+	}
+	return false
 }
 
 func (l *Limited) gate(host string) chan struct{} {

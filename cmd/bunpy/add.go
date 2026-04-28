@@ -8,8 +8,9 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
-
+	"sync"
 
 	"github.com/tamnd/bunpy/v1/internal/httpkit"
 	"github.com/tamnd/bunpy/v1/pkg/cache"
@@ -22,6 +23,28 @@ import (
 	"github.com/tamnd/bunpy/v1/pkg/version"
 	"github.com/tamnd/bunpy/v1/pkg/wheel"
 )
+
+// sharedWheelRT is the one-per-process HTTP transport for wheel file
+// downloads. Created once via sync.Once so concurrent fetchAddWheel
+// calls share a connection pool and a single per-host semaphore.
+// Default concurrency is 32; BUNPY_PYPI_CONCURRENCY overrides it.
+var (
+	wheelRTOnce sync.Once
+	wheelRT     httpkit.RoundTripper
+)
+
+func sharedWheelRT() httpkit.RoundTripper {
+	wheelRTOnce.Do(func() {
+		n := 32
+		if s := os.Getenv("BUNPY_PYPI_CONCURRENCY"); s != "" {
+			if v, err := strconv.Atoi(s); err == nil && v > 0 {
+				n = v
+			}
+		}
+		wheelRT = httpkit.Default(n)
+	})
+	return wheelRT
+}
 
 // addSubcommand wires `bunpy add <pkg>[<spec>]`. v0.1.5 hands the
 // requirement to the PubGrub-inspired resolver, which walks
@@ -407,7 +430,7 @@ func fetchAddWheel(f pypi.File, pkgName, cacheDir string) ([]byte, error) {
 			return body, nil
 		}
 	}
-	var rt httpkit.RoundTripper = httpkit.Default(4)
+	rt := sharedWheelRT()
 	if fix := os.Getenv("BUNPY_PYPI_FIXTURES"); fix != "" {
 		rt = httpkit.FixturesFS(fix)
 	}

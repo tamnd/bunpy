@@ -5,10 +5,14 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/tamnd/bunpy/v1/internal/httpkit"
 	"github.com/tamnd/bunpy/v1/pkg/cache"
@@ -305,6 +309,51 @@ func TestFetchMetadataFallbackExtract(t *testing.T) {
 	}
 	if string(got) != string(want) {
 		t.Errorf("got %q, want %q", got, want)
+	}
+}
+
+// TestNewConcurrencyEnvOverride verifies that BUNPY_PYPI_CONCURRENCY
+// controls the per-host limit used by pypi.New().
+func TestNewConcurrencyEnvOverride(t *testing.T) {
+	const limit = 2
+	const total = limit * 3
+
+	t.Setenv("BUNPY_PYPI_CONCURRENCY", "2")
+
+	var active atomic.Int32
+	var peakMu sync.Mutex
+	var peak int32
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		n := active.Add(1)
+		defer active.Add(-1)
+		peakMu.Lock()
+		if n > peak {
+			peak = n
+		}
+		peakMu.Unlock()
+		time.Sleep(30 * time.Millisecond)
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	c := New()
+	var wg sync.WaitGroup
+	for range total {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			req, _ := http.NewRequestWithContext(context.Background(), "GET", srv.URL+"/simple/pkg/", nil)
+			resp, err := c.HTTP.Do(req)
+			if err == nil {
+				resp.Body.Close()
+			}
+		}()
+	}
+	wg.Wait()
+
+	if peak > int32(limit) {
+		t.Errorf("peak concurrency %d exceeded BUNPY_PYPI_CONCURRENCY=%d", peak, limit)
 	}
 }
 
