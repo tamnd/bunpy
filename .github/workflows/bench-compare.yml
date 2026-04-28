@@ -28,12 +28,12 @@ jobs:
           cache: true
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v8
 
       - name: Print tool versions
         run: |
           go version
-          uv version
+          uv self version
           python3 --version
 
       - name: Build bunpy
@@ -52,7 +52,7 @@ jobs:
           grep -E '^Benchmark' bench-compare.txt || true
 
       - name: Upload results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: bench-compare-${{ github.sha }}
