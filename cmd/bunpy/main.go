@@ -15,6 +15,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime/pprof"
 	"strings"
 	"time"
 
@@ -24,6 +25,25 @@ import (
 )
 
 func main() {
+	os.Exit(mainCode())
+}
+
+// mainCode runs the program and returns the exit code. Separated from main so
+// that deferred cleanup (pprof stop, file close) runs before os.Exit is called.
+func mainCode() int {
+	if os.Getenv("BUNPY_PROFILE_STARTUP") == "1" {
+		pprofPath := os.Getenv("BUNPY_STARTUP_PPROF")
+		if pprofPath == "" {
+			pprofPath = "/tmp/bunpy-startup.pprof"
+		}
+		if f, err := os.Create(pprofPath); err == nil {
+			pprof.StartCPUProfile(f)
+			defer func() {
+				pprof.StopCPUProfile()
+				f.Close()
+			}()
+		}
+	}
 	code, err := run(os.Args[1:], os.Stdout, os.Stderr)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "bunpy:", err)
@@ -31,13 +51,21 @@ func main() {
 			code = 1
 		}
 	}
-	os.Exit(code)
+	return code
 }
 
 func run(args []string, stdout, stderr io.Writer) (int, error) {
 	if len(args) == 0 {
 		usage(stdout)
 		return 0, nil
+	}
+
+	if args[0] == "-c" {
+		if len(args) < 2 {
+			fmt.Fprintln(stderr, "usage: bunpy -c <code> [args...]")
+			return 1, fmt.Errorf("bunpy -c requires a code argument")
+		}
+		return runInline(args[1], args[2:], stdout, stderr)
 	}
 
 	switch args[0] {
@@ -247,6 +275,10 @@ func runFile(path string, args []string, stdout, stderr io.Writer) (int, error) 
 		return 1, err
 	}
 	return runtime.Run(path, src, args, stdout, stderr)
+}
+
+func runInline(code string, args []string, stdout, stderr io.Writer) (int, error) {
+	return runtime.Run("<string>", []byte(code), args, stdout, stderr)
 }
 
 func runWithWatch(path string, args []string, stdout, stderr io.Writer) (int, error) {

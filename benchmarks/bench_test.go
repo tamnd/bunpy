@@ -271,6 +271,18 @@ func BenchmarkBuild_CacheMiss(b *testing.B) {
 	}
 }
 
+// BenchmarkStartup_InlinePass measures the wall time for `bunpy -c "pass"` —
+// the minimum-overhead startup path added in v0.12.8. No temp file, no disk
+// read, no bunpy module factories loaded.
+func BenchmarkStartup_InlinePass(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		if err := exec.Command(bunpyBin, "-c", "pass").Run(); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
 // BenchmarkStartup measures the wall time for running a trivial Python
 // script from fork to process exit — end-to-end cold-start overhead per
 // invocation. Uses an existing fixture file to avoid temp-file overhead.

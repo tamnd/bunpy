@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -439,6 +440,69 @@ func TestManUnknown(t *testing.T) {
 	}
 	if code == 0 {
 		t.Error("expected non-zero exit code")
+	}
+}
+
+func TestInlineFlag(t *testing.T) {
+	for _, code := range []string{"pass", "x = 1", ""} {
+		var stdout, stderr bytes.Buffer
+		exitCode, err := run([]string{"-c", code}, &stdout, &stderr)
+		if err != nil {
+			t.Fatalf("-c %q: %v\nstderr: %s", code, err, stderr.String())
+		}
+		if exitCode != 0 {
+			t.Fatalf("-c %q: code %d, want 0\nstderr: %s", code, exitCode, stderr.String())
+		}
+	}
+}
+
+func TestInlineFlagCompileError(t *testing.T) {
+	// def/class are not yet supported by gocopy; -c should propagate compile errors.
+	var stdout, stderr bytes.Buffer
+	exitCode, err := run([]string{"-c", "def f(): pass"}, &stdout, &stderr)
+	if err == nil {
+		t.Fatal("expected compile error for unsupported syntax")
+	}
+	if exitCode == 0 {
+		t.Error("expected non-zero exit code")
+	}
+	_ = stdout
+}
+
+func TestInlineFlagMissingArg(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	exitCode, err := run([]string{"-c"}, &stdout, &stderr)
+	if err == nil {
+		t.Fatal("expected error for -c with no argument")
+	}
+	if exitCode == 0 {
+		t.Error("expected non-zero exit code")
+	}
+}
+
+func TestStartupProfileFlag(t *testing.T) {
+	tmp := t.TempDir()
+	bin := filepath.Join(tmp, "bunpy")
+	out, err := exec.Command("go", "build", "-o", bin, "github.com/tamnd/bunpy/v1/cmd/bunpy").CombinedOutput()
+	if err != nil {
+		t.Skipf("could not build bunpy binary: %v\n%s", err, out)
+	}
+
+	profPath := filepath.Join(tmp, "startup.pprof")
+	cmd := exec.Command(bin, "-c", "pass")
+	cmd.Env = append(os.Environ(),
+		"BUNPY_PROFILE_STARTUP=1",
+		"BUNPY_STARTUP_PPROF="+profPath,
+	)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("bunpy -c pass: %v\n%s", err, out)
+	}
+	info, err := os.Stat(profPath)
+	if err != nil {
+		t.Fatalf("pprof file not written: %v", err)
+	}
+	if info.Size() == 0 {
+		t.Fatal("pprof file is empty")
 	}
 }
 

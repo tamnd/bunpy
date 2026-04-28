@@ -7,6 +7,7 @@
 package runtime
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -58,7 +59,11 @@ func Run(filename string, source []byte, args []string, stdout, stderr io.Writer
 	interp := goipyVM.New()
 	interp.Stdout = stdout
 	interp.Stderr = stderr
-	interp.SetNativeModules(bunpyAPI.Modules())
+	modules := bunpyAPI.Modules()
+	if !bytes.Contains(source, []byte("bunpy")) {
+		modules = make(map[string]func(*goipyVM.Interp) *goipyObject.Module)
+	}
+	interp.SetNativeModules(modules)
 	bunpyAPI.InjectGlobals(interp)
 	if abs, aerr := filepath.Abs(filepath.Dir(filename)); aerr == nil {
 		interp.SearchPath = []string{abs}
