@@ -127,6 +127,52 @@ BenchmarkStartup_InlinePass   ~7.2 ms/op (v0.12.8, bunpy -c "pass")
 `bunpy -c "pass"` lands at ~7.2 ms — inside the 10 ms target and below CPython 3.14's 14 ms cold start on M-series. The remaining startup time is Go runtime init plus `goipy.New()` and its `initBuiltins()` call (1715-line function that runs on every interpreter construction). Reducing `initBuiltins()` cost is on the v0.13.x agenda.
 
 
+## B-9: Real-world benchmarks vs uv (v0.12.10)
+
+**Context.** The 47-package synthetic fixture used in B-1 through B-3 is flat — no transitive dependencies, all packages at the same version, no realistic dependency graph. It measures raw resolver throughput but not how bunpy compares to uv on a project a developer would actually run.
+
+**Fix.** Replaced the synthetic fixture with four real-world project profiles (54 named packages with realistic `Requires-Dist` graphs served from a local fixture HTTP server). Added side-by-side benchmarks against uv and four `TestCompatibility_*` tests that verify both tools resolve to identical package→version maps.
+
+The four profiles:
+
+| Profile | Direct deps | Transitive total |
+|---------|------------|-----------------|
+| `fastapi-app` | 5 | 18 |
+| `django-app` | 6 | 15 |
+| `datascience` | 4 | 18 |
+| `cli-tool` | 5 | 14 |
+
+**Numbers.**
+
+```
+BenchmarkLockBunpy_FastAPI       ~58 ms/op   (18 packages)
+BenchmarkLockUV_FastAPI          ~129 ms/op
+  → bunpy 2.2× faster
+
+BenchmarkLockBunpy_Django        ~43 ms/op   (15 packages)
+BenchmarkLockUV_Django           ~113 ms/op
+  → bunpy 2.6× faster
+
+BenchmarkLockBunpy_DataScience   ~48 ms/op   (18 packages)
+BenchmarkLockUV_DataScience      ~175 ms/op
+  → bunpy 3.6× faster
+
+BenchmarkLockBunpy_CLI           ~54 ms/op   (14 packages)
+BenchmarkLockUV_CLI              ~98 ms/op
+  → bunpy 1.8× faster
+```
+
+Reproduce with:
+
+```bash
+go test -bench=. -benchmem -benchtime=3s -count=3 ./benchmarks/compare/
+```
+
+uv benchmarks skip gracefully if `uv` is not in PATH.
+
+**Compatibility.** All four `TestCompatibility_*` tests pass — bunpy and uv agree on every package→version pair for each profile. The resolver produces identical lockfiles despite taking 1.8–3.6× less time.
+
+
 ---
 
 ## Summary table
@@ -140,6 +186,7 @@ BenchmarkStartup_InlinePass   ~7.2 ms/op (v0.12.8, bunpy -c "pass")
 | B-6  | v0.12.6 | Static coverage estimate | n/a (infra) | real line counts (gocopy v0.6 pending) |
 | B-7  | v0.12.7 | Full rebuild every `bunpy build` | ~14 ms | ~8 ms hit / ~55 µs hash check |
 | B-8  | v0.12.8 | 40+ module factories on every start | ~8 ms | ~7.2 ms (`-c "pass"`) |
+| B-9  | v0.12.10 | uv comparison on real-world profiles | n/a (new benchmark) | 1.8–3.6× faster than uv across 4 profiles |
 
 Machine: Apple M4, macOS, Go 1.26. Fixture benchmarks use the in-process index and pre-opened wheels; they measure pure Go-level overhead, not network latency.
 
