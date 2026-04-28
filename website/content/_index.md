@@ -31,49 +31,43 @@ curl -fsSL https://tamnd.github.io/bunpy/install.sh | bash
 bunpy --version  # bunpy 0.11.15
 ```
 
-<p class="hx-text-sm hx-text-gray-500 hx-mt-2">
+<p class="hx-text-sm hx-text-gray-500 hx-mt-2 hx-mb-20">
 macOS (arm64, x64) · Linux (arm64, x64) · Windows (x64)
 </p>
 
+{{< hextra/feature-grid cols=3 >}}
+  {{< hextra/feature-card
+    title="16x faster"
+    subtitle="bunpy pm lock resolves packages 16x faster than uv. Written in Go, no Python subprocess, no startup overhead."
+    class="hx-aspect-auto md:hx-aspect-[1.1/1] max-md:hx-min-h-[200px]"
+  >}}
+  {{< hextra/feature-card
+    title="One binary, ~4 MB"
+    subtitle="Replaces pip, uv, pytest, ruff, and black. A single static executable. Copy it anywhere and it works."
+    class="hx-aspect-auto md:hx-aspect-[1.1/1] max-md:hx-min-h-[200px]"
+  >}}
+  {{< hextra/feature-card
+    title="Zero config"
+    subtitle="Drop a pyproject.toml and run bunpy install. No virtualenv, no requirements.txt, no activation step."
+    class="hx-aspect-auto md:hx-aspect-[1.1/1] max-md:hx-min-h-[200px]"
+  >}}
+{{< /hextra/feature-grid >}}
 
-## Numbers
+<div class="hx-mt-20 hx-mb-4">
 
-<div class="hx-grid hx-grid-cols-1 md:hx-grid-cols-3 hx-gap-6 hx-mt-6 hx-mb-8">
-<div>
-
-**16x faster**
-
-`bunpy pm lock` resolves and pins packages 16 times faster than uv on the same dependency graph. Written in Go, no Python subprocess.
-
-</div>
-<div>
-
-**One binary**
-
-A single ~4 MB static executable replaces pip, uv, pytest, ruff, and black. Copy it anywhere and it works.
-
-</div>
-<div>
-
-**Zero config**
-
-Drop a `pyproject.toml` and run `bunpy install`. No virtualenv, no `requirements.txt`, no activation step.
+## What's included
 
 </div>
-</div>
-
-
-## Tools
 
 {{< hextra/feature-grid >}}
   {{< hextra/feature-card
     title="Package manager"
-    subtitle="Add, remove, lock, and install packages. Compatible with uv.lock. 16x faster resolution than uv."
+    subtitle="Add, remove, lock, and install packages. uv.lock compatible. 16x faster resolution than uv."
     class="hx-aspect-auto md:hx-aspect-[1.1/1] max-md:hx-min-h-[340px]"
   >}}
   {{< hextra/feature-card
     title="HTTP server"
-    subtitle="Built-in bunpy.serve handles routing, parsing, and response serialisation in Go. No framework required."
+    subtitle="bunpy.serve handles routing, parsing, and response serialisation in Go. No framework required."
     class="hx-aspect-auto md:hx-aspect-[1.1/1] max-md:hx-min-h-[340px]"
   >}}
   {{< hextra/feature-card
@@ -88,7 +82,7 @@ Drop a `pyproject.toml` and run `bunpy install`. No virtualenv, no `requirements
   >}}
   {{< hextra/feature-card
     title="Web globals"
-    subtitle="fetch, URL, Request, Response, and WebSocket are injected into every script. No import needed."
+    subtitle="fetch, URL, Request, Response, and WebSocket are available in every script. No import needed."
     class="hx-aspect-auto md:hx-aspect-[1.1/1] max-md:hx-min-h-[340px]"
   >}}
   {{< hextra/feature-card
@@ -98,8 +92,11 @@ Drop a `pyproject.toml` and run `bunpy install`. No virtualenv, no `requirements
   >}}
 {{< /hextra/feature-grid >}}
 
+<div class="hx-mt-20 hx-mb-4">
 
 ## Quick look
+
+</div>
 
 ```python
 # server.py
@@ -118,7 +115,7 @@ bunpy server.py
 ```
 
 ```python
-# fetch is a global, no import needed
+# fetch is available globally, no import needed
 resp = fetch("https://api.github.com/repos/tamnd/bunpy")
 print(resp.json()["stargazers_count"])
 ```
@@ -130,8 +127,11 @@ bunpy install --frozen   # CI-safe, fails if uv.lock is stale
 bunpy pm lock            # 16x faster than uv
 ```
 
+<div class="hx-mt-20 hx-mb-4">
 
 ## Commands
+
+</div>
 
 | Command | What it does |
 |---------|-------------|
