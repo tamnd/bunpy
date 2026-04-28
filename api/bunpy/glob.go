@@ -67,7 +67,7 @@ func BuildGlob(_ *goipyVM.Interp) *goipyObject.BuiltinFunc {
 					if relErr != nil {
 						rel = m
 					}
-					items = append(items, &goipyObject.Str{V: rel})
+					items = append(items, &goipyObject.Str{V: filepath.ToSlash(rel)})
 				}
 			}
 			return &goipyObject.List{V: items}, nil
