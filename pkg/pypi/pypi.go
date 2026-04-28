@@ -44,6 +44,8 @@ type Client struct {
 
 // New returns a Client with sane defaults. The HTTP concurrency limit
 // defaults to 16 and can be overridden with BUNPY_PYPI_CONCURRENCY.
+// BUNPY_PYPI_INDEX_URL overrides DefaultBaseURL (used by comparison benchmarks
+// that point both bunpy and uv at the same local fixture server).
 func New() *Client {
 	n := 16
 	if s := os.Getenv("BUNPY_PYPI_CONCURRENCY"); s != "" {
@@ -51,8 +53,12 @@ func New() *Client {
 			n = v
 		}
 	}
+	baseURL := DefaultBaseURL
+	if s := os.Getenv("BUNPY_PYPI_INDEX_URL"); s != "" {
+		baseURL = s
+	}
 	return &Client{
-		BaseURL:   DefaultBaseURL,
+		BaseURL:   baseURL,
 		HTTP:      httpkit.Default(n),
 		UserAgent: "bunpy/0.3.1",
 	}

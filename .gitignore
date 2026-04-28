@@ -25,3 +25,8 @@
 # bunpy runtime caches
 /.bunpy/
 /bunpy.lock.tmp
+
+# Build outputs
+/dist/
+benchmarks/dist/
+**/.bunpy/

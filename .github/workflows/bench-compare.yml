@@ -1,0 +1,60 @@
+name: bench-compare
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: '0 6 * * 1'  # weekly, Monday 06:00 UTC
+
+concurrency:
+  group: bench-compare-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GO_VERSION: '1.26'
+
+jobs:
+  compare:
+    name: cross-tool benchmark comparison
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Print tool versions
+        run: |
+          go version
+          uv version
+          python3 --version
+
+      - name: Build bunpy
+        run: go build -o /tmp/bunpy ./cmd/bunpy
+
+      - name: Run comparison benchmarks
+        run: |
+          go test -bench=. -benchmem -benchtime=3s -count=3 -v \
+            ./benchmarks/compare/ \
+            | tee bench-compare.txt
+
+      - name: Print summary
+        if: always()
+        run: |
+          echo "=== Benchmark results ==="
+          grep -E '^Benchmark' bench-compare.txt || true
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bench-compare-${{ github.sha }}
+          path: bench-compare.txt
+          retention-days: 90

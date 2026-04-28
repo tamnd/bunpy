@@ -9,6 +9,22 @@ changes.
 
 ## [Unreleased]
 
+## [0.12.7] - 2026-04-28
+
+See `changelog/v0.12.7.md` for the full entry.
+
+## [0.12.6] - 2026-04-28
+
+See `changelog/v0.12.6.md` for the full entry.
+
+## [0.12.5] - 2026-04-28
+
+See `changelog/v0.12.5.md` for the full entry.
+
+## [0.12.4.1] - 2026-04-28
+
+See `changelog/v0.12.4.1.md` for the full entry.
+
 ## [0.3.1] - 2026-04-27
 
 See `changelog/v0.3.1.md` for the full entry.
