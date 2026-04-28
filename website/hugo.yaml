@@ -9,7 +9,7 @@ module:
     - path: github.com/imfing/hextra
 
 params:
-  description: "The Python runtime, package manager, and bundler — all in one."
+  description: "An all-in-one Python toolkit. Runtime, package manager, bundler, test runner, and formatter in one fast static binary."
   navbar:
     displayTitle: true
     displayLogo: false

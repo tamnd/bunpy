@@ -1,5 +1,6 @@
 ---
-title: bunpy
+title: "bunpy: an all-in-one Python toolkit"
+description: "Runtime, package manager, bundler, test runner, and formatter in one fast static binary. No virtualenv, no system Python, no setup."
 layout: hextra-home
 toc: false
 ---
@@ -16,8 +17,8 @@ toc: false
 
 <div class="hx-mb-12">
 {{< hextra/hero-subtitle >}}
-  Run, install, bundle, and test Python with one binary.
-  No CPython. No pip. No config.
+  An all-in-one Python toolkit. Runtime, package manager, bundler, test
+  runner, and formatter in one fast static binary.
 {{< /hextra/hero-subtitle >}}
 </div>
 
@@ -26,10 +27,15 @@ toc: false
 {{< hextra/hero-button text="GitHub" link="https://github.com/tamnd/bunpy" style="secondary" >}}
 </div>
 
+<div class="bp-install">
+
 ```bash
 curl -fsSL https://tamnd.github.io/bunpy/install.sh | bash
-bunpy --version  # bunpy 0.11.15
+bunpy --version
+# bunpy 0.11.15
 ```
+
+</div>
 
 <p class="hx-text-sm hx-text-gray-500 hx-mt-2 hx-mb-20">
 macOS (arm64, x64) · Linux (arm64, x64) · Windows (x64)
@@ -37,13 +43,13 @@ macOS (arm64, x64) · Linux (arm64, x64) · Windows (x64)
 
 {{< hextra/feature-grid cols=3 >}}
   {{< hextra/feature-card
-    title="16x faster"
-    subtitle="bunpy pm lock resolves packages 16x faster than uv. Written in Go, no Python subprocess, no startup overhead."
+    title="Designed for speed"
+    subtitle="Written in Go. Cold starts in milliseconds, package resolution in seconds, no Python subprocess fan-out."
     class="hx-aspect-auto md:hx-aspect-[1.1/1] max-md:hx-min-h-[200px]"
   >}}
   {{< hextra/feature-card
-    title="One binary, ~4 MB"
-    subtitle="Replaces pip, uv, pytest, ruff, and black. A single static executable. Copy it anywhere and it works."
+    title="All in one"
+    subtitle="Replaces pip, pytest, ruff, and black. A single ~4 MB static binary. Copy it anywhere and it works."
     class="hx-aspect-auto md:hx-aspect-[1.1/1] max-md:hx-min-h-[200px]"
   >}}
   {{< hextra/feature-card
@@ -55,34 +61,34 @@ macOS (arm64, x64) · Linux (arm64, x64) · Windows (x64)
 
 <div class="hx-mt-20 hx-mb-4">
 
-## What's included
+## What's inside
 
 </div>
 
 {{< hextra/feature-grid >}}
   {{< hextra/feature-card
     title="Package manager"
-    subtitle="Add, remove, lock, and install packages. uv.lock compatible. 16x faster resolution than uv."
+    subtitle="Install, lock, and update PyPI packages. Reads `pyproject.toml`. Workspaces, overrides, audits, patches."
     class="hx-aspect-auto md:hx-aspect-[1.1/1] max-md:hx-min-h-[340px]"
   >}}
   {{< hextra/feature-card
     title="HTTP server"
-    subtitle="bunpy.serve handles routing, parsing, and response serialisation in Go. No framework required."
+    subtitle="`bunpy.serve` handles routing, parsing, and response serialisation in Go. No framework required."
     class="hx-aspect-auto md:hx-aspect-[1.1/1] max-md:hx-min-h-[340px]"
   >}}
   {{< hextra/feature-card
     title="Bundler"
-    subtitle="Bundle to a portable .pyz archive or compile to a self-contained native binary with bunpy build --compile."
+    subtitle="Bundle to a portable `.pyz` archive or compile to a self-contained native binary."
     class="hx-aspect-auto md:hx-aspect-[1.1/1] max-md:hx-min-h-[340px]"
   >}}
   {{< hextra/feature-card
     title="Test runner"
-    subtitle="Run tests with bunpy test. Built-in coverage, reporters, filtering, and lifecycle hooks."
+    subtitle="Run tests with `bunpy test`. Built-in coverage, reporters, filtering, and lifecycle hooks."
     class="hx-aspect-auto md:hx-aspect-[1.1/1] max-md:hx-min-h-[340px]"
   >}}
   {{< hextra/feature-card
     title="Web globals"
-    subtitle="fetch, URL, Request, Response, and WebSocket are available in every script. No import needed."
+    subtitle="`fetch`, `URL`, `Request`, `Response`, and `WebSocket` are available in every script. No import needed."
     class="hx-aspect-auto md:hx-aspect-[1.1/1] max-md:hx-min-h-[340px]"
   >}}
   {{< hextra/feature-card
@@ -91,6 +97,26 @@ macOS (arm64, x64) · Linux (arm64, x64) · Windows (x64)
     class="hx-aspect-auto md:hx-aspect-[1.1/1] max-md:hx-min-h-[340px]"
   >}}
 {{< /hextra/feature-grid >}}
+
+<div class="hx-mt-20 hx-mb-4">
+
+## Compared to a Python toolchain
+
+</div>
+
+<div class="bp-compare">
+
+|                          | bunpy                  | python + pip + venv     |
+|--------------------------|------------------------|-------------------------|
+| Runtime included         | yes (Python 3.14)      | requires CPython        |
+| Package install          | built-in `bunpy add`   | pip + manual venv       |
+| Test runner              | built-in `bunpy test`  | pytest (separate)       |
+| Bundler                  | built-in `bunpy build` | shiv / pyinstaller      |
+| Formatter                | built-in `bunpy fmt`   | black / ruff (separate) |
+| HTTP server              | built-in `bunpy.serve` | flask / fastapi         |
+| Native binary executable | `bunpy build --compile`| not supported           |
+
+</div>
 
 <div class="hx-mt-20 hx-mb-4">
 
@@ -123,8 +149,8 @@ print(resp.json()["stargazers_count"])
 ```bash
 # Package manager
 bunpy add requests fastapi
-bunpy install --frozen   # CI-safe, fails if uv.lock is stale
-bunpy pm lock            # 16x faster than uv
+bunpy install --frozen
+bunpy pm lock
 ```
 
 <div class="hx-mt-20 hx-mb-4">
@@ -137,9 +163,9 @@ bunpy pm lock            # 16x faster than uv
 |---------|-------------|
 | `bunpy script.py` | Run a Python script |
 | `bunpy add requests` | Add a dependency |
-| `bunpy install` | Install from pyproject.toml |
+| `bunpy install` | Install from `pyproject.toml` |
 | `bunpy pm lock` | Resolve and pin all dependencies |
-| `bunpy build app.py` | Bundle to app.pyz |
+| `bunpy build app.py` | Bundle to `app.pyz` |
 | `bunpy test` | Run tests |
 | `bunpy fmt src/` | Format source |
 | `bunpy repl` | Interactive REPL |
