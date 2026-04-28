@@ -834,7 +834,7 @@ jobs:
           whl="$cache_dir/mygreet-1.0.0-py3-none-any.whl"
           ( cd "$wheel_dir" && zip -r "$whl" . -x "*.DS_Store" )
           # run via bunpyx using the pre-seeded cache
-          out="$( "$GITHUB_WORKSPACE/bunpyx" --cache-dir "$cache_dir" --no-cache mygreet@1.0.0 world 2>&1 || true )"
+          out="$( "$GITHUB_WORKSPACE/bunpyx" --cache-dir "$cache_dir" mygreet@1.0.0 world 2>&1 || true )"
           echo "$out" | grep -q "hello bunpyx" || { echo "unexpected output: $out"; exit 1; }
           # --help exits 0
           "$GITHUB_WORKSPACE/bunpyx" --help > /dev/null
