@@ -100,13 +100,18 @@ func BuildGlobMatch(_ *goipyVM.Interp) *goipyObject.BuiltinFunc {
 // doubleStarGlob handles ** patterns by walking the tree.
 // For patterns without **, it falls back to filepath.Glob.
 func doubleStarGlob(root, pattern string, dot bool) ([]string, error) {
+	// Normalize pattern to OS path separators so filepath functions work correctly.
+	pattern = filepath.FromSlash(pattern)
+
 	if !strings.Contains(pattern, "**") {
 		return filepath.Glob(filepath.Join(root, pattern))
 	}
 
 	parts := strings.SplitN(pattern, "**", 2)
 	prefix := filepath.Clean(filepath.Join(root, parts[0]))
+	// Trim both possible separator styles after ** to handle cross-platform input.
 	suffix := strings.TrimPrefix(parts[1], string(filepath.Separator))
+	suffix = strings.TrimPrefix(suffix, "/")
 
 	var matches []string
 	err := filepath.WalkDir(prefix, func(path string, d os.DirEntry, err error) error {
