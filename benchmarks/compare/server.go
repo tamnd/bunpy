@@ -15,6 +15,16 @@ import (
 	"strings"
 )
 
+// setLingerZero sets SO_LINGER=0 on a TCP connection so that closing it sends
+// an RST rather than going through the FIN/FIN-ACK sequence. This prevents
+// TIME_WAIT accumulation when running many benchmark iterations, each of which
+// spawns a fresh subprocess with its own connection pool.
+func setLingerZero(conn net.Conn) {
+	if tc, ok := conn.(*net.TCPConn); ok {
+		_ = tc.SetLinger(0)
+	}
+}
+
 // FixtureHandler is an HTTP handler that serves benchmark fixture data.
 // Index pages are served at /simple/{pkg}/ with wheel URLs rewritten to
 // /files/{pkg}/{filename}. Wheel files are served from the fixtures tree.
@@ -124,7 +134,14 @@ func StartServer(fixturesRoot string) (baseURL string, shutdown func(), err erro
 	}
 	addr := "http://" + ln.Addr().String()
 	handler := NewFixtureHandler(fixturesRoot, addr)
-	srv := &http.Server{Handler: handler}
+	srv := &http.Server{
+		Handler: handler,
+		ConnState: func(conn net.Conn, state http.ConnState) {
+			if state == http.StateNew {
+				setLingerZero(conn)
+			}
+		},
+	}
 	go srv.Serve(ln) //nolint:errcheck
 	return addr, func() { srv.Close() }, nil
 }

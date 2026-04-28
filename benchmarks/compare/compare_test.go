@@ -33,6 +33,10 @@ var (
 	// realworld fixture server (started only when fixtures/realworld/index exists)
 	rwServerURL  string
 	rwServerStop func()
+
+	// snapshot fixture server (started only when fixtures/snapshot/index exists)
+	snapServerURL  string
+	snapServerStop func()
 )
 
 func TestMain(m *testing.M) {
@@ -59,6 +63,17 @@ func TestMain(m *testing.M) {
 			os.Exit(1)
 		}
 		defer rwServerStop()
+	}
+
+	// Start snapshot fixture server if the fixtures have been generated.
+	snapIndex := filepath.Join(repoRoot, "benchmarks", "fixtures", "snapshot", "index")
+	if _, statErr := os.Stat(snapIndex); statErr == nil {
+		snapServerURL, snapServerStop, err = compare.StartServer(snapIndex)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "compare: start snapshot server:", err)
+			os.Exit(1)
+		}
+		defer snapServerStop()
 	}
 
 	// Build bunpy binary once.

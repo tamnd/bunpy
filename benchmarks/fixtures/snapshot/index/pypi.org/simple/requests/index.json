@@ -1,0 +1,11 @@
+{
+  "name": "requests",
+  "files": [
+    {
+      "filename": "requests-2.31.0-py3-none-any.whl",
+      "url": "https://files.example/requests/requests-2.31.0-py3-none-any.whl",
+      "hashes": {"sha256": "58cd2187c01e70e6e26505bca751777aa9f2ee0b7f4300988b709f44e013003f"}
+    }
+  ],
+  "meta": {"api-version": "1.1", "_last-serial": 1}
+}

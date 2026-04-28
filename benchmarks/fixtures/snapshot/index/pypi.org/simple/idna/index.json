@@ -1,0 +1,11 @@
+{
+  "name": "idna",
+  "files": [
+    {
+      "filename": "idna-3.6-py3-none-any.whl",
+      "url": "https://files.example/idna/idna-3.6-py3-none-any.whl",
+      "hashes": {"sha256": "c05567e9c24a6b9faaa835c4821bad0590fbb9d5779e7caa6e1cc4978e7eb24f"}
+    }
+  ],
+  "meta": {"api-version": "1.1", "_last-serial": 1}
+}
