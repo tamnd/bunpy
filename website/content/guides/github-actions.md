@@ -5,7 +5,6 @@ description: Full GitHub Actions workflow for bunpy — lint, type check, test w
 
 This guide builds a production-grade GitHub Actions workflow for a bunpy project. The pipeline runs lint, type check, tests with coverage upload, builds a `.pyz` archive, and deploys on merge to main. It caches the bunpy install between runs to keep CI fast.
 
----
 
 ## Workflow overview
 
@@ -19,7 +18,6 @@ lint (ruff)
 
 Each stage depends on the previous one. The test stage fans out across a matrix of operating systems and Python versions. The build and deploy stages run only after all matrix jobs pass.
 
----
 
 ## Full workflow file
 
@@ -214,7 +212,6 @@ jobs:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 ```
 
----
 
 ## Cache key strategy
 
@@ -235,7 +232,6 @@ restore-keys: |
 
 This allows a partial cache restore when the exact key does not exist. Partial restores reduce install time even when the lockfile has changed, because only new packages need to be downloaded.
 
----
 
 ## Matrix builds
 
@@ -250,7 +246,6 @@ strategy:
     python-version: ["3.12", "3.14"]
 ```
 
----
 
 ## Secrets management
 
@@ -266,7 +261,6 @@ Secrets are injected as environment variables at runtime. They never appear in l
 
 For environment-specific secrets (staging vs production), use GitHub Environments. The `deploy` job above references the `production` environment, which can have its own secret set and require manual approval before the job runs.
 
----
 
 ## Codecov integration
 
@@ -292,7 +286,6 @@ coverage:
 
 This fails the coverage check if overall coverage drops below 80%, or if the lines changed in the PR are covered below 70%.
 
----
 
 ## Concurrency control
 
@@ -304,7 +297,6 @@ concurrency:
 
 This cancels any in-progress run for the same workflow and branch when a new commit is pushed. For pull requests, each new push cancels the previous CI run, saving runner minutes.
 
----
 
 ## Branch protection
 

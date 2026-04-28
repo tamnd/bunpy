@@ -5,7 +5,6 @@ description: Deploy a bunpy app to Fly.io with fly.toml, secrets, SQLite volumes
 
 Fly.io runs your app in a VM close to your users, supports SQLite with persistent volumes, and lets you scale to zero when there is no traffic. This guide covers a complete deployment including secrets, health checks, and the full `fly.toml` configuration.
 
----
 
 ## Prerequisites
 
@@ -13,7 +12,6 @@ Fly.io runs your app in a VM close to your users, supports SQLite with persisten
 - The `flyctl` CLI: `curl -L https://fly.io/install.sh | sh`
 - A Fly.io account: `fly auth signup` or `fly auth login`
 
----
 
 ## Step 1: Launch
 
@@ -33,7 +31,6 @@ Fly will ask a series of questions:
 
 `fly launch` writes a `fly.toml` file to the current directory. You'll edit it in the next step.
 
----
 
 ## Step 2: fly.toml
 
@@ -96,7 +93,6 @@ For a nixpacks-based deploy without Docker, add a build command:
   build-args = { BUILD_CMD = "bunpy install --frozen" }
 ```
 
----
 
 ## Step 3: Dockerfile for Fly
 
@@ -129,7 +125,6 @@ EXPOSE 8080
 CMD ["python", "-m", "myapp"]
 ```
 
----
 
 ## Step 4: Secrets
 
@@ -160,7 +155,6 @@ secret_key = os.environ["SECRET_KEY"]
 database_url = os.environ.get("DATABASE_URL")
 ```
 
----
 
 ## Step 5: SQLite volumes
 
@@ -188,7 +182,6 @@ DB_PATH = os.environ.get("DB_PATH", "/data/app.db")
 
 For production SQLite on Fly, consider using [LiteFS](https://fly.io/docs/litefs/) for replication across multiple VMs. A single-VM SQLite setup is simpler and works well for apps with moderate write volume.
 
----
 
 ## Step 6: Deploy
 
@@ -204,7 +197,6 @@ Watch the deployment:
 fly deploy --now
 ```
 
----
 
 ## Logs
 
@@ -227,7 +219,6 @@ Example output:
 2026-04-28T10:23:12Z app[abc123] sin [info] GET /healthz 200 1ms
 ```
 
----
 
 ## Scale to zero
 
@@ -244,7 +235,6 @@ fly scale count 0           # stop all VMs (same as scale-to-zero)
 fly status
 ```
 
----
 
 ## Health checks
 
@@ -279,7 +269,6 @@ class Handler(BaseHTTPRequestHandler):
 
 During deployment, the `grace_period = "15s"` setting gives your app time to start before health checks begin. Increase this if your app takes longer to initialize (e.g., it runs database migrations on startup).
 
----
 
 ## Full deployment checklist
 

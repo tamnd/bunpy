@@ -8,7 +8,6 @@ When we first built the bunpy package manager, we created our own lockfile forma
 
 Then we switched to `uv.lock` in v0.10.x and deprecated `bunpy.lock`. Here is why.
 
----
 
 ## What was wrong with bunpy.lock
 
@@ -20,7 +19,6 @@ More importantly, it meant you could not use `uv` and `bunpy` on the same projec
 
 We also noticed that projects maintained by people who used uv already had `uv.lock` committed. They were not going to adopt a new tool that required them to throw away the lockfile they already had and trusted.
 
----
 
 ## The decision
 
@@ -30,7 +28,6 @@ The practical upside: any project that already uses `uv` gets zero-migration bun
 
 The downside: we had to implement uv.lock parsing and writing from scratch, in Go. The format is documented but has enough edge cases that getting it right took a few iterations.
 
----
 
 ## What we had to build
 
@@ -61,7 +58,6 @@ Extras are the most complex part of the format. A package installed with extras 
 
 We had to track extras through the full resolver loop — from the initial requirement spec through the metadata fetch to the final lockfile write. The tricky case is transitive extras: a package that requires `aiohttp[speedups]`, which in turn requires `aiodns` (only when speedups is enabled). Getting the edges right for this case took a few iterations and a test case that specifically covered it.
 
----
 
 ## What we gained
 
@@ -71,7 +67,6 @@ We also get to inherit the trust that uv has built. Users who already rely on `u
 
 A secondary gain: we can test our resolver output against uv. If our `uv.lock` output passes `uv sync` without errors, we know the format is correct. This gives us a concrete correctness check that we did not have with our own format.
 
----
 
 ## The cost
 

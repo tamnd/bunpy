@@ -8,7 +8,6 @@ v0.10.x started as a performance sprint and turned into a full parity push. By t
 
 Here is what happened across those twenty-nine releases.
 
----
 
 ## Performance: RC-1 through RC-6
 
@@ -26,7 +25,6 @@ The performance story is covered in detail in the [pm lock benchmark post](/blog
 
 **RC-6 (v0.10.25):** HTTP/2 multiplexing for PyPI requests. The per-request overhead of HTTP/1.1 was visible at this scale. Final warm-cache time: 85ms.
 
----
 
 ## Parity gaps: G-1 through G-8
 
@@ -48,7 +46,6 @@ Performance is only useful if the output is correct. During the same period we f
 
 **G-8: Direct URL dependencies not supported.** Projects with `my-package @ https://example.com/my-package.tar.gz` in `pyproject.toml` failed to install. Fixed by adding a direct URL resolver path that bypasses the PyPI index.
 
----
 
 ## Dropping bunpy.lock
 
@@ -58,7 +55,6 @@ The migration is automatic: if a project has `bunpy.lock` but no `uv.lock`, the 
 
 `bunpy.lock` support will be removed in v0.12.x.
 
----
 
 ## What comes next
 
@@ -74,7 +70,6 @@ On the performance side, we have one known remaining bottleneck: sdist metadata 
 
 The parity target for v0.11.x is passing the full uv integration test suite. We already pass the core cases. The remaining gaps are in edge cases around virtual environments, workspace support, and the `--extra` flag behavior for transitive extras.
 
----
 
 ## Updating
 

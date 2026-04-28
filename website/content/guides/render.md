@@ -5,7 +5,6 @@ description: Deploy a bunpy app to Render using render.yaml — build command, s
 
 Render is a fully managed cloud platform with a straightforward YAML configuration. You define your service, database, environment variables, and health checks in a single `render.yaml` file committed to your repository. This guide walks through a complete setup.
 
----
 
 ## Prerequisites
 
@@ -13,7 +12,6 @@ Render is a fully managed cloud platform with a straightforward YAML configurati
 - A Render account at [render.com](https://render.com)
 - The repository pushed to GitHub or GitLab (Render deploys from Git)
 
----
 
 ## render.yaml
 
@@ -61,7 +59,6 @@ databases:
 
 **`autoDeploy: true`** — triggers a new deploy every time you push to the connected branch.
 
----
 
 ## Environment variables
 
@@ -98,7 +95,6 @@ Render injects the connection string from the managed Postgres instance. The ava
 
 For secrets that cannot be in `render.yaml` (API keys, third-party credentials), add them in the Render dashboard under Environment > Environment Variables. These are not stored in source control.
 
----
 
 ## Managed PostgreSQL
 
@@ -125,7 +121,6 @@ engine = create_engine(os.environ["DATABASE_URL"])
 
 The `DATABASE_URL` is injected via the `fromDatabase` reference in `render.yaml`, so you do not need to configure it manually.
 
----
 
 ## Health check endpoint
 
@@ -174,7 +169,6 @@ def health():
 
 This verifies the database is reachable, not just that the HTTP server started.
 
----
 
 ## Autoscaling
 
@@ -196,7 +190,6 @@ Render scales up when CPU or memory exceeds the target and scales down when load
 
 For development or low-traffic services, set `minInstances: 0` (requires `plan: starter` or higher on the new billing model).
 
----
 
 ## Build caching
 
@@ -204,7 +197,6 @@ Render caches build artifacts between deploys. To take advantage of this, struct
 
 Render does not support arbitrary cache keys like GitHub Actions does. The cache is invalidated when the build command changes or when you manually clear it in the dashboard. In practice, `bunpy install --frozen` is fast enough on warm cache (~1–2 seconds for a resolved lockfile) that build caching matters less here.
 
----
 
 ## Deploy process
 
@@ -226,7 +218,6 @@ curl -H "Authorization: Bearer $RENDER_API_KEY" \
   "https://api.render.com/v1/services/$SERVICE_ID/deploys?limit=5"
 ```
 
----
 
 ## Full project structure
 

@@ -5,7 +5,6 @@ description: Add ruff to a bunpy project — pyproject.toml config, ruff check a
 
 ruff is a fast Python linter and formatter written in Rust. It replaces flake8, isort, pyupgrade, and black with a single tool that runs in milliseconds. This guide covers adding ruff to a bunpy project, configuring it for FastAPI and Django, wiring it into pre-commit, and running it in CI.
 
----
 
 ## Install ruff
 
@@ -22,7 +21,6 @@ bunpy run ruff --version
 # ruff 0.4.x
 ```
 
----
 
 ## Running ruff
 
@@ -59,7 +57,6 @@ bunpy run ruff format src/
 
 ruff's formatter is compatible with black. If you are migrating from black, `ruff format` produces the same output in almost all cases.
 
----
 
 ## pyproject.toml configuration
 
@@ -127,7 +124,6 @@ ignore = [
 per-file-ignores = { "*/migrations/*" = ["E501", "N806"] }
 ```
 
----
 
 ## Common fixes
 
@@ -166,7 +162,6 @@ bunpy run ruff check --select UP032 --fix src/
 
 Rewrites `"{}".format(x)` and `"%" % x` to f-strings.
 
----
 
 ## pre-commit hook
 
@@ -205,7 +200,6 @@ To skip the hook for a specific commit (not recommended for normal use):
 git commit --no-verify -m "WIP: skip hooks"
 ```
 
----
 
 ## VS Code extension
 
@@ -230,7 +224,6 @@ Add to `.vscode/settings.json`:
 
 The extension reads `pyproject.toml` for configuration. Changes to `[tool.ruff]` take effect without restarting VS Code.
 
----
 
 ## CI step
 
@@ -248,7 +241,6 @@ The `--check` flag makes `ruff format` exit with a non-zero code if any files wo
 
 For the full workflow with caching, see the [CI/CD with GitHub Actions](/guides/github-actions) guide.
 
----
 
 ## Checking specific rules
 
@@ -277,7 +269,6 @@ Show the documentation for a specific rule:
 bunpy run ruff rule B008
 ```
 
----
 
 ## Migrating from flake8 + black + isort
 

@@ -5,7 +5,6 @@ description: Step-by-step guide to deploying a bunpy app on Railway with Postgre
 
 Railway is a good fit for bunpy projects. It handles build and run automatically, exposes environment variables cleanly, and provisions a managed PostgreSQL instance with one command. This guide walks through a complete deployment from a fresh repository to a live service.
 
----
 
 ## Prerequisites
 
@@ -14,7 +13,6 @@ Railway is a good fit for bunpy projects. It handles build and run automatically
 - The Railway CLI installed: `npm install -g @railway/cli`
 - A Railway account (free tier works)
 
----
 
 ## Step 1: Create the project
 
@@ -31,7 +29,6 @@ railway init
 
 If you prefer the dashboard, go to [railway.app](https://railway.app), click "New Project", then "Deploy from GitHub repo" and select your repository. Come back to the CLI for the rest.
 
----
 
 ## Step 2: Procfile
 
@@ -55,7 +52,6 @@ import os
 port = int(os.environ.get("PORT", 8080))
 ```
 
----
 
 ## Step 3: railway.toml
 
@@ -99,7 +95,6 @@ cmds = [
 ]
 ```
 
----
 
 ## Step 4: Health check endpoint
 
@@ -136,7 +131,6 @@ def health():
     return {"status": "ok"}
 ```
 
----
 
 ## Step 5: Add PostgreSQL
 
@@ -163,7 +157,6 @@ from sqlalchemy import create_engine
 engine = create_engine(os.environ["DATABASE_URL"])
 ```
 
----
 
 ## Step 6: Environment variables
 
@@ -187,7 +180,6 @@ railway run bunpy server.py
 
 This pulls all project variables and runs the command with them in the environment, so your local app connects to the same database as production. Useful for debugging production-specific issues without hardcoding connection strings.
 
----
 
 ## Step 7: Deploy
 
@@ -201,7 +193,6 @@ railway up --detach && railway logs --follow
 
 Railway triggers a build, runs `buildCommand`, then starts your process with `startCommand`. The build log shows each step. If the build fails, the previous deployment stays active.
 
----
 
 ## Deploy logs
 
@@ -224,7 +215,6 @@ Example output:
 [deploy] Listening on 0.0.0.0:3456
 ```
 
----
 
 ## Environment-specific config
 
@@ -237,7 +227,6 @@ railway up
 
 Each environment has its own variable set and its own Postgres instance. The staging environment uses the same `railway.toml` build config but different secrets.
 
----
 
 ## Full project structure
 

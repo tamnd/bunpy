@@ -10,7 +10,6 @@ This guide covers two approaches:
 1. **Full install** — copies your dependencies into the image, runs with `python:3.14-slim`. Good for apps that use C extensions or need the full Python stdlib.
 2. **.pyz bundle** — packages everything into a single archive, runs on a minimal base. Good for pure-Python services.
 
----
 
 ## Approach 1: Full install with layer caching
 
@@ -69,7 +68,6 @@ docker run --rm -p 8080:8080 \
 
 `--target /app/site-packages` installs packages into a specific directory instead of the system site-packages. This makes it straightforward to copy the installed dependencies as a single directory between build stages, and it means the runtime image does not need bunpy installed at all.
 
----
 
 ## Approach 2: .pyz bundle in a scratch image
 
@@ -119,7 +117,6 @@ ENTRYPOINT ["/myapp"]
 
 The compiled binary is statically linked. It includes the Go runtime and the goipy interpreter. There is nothing else to install.
 
----
 
 ## ARM64 cross-compile
 
@@ -150,7 +147,6 @@ RUN bunpy build --compile src/myapp/__main__.py -o /app/myapp
 
 Docker passes `TARGETARCH` automatically when building multi-platform. bunpy reads `GOARCH` and produces the correct binary.
 
----
 
 ## .dockerignore
 
@@ -173,7 +169,6 @@ node_modules/
 
 The `.bunpy/` directory contains your local cache. It can be hundreds of megabytes. Without `.dockerignore`, Docker sends the entire working directory to the build daemon for each build.
 
----
 
 ## Image size comparison
 
@@ -186,7 +181,6 @@ The `.bunpy/` directory contains your local cache. It can be hundreds of megabyt
 
 The compiled binary route gives the smallest image by a large margin because it carries no OS packages and no Python installation. The tradeoff is that C extension dependencies (`psycopg`, `cryptography`, and similar) do not work in a compiled binary — they require a CPython runtime.
 
----
 
 ## Passing environment variables
 
@@ -201,7 +195,6 @@ docker run --rm \
 
 For production, prefer Docker secrets or your orchestration platform's secret management over `-e` flags.
 
----
 
 ## Docker Compose example
 

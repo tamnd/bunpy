@@ -5,7 +5,6 @@ description: Run a bunpy app as a systemd service with automatic restarts, envir
 
 On a Linux server, systemd is the standard way to run a long-lived process. It handles startup on boot, automatic restart on crash, log collection via journald, and dependency ordering with other services. This guide covers a production-ready unit file for a bunpy app.
 
----
 
 ## Prerequisites
 
@@ -13,7 +12,6 @@ On a Linux server, systemd is the standard way to run a long-lived process. It h
 - bunpy installed system-wide or in a specific user's home directory
 - Your app deployed to a directory on the server, e.g. `/opt/myapp`
 
----
 
 ## Install your app on the server
 
@@ -42,7 +40,6 @@ bunpy build src/myapp/__main__.py -o dist/myapp.pyz
 scp dist/myapp.pyz appuser@server:/opt/myapp/myapp.pyz
 ```
 
----
 
 ## Create a dedicated user
 
@@ -58,7 +55,6 @@ For apps that need a home directory (e.g., to store the bunpy cache):
 sudo useradd --system --create-home --shell /usr/sbin/nologin appuser
 ```
 
----
 
 ## Environment file
 
@@ -85,7 +81,6 @@ ENVIRONMENT=production
 
 This file is not committed to source control. On a new server, provision it from a secrets manager (Vault, AWS Secrets Manager, etc.) or set it manually.
 
----
 
 ## Unit file
 
@@ -152,7 +147,6 @@ WantedBy=multi-user.target
 
 **`PrivateTmp=yes`** — gives the service its own `/tmp` directory. Files written to `/tmp` by the app are not visible to other processes.
 
----
 
 ## Enable and start
 
@@ -184,7 +178,6 @@ Example `status` output:
              └─12345 /home/appuser/.bunpy/bin/bunpy server.py
 ```
 
----
 
 ## Tailing logs
 
@@ -209,7 +202,6 @@ sudo journalctl -u myapp -o json | jq '{ts: .REALTIME_TIMESTAMP, msg: .MESSAGE}'
 
 To forward logs to an external service (Datadog, Loki, etc.), configure a systemd-journal remote exporter or use a log shipper like Vector or Promtail.
 
----
 
 ## Deployment via systemctl
 
@@ -226,7 +218,6 @@ sudo systemctl status myapp
 
 For a zero-downtime update, deploy behind a reverse proxy (nginx or Caddy) and start the new process on a different port before switching the proxy upstream.
 
----
 
 ## Socket activation (bonus)
 
@@ -278,7 +269,6 @@ sudo systemctl enable --now myapp.socket
 
 Your app reads the socket from the file descriptor passed by systemd. Most ASGI/WSGI servers support this via the `--fd` flag or the `SD_LISTEN_FDS` environment variable. For a raw Python HTTP server, use the `socket` module to accept the pre-bound socket.
 
----
 
 ## Common troubleshooting
 

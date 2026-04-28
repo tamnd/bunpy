@@ -12,7 +12,6 @@ By v0.10.29, bunpy warm lock takes 85 milliseconds on the same tree. uv cold loc
 
 Here is what we found and what we fixed.
 
----
 
 ## The benchmark setup
 
@@ -33,7 +32,6 @@ Baseline before any fixes:
 
 We were not just slower than uv warm. We were slower than uv cold. That told us we were not using our cache at all.
 
----
 
 ## Root cause 1: Cache not wired
 
@@ -43,7 +41,6 @@ Fix: move the cache lookup to before the fetch decision, not inside the pin chec
 
 **Time after fix:** 9.8s
 
----
 
 ## Root cause 2: Double fetch of metadata
 
@@ -55,7 +52,6 @@ Fix: parse the version metadata from the index response when it is present. Fall
 
 **Time after fix:** 5.1s
 
----
 
 ## Root cause 3: Sequential resolver
 
@@ -67,7 +63,6 @@ Fix: goroutine pool with 8 workers. Dependencies that overlap (same package need
 
 **Time after fix:** 1.8s
 
----
 
 ## Root cause 4: No prefetch
 
@@ -81,7 +76,6 @@ Fix: issue dependency fetches eagerly as soon as a dependency is identified in t
 
 **Time after fix:** 0.82s
 
----
 
 ## Root cause 5: Lock seeding missing
 
@@ -93,7 +87,6 @@ Fix: parse the existing `uv.lock` at startup and seed the resolver's version reg
 
 This was the biggest single improvement. Most `pm lock` runs happen on projects where only one or two packages changed. Seeding from the existing lockfile means the resolver does work proportional to the change, not proportional to the whole tree.
 
----
 
 ## Root cause 6: HTTP/1.1
 
@@ -105,7 +98,6 @@ Fix: use `golang.org/x/net/http2` with `http2.ConfigureTransport`. Enable it onl
 
 This last fix gave us less than the others individually, but combined with the parallel resolver and prefetch it made a noticeable difference on cold runs too.
 
----
 
 ## Before and after
 
@@ -121,7 +113,6 @@ The cold-cache number is relevant for CI. On a runner with no cache, bunpy takes
 
 The ratio we are proud of: bunpy warm is 0.28x the time of uv cold. If your CI warms the bunpy cache, you are resolving in under 100ms instead of 1.4 seconds.
 
----
 
 ## What is next
 
