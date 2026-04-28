@@ -1,0 +1,12 @@
+[project]
+name = "bench-multi"
+version = "0.0.1"
+requires-python = ">=3.12"
+dependencies = [
+    "requests>=2.31",
+    "rich>=13.0",
+    "click>=8.1",
+]
+
+[dependency-groups]
+dev = ["pytest>=8.0"]
