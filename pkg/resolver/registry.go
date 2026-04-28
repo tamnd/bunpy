@@ -23,3 +23,12 @@ type Requirement struct {
 	Name string
 	Spec version.Spec
 }
+
+// Prefetcher is an optional extension of Registry. When the Registry
+// also implements Prefetcher, the solver calls PrefetchProjects with
+// the names of packages whose project pages are about to be needed,
+// allowing the registry to warm its cache concurrently.
+// Implementations that cannot prefetch may ignore calls safely.
+type Prefetcher interface {
+	PrefetchProjects(names []string)
+}

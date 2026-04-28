@@ -3,6 +3,7 @@ package resolver
 import (
 	"errors"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/tamnd/bunpy/v1/pkg/version"
@@ -200,4 +201,81 @@ func indexPins(pins []Pin) map[string]string {
 		out[p.Name] = p.Version
 	}
 	return out
+}
+
+// trackingRegistry wraps fakeRegistry and records PrefetchProjects calls.
+type trackingRegistry struct {
+	*fakeRegistry
+	mu       sync.Mutex
+	prefetch [][]string // one entry per call
+}
+
+func (r *trackingRegistry) PrefetchProjects(names []string) {
+	cp := append([]string(nil), names...)
+	r.mu.Lock()
+	r.prefetch = append(r.prefetch, cp)
+	r.mu.Unlock()
+}
+
+func (r *trackingRegistry) allPrefetched() map[string]bool {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	out := map[string]bool{}
+	for _, batch := range r.prefetch {
+		for _, n := range batch {
+			out[n] = true
+		}
+	}
+	return out
+}
+
+// TestSolverPrefetch_Called verifies the solver calls PrefetchProjects
+// with the dep names it discovers during each decide() step.
+func TestSolverPrefetch_Called(t *testing.T) {
+	fake := newFake()
+	fake.add("a", []string{"1.0.0"}, map[string][]Requirement{
+		"1.0.0": {mustReq(t, "b", ""), mustReq(t, "c", "")},
+	})
+	fake.add("b", []string{"1.0.0"}, map[string][]Requirement{
+		"1.0.0": {mustReq(t, "d", "")},
+	})
+	fake.add("c", []string{"1.0.0"}, nil)
+	fake.add("d", []string{"1.0.0"}, nil)
+
+	reg := &trackingRegistry{fakeRegistry: fake}
+	res, err := New(reg).Solve([]Requirement{mustReq(t, "a", "")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Pins) != 4 {
+		t.Fatalf("want 4 pins, got %d: %+v", len(res.Pins), res.Pins)
+	}
+
+	got := reg.allPrefetched()
+	// When a is decided, its deps b and c should be prefetched.
+	// When b is decided, its dep d should be prefetched.
+	for _, want := range []string{"b", "c", "d"} {
+		if !got[want] {
+			t.Errorf("PrefetchProjects never called for %q; all calls: %v", want, reg.prefetch)
+		}
+	}
+}
+
+// TestSolverPrefetch_FallbackOnMiss verifies that a registry without
+// Prefetcher still resolves correctly — the type assertion degrades
+// gracefully.
+func TestSolverPrefetch_FallbackOnMiss(t *testing.T) {
+	reg := newFake()
+	reg.add("x", []string{"2.0.0"}, map[string][]Requirement{
+		"2.0.0": {mustReq(t, "y", ">=1.0")},
+	})
+	reg.add("y", []string{"1.0.0", "1.5.0"}, nil)
+	res, err := New(reg).Solve([]Requirement{mustReq(t, "x", "")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	pins := indexPins(res.Pins)
+	if pins["x"] != "2.0.0" || pins["y"] != "1.5.0" {
+		t.Errorf("unexpected pins: %v", pins)
+	}
 }

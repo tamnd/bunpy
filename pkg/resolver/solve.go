@@ -163,6 +163,15 @@ func (s *searchState) decide(pkg string) error {
 	if err != nil {
 		return fmt.Errorf("resolver: %s@%s: %w", pkg, chosen, err)
 	}
+	// Hint the registry to prefetch project pages for all deps so the
+	// next decide() calls find them cached instead of blocking on HTTP.
+	if pf, ok := s.solver.Registry.(Prefetcher); ok && len(deps) > 0 {
+		names := make([]string, len(deps))
+		for i, d := range deps {
+			names[i] = d.Name
+		}
+		pf.PrefetchProjects(names)
+	}
 	for _, d := range deps {
 		s.pending = append(s.pending, frame{req: d, from: pkg})
 	}

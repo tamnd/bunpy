@@ -4,7 +4,9 @@ import (
 	"context"
 	"crypto/sha256"
 	"fmt"
+	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -47,6 +49,12 @@ type pypiRegistry struct {
 }
 
 func newPypiRegistry(ctx context.Context, client *pypi.Client, tags []wheel.Tag, env marker.Env, fetchBody func(pypi.File) ([]byte, error)) *pypiRegistry {
+	concurrency := 4
+	if s := os.Getenv("BUNPY_RESOLVER_CONCURRENCY"); s != "" {
+		if n, err := strconv.Atoi(s); err == nil && n > 0 {
+			concurrency = n
+		}
+	}
 	r := &pypiRegistry{
 		ctx: ctx, client: client, tags: tags, env: env, fetchBody: fetchBody,
 		tagsKey:     tagsFingerprint(tags),
@@ -55,7 +63,7 @@ func newPypiRegistry(ctx context.Context, client *pypi.Client, tags []wheel.Tag,
 		depsCache:   map[string]map[string][]resolver.Requirement{},
 		depGraph:    map[string][]string{},
 		depExtras:   map[string]map[string][]string{},
-		prefetchSem: make(chan struct{}, 4),
+		prefetchSem: make(chan struct{}, concurrency),
 	}
 	return r
 }
@@ -99,15 +107,69 @@ func (r *pypiRegistry) prefetch(pkg, ver string) {
 }
 
 func (r *pypiRegistry) project(pkg string) (*pypi.Project, error) {
+	r.mu.Lock()
 	if p, ok := r.projects[pkg]; ok {
+		r.mu.Unlock()
 		return p, nil
 	}
+	r.mu.Unlock()
+
 	p, err := r.client.Get(r.ctx, pkg)
 	if err != nil {
 		return nil, err
 	}
-	r.projects[pkg] = p
+
+	r.mu.Lock()
+	if existing := r.projects[pkg]; existing != nil {
+		p = existing // prefetch goroutine beat us; discard duplicate fetch
+	} else {
+		r.projects[pkg] = p
+	}
+	r.mu.Unlock()
 	return p, nil
+}
+
+// prefetchProject fires a background goroutine to warm r.projects[pkg].
+// Silently skips if the entry is already cached or if the fetch fails.
+func (r *pypiRegistry) prefetchProject(pkg string) {
+	r.mu.Lock()
+	_, cached := r.projects[pkg]
+	r.mu.Unlock()
+	if cached {
+		return
+	}
+	r.prefetchWg.Add(1)
+	go func() {
+		defer r.prefetchWg.Done()
+		r.prefetchSem <- struct{}{}
+		defer func() { <-r.prefetchSem }()
+		// Re-check under lock: another goroutine may have beaten us.
+		r.mu.Lock()
+		_, already := r.projects[pkg]
+		r.mu.Unlock()
+		if already {
+			return
+		}
+		p, err := r.client.Get(r.ctx, pkg)
+		if err != nil {
+			return
+		}
+		r.mu.Lock()
+		if r.projects[pkg] == nil {
+			r.projects[pkg] = p
+		}
+		r.mu.Unlock()
+	}()
+}
+
+// PrefetchProjects implements resolver.Prefetcher. The solver calls
+// this with the dep names discovered by each decide() step so that
+// project pages are fetched concurrently while the solver processes
+// earlier constraints.
+func (r *pypiRegistry) PrefetchProjects(names []string) {
+	for _, name := range names {
+		r.prefetchProject(name)
+	}
 }
 
 // Versions returns versions whose best matching wheel is compatible
