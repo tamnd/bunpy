@@ -1,0 +1,11 @@
+{
+  "name": "pkg28",
+  "files": [
+    {
+      "filename": "pkg28-1.0.0-py3-none-any.whl",
+      "url": "https://files.example/pkg28/pkg28-1.0.0-py3-none-any.whl",
+      "hashes": {"sha256": "f7b7cf81b7153592a229c1ea5169808bd02d8cd1250a7976d27252e42c93a1a3"}
+    }
+  ],
+  "meta": {"api-version": "1.1", "_last-serial": 1}
+}

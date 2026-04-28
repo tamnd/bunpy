@@ -1,0 +1,11 @@
+{
+  "name": "pkg33",
+  "files": [
+    {
+      "filename": "pkg33-1.0.0-py3-none-any.whl",
+      "url": "https://files.example/pkg33/pkg33-1.0.0-py3-none-any.whl",
+      "hashes": {"sha256": "d0b52d551a266ef58ba994a7ffeef670aa60097dc1f1afddb6f8ebd6ca6ee8df"}
+    }
+  ],
+  "meta": {"api-version": "1.1", "_last-serial": 1}
+}

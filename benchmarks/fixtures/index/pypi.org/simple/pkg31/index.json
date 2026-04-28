@@ -1,0 +1,11 @@
+{
+  "name": "pkg31",
+  "files": [
+    {
+      "filename": "pkg31-1.0.0-py3-none-any.whl",
+      "url": "https://files.example/pkg31/pkg31-1.0.0-py3-none-any.whl",
+      "hashes": {"sha256": "aaf1d12a430bda1ebf2fe9a94b7450a329b63aaa2b238f174c41aa4115d18313"}
+    }
+  ],
+  "meta": {"api-version": "1.1", "_last-serial": 1}
+}

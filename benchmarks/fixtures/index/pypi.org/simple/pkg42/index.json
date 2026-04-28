@@ -1,0 +1,11 @@
+{
+  "name": "pkg42",
+  "files": [
+    {
+      "filename": "pkg42-1.0.0-py3-none-any.whl",
+      "url": "https://files.example/pkg42/pkg42-1.0.0-py3-none-any.whl",
+      "hashes": {"sha256": "f1ff093354073f42cff86ecef512b63938116bd83ff2b1cef30ebc8ed9036694"}
+    }
+  ],
+  "meta": {"api-version": "1.1", "_last-serial": 1}
+}

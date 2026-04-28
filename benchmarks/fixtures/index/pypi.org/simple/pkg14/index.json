@@ -1,0 +1,11 @@
+{
+  "name": "pkg14",
+  "files": [
+    {
+      "filename": "pkg14-1.0.0-py3-none-any.whl",
+      "url": "https://files.example/pkg14/pkg14-1.0.0-py3-none-any.whl",
+      "hashes": {"sha256": "e61dd1253175002c49e45847bf0eaf9130693d2bbca65b39ac58fd564c3a4e41"}
+    }
+  ],
+  "meta": {"api-version": "1.1", "_last-serial": 1}
+}

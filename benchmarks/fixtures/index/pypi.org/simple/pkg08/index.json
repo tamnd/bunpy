@@ -1,0 +1,11 @@
+{
+  "name": "pkg08",
+  "files": [
+    {
+      "filename": "pkg08-1.0.0-py3-none-any.whl",
+      "url": "https://files.example/pkg08/pkg08-1.0.0-py3-none-any.whl",
+      "hashes": {"sha256": "3495fe5ca9c4fa19c7e3261108e21f44b143ff331c82424a36456c5b3a8d0cac"}
+    }
+  ],
+  "meta": {"api-version": "1.1", "_last-serial": 1}
+}

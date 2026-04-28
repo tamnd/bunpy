@@ -1,0 +1,26 @@
+goos: darwin
+goarch: arm64
+pkg: github.com/tamnd/bunpy/v1/benchmarks
+cpu: Apple M4
+BenchmarkPMLock_47pkgs-10          	     265	  14368491 ns/op	   21189 B/op	      45 allocs/op
+BenchmarkPMLock_47pkgs-10          	     223	  14184622 ns/op	   21112 B/op	      45 allocs/op
+BenchmarkPMLock_47pkgs-10          	     260	  13200723 ns/op	   21117 B/op	      45 allocs/op
+BenchmarkPMLock_47pkgs-10          	     250	  13594827 ns/op	   21114 B/op	      45 allocs/op
+BenchmarkPMLock_47pkgs-10          	     262	  13253157 ns/op	   21112 B/op	      45 allocs/op
+BenchmarkInstall_47pkgs-10         	      55	  65203856 ns/op	 1258101 B/op	    9640 allocs/op
+BenchmarkInstall_47pkgs-10         	      57	  63743612 ns/op	 1247015 B/op	    9639 allocs/op
+BenchmarkInstall_47pkgs-10         	      55	  65256027 ns/op	 1253892 B/op	    9640 allocs/op
+BenchmarkInstall_47pkgs-10         	      60	 111961366 ns/op	 1255985 B/op	    9640 allocs/op
+BenchmarkInstall_47pkgs-10         	      56	  69349462 ns/op	 1254086 B/op	    9640 allocs/op
+BenchmarkTestRunner_100tests-10    	     265	  14117424 ns/op	24444464 B/op	  316269 allocs/op
+BenchmarkTestRunner_100tests-10    	     250	  17211444 ns/op	24444462 B/op	  316270 allocs/op
+BenchmarkTestRunner_100tests-10    	     259	  13685406 ns/op	24444344 B/op	  316269 allocs/op
+BenchmarkTestRunner_100tests-10    	     258	  14669435 ns/op	24444407 B/op	  316269 allocs/op
+BenchmarkTestRunner_100tests-10    	     253	  14478960 ns/op	24444287 B/op	  316268 allocs/op
+BenchmarkStartup-10                	     390	   7730816 ns/op	   15088 B/op	      30 allocs/op
+BenchmarkStartup-10                	     466	   7889559 ns/op	   15088 B/op	      30 allocs/op
+BenchmarkStartup-10                	     464	  10900433 ns/op	   15088 B/op	      30 allocs/op
+BenchmarkStartup-10                	     388	   9203759 ns/op	   15088 B/op	      30 allocs/op
+BenchmarkStartup-10                	     478	   7524928 ns/op	   15088 B/op	      30 allocs/op
+PASS
+ok  	github.com/tamnd/bunpy/v1/benchmarks	104.672s

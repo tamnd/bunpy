@@ -1,0 +1,11 @@
+{
+  "name": "pkg16",
+  "files": [
+    {
+      "filename": "pkg16-1.0.0-py3-none-any.whl",
+      "url": "https://files.example/pkg16/pkg16-1.0.0-py3-none-any.whl",
+      "hashes": {"sha256": "3e49bc54ca6a9059eb3442b35df6c646be7222bdd03c5afac0e92e691c56fee5"}
+    }
+  ],
+  "meta": {"api-version": "1.1", "_last-serial": 1}
+}

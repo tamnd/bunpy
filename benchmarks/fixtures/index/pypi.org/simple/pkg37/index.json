@@ -1,0 +1,11 @@
+{
+  "name": "pkg37",
+  "files": [
+    {
+      "filename": "pkg37-1.0.0-py3-none-any.whl",
+      "url": "https://files.example/pkg37/pkg37-1.0.0-py3-none-any.whl",
+      "hashes": {"sha256": "695988fd1f0fc26c66de147b3af8e1e9a93f66b7092b230133a0893d4662e60a"}
+    }
+  ],
+  "meta": {"api-version": "1.1", "_last-serial": 1}
+}
